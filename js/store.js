@@ -26,10 +26,12 @@ const VIS_FROM_DB = { public: 'public', friends: 'amis', private: 'prive' };
 
 /* ---------- correspondance appli <-> base ---------- */
 const ROW = {
-  trips: t => ({ id: t.id, country_code: t.pays, city: t.ville, start_date: t.du, end_date: t.au, budget: Number(t.budget) || 0,
-    category_budgets: t.budgets || null, places: t.lieux || [], is_favorite: !!t.fav, album_visibility: VIS_TO_DB[t.vis || 'prive'], cover_path: t.cover || null }),
+  trips: t => ({ id: t.id, country_code: t.pays, city: t.ville || null, start_date: t.du, end_date: t.au, budget: Number(t.budget) || 0,
+    category_budgets: t.budgets || null, places: t.lieux || [], is_favorite: !!t.fav, album_visibility: VIS_TO_DB[t.vis || 'prive'], cover_path: t.cover || null,
+    members: t.membres || [], settlements: t.reglements || [] }),
   expenses: ([t, d]) => ({ id: d.id, trip_id: t.id, day: d.j, label: d.l, category: d.c,
-    amount_local: d.v == null ? null : Number(d.v), currency: d.v == null ? null : (C(t).code || null), amount_eur: Math.round(Number(d.eur) * 100) / 100 }),
+    amount_local: d.v == null ? null : Number(d.v), currency: d.v == null ? null : (d.cur || C(t).code || null), amount_eur: Math.round(Number(d.eur) * 100) / 100,
+    paid_by: d.by || 'me', split: d.split || null }),
   journal_entries: ([t, e]) => ({ id: e.id, trip_id: t.id, day: e.j, title: e.t, note: e.n || '', photo_paths: e.photos }),
   wishes: w => ({ id: w.id, country_code: w.pays, note: w.note || '' }),
 };
@@ -41,8 +43,8 @@ const LIST = {
 };
 // colonnes modifiables (les autres sont figées par la base)
 const UPDATABLE = {
-  trips: ['country_code', 'city', 'start_date', 'end_date', 'budget', 'category_budgets', 'places', 'is_favorite', 'album_visibility', 'cover_path'],
-  expenses: ['day', 'label', 'category', 'amount_local', 'currency', 'amount_eur'],
+  trips: ['country_code', 'city', 'start_date', 'end_date', 'budget', 'category_budgets', 'places', 'is_favorite', 'album_visibility', 'cover_path', 'members', 'settlements'],
+  expenses: ['day', 'label', 'category', 'amount_local', 'currency', 'amount_eur', 'paid_by', 'split'],
   journal_entries: ['day', 'title', 'note', 'photo_paths'],
   wishes: ['note'],
 };
@@ -50,11 +52,11 @@ const ORDER_INS = ['trips', 'expenses', 'journal_entries', 'wishes'];
 const ORDER_DEL = ['expenses', 'journal_entries', 'wishes', 'trips'];
 
 function fromDb(trips, exps, entries, wishes) {
-  const T = trips.map(r => ({ id: r.id, pays: r.country_code, ville: r.city, du: r.start_date, au: r.end_date, budget: Number(r.budget),
+  const T = trips.map(r => ({ id: r.id, pays: r.country_code, ville: r.city || '', membres: r.members || [], reglements: r.settlements || [], du: r.start_date, au: r.end_date, budget: Number(r.budget),
     budgets: r.category_budgets || null, lieux: r.places || [], fav: r.is_favorite, vis: VIS_FROM_DB[r.album_visibility] || 'prive',
     cover: r.cover_path, entrees: [], depenses: [] }));
   const byId = Object.fromEntries(T.map(t => [t.id, t]));
-  exps.forEach(r => { const t = byId[r.trip_id]; if (t) t.depenses.push({ id: r.id, j: r.day, l: r.label, c: r.category, v: r.amount_local == null ? null : Number(r.amount_local), eur: Number(r.amount_eur), at: r.created_at }); });
+  exps.forEach(r => { const t = byId[r.trip_id]; if (t) t.depenses.push({ id: r.id, j: r.day, l: r.label, c: r.category, v: r.amount_local == null ? null : Number(r.amount_local), cur: r.amount_local == null || r.currency === C(t).code ? null : r.currency, eur: Number(r.amount_eur), by: r.paid_by || 'me', split: r.split || null, at: r.created_at }); });
   entries.forEach(r => { const t = byId[r.trip_id]; if (t) t.entrees.push({ id: r.id, j: r.day, t: r.title, n: r.note, photos: r.photo_paths || [] }); });
   T.forEach(t => { t.entrees.sort((a, b) => a.j - b.j); t.depenses.sort((a, b) => (a.at || '').localeCompare(b.at || '')); });
   return { trips: T, envies: wishes.map(r => ({ id: r.id, pays: r.country_code, note: r.note })) };
@@ -87,11 +89,20 @@ async function loadData() {
   const fresh = fromDb(t.data, e.data, j.data, w.data);
   S = { user: S.user, ...fresh }; SNAP = snapshotOf(S); writeCache();
 }
+/** Identifiants des éléments modifiés sur l'appareil et pas encore confirmés par le serveur. */
+function pendingIds() { const out = new Set(); if (!SNAP) return out; const cur = snapshotOf(S);
+  ORDER_INS.forEach(n => { Object.entries(cur[n]).forEach(([id, j]) => { if (SNAP[n][id] !== j) out.add(id); }); Object.keys(SNAP[n]).forEach(id => { if (!(id in cur[n])) out.add(id); }); }); return out; }
 const hasPending = () => { if (!SNAP) return false; const cur = snapshotOf(S); return ORDER_INS.some(n => JSON.stringify(cur[n]) !== JSON.stringify(SNAP[n])); };
 
 /* ---------- synchronisation ---------- */
 let syncTimer = null, syncing = false, again = false, backoff = 0;
-function save() { writeCache(); clearTimeout(syncTimer); syncTimer = setTimeout(sync, 350); }
+function save() { writeCache(); updatePending(); clearTimeout(syncTimer); syncTimer = setTimeout(sync, 350); }
+/* indicateur hors connexion : nombre de modifications en attente d'envoi */
+let PENDING = new Set(), wasOffline = false;
+function updatePending() {
+  PENDING = pendingIds(); const n = PENDING.size, bar = document.querySelector('.offline-bar'); if (!bar) return;
+  bar.textContent = n ? `Hors connexion : ${n} modification${n > 1 ? 's' : ''} enregistrée${n > 1 ? 's' : ''} sur ton téléphone, envoyée${n > 1 ? 's' : ''} au retour du réseau.` : 'Hors connexion : tu peux continuer à noter tes dépenses, elles seront envoyées au retour du réseau.';
+}
 async function sync() {
   if (!ME || !SNAP) return;
   if (syncing) { again = true; return; }
@@ -112,6 +123,7 @@ async function sync() {
       if (del.length) { const r = await sb.from(n).delete().in('id', del); if (r.error) throw r.error; del.forEach(id => delete SNAP[n][id]); }
     }
     backoff = 0; setOnline(true); writeCache(); flushMediaDeletes();
+    const had = PENDING.size; updatePending(); if (had && wasOffline) { wasOffline = false; toast('Connexion retrouvée : tout est synchronisé'); if (typeof refresh === 'function') refresh(); }
   } catch (e) {
     if (isNetwork(e)) { setOnline(false); backoff = Math.min(60000, (backoff || 2500) * 2); setTimeout(sync, backoff); }
     else {
@@ -122,7 +134,9 @@ async function sync() {
   } finally { syncing = false; if (again) sync(); }
 }
 const isNetwork = e => !e || e.name === 'TypeError' || /fetch|network|Failed to fetch|Load failed/i.test(e.message || '') || e.status === 0;
-function setOnline(on) { document.body.classList.toggle('offline', !on); }
+function setOnline(on) { if (!on) { wasOffline = true; updatePending(); } document.body.classList.toggle('offline', !on); }
+// nouvelle tentative régulière tant que quelque chose attend (réseau capricieux en voyage)
+setInterval(() => { if (ME && SNAP && !syncing && PENDING.size && navigator.onLine) sync(); }, 30000);
 addEventListener('online', () => { setOnline(true); sync(); });
 addEventListener('offline', () => setOnline(false));
 

@@ -146,7 +146,7 @@ ACT.compose = fromPanel(d => {
   comp = { trip: t.id, sel: [], extra: [], vis: (SETTINGS && SETTINGS.default_visibility) || 'friends', bud: false, chal: d.chal || null };
   const ch = d.chal ? CHALS.find(c => c.id === d.chal) : null;
   openPanel(`<h2>${ch ? 'Relever le défi' : 'Publier un souvenir'}</h2>${ch ? `<p class="small">${SV.target} ${esc(ch.place)}, lancé par ${first(ch.other.display_name)}</p>` : ''}
-   <label class="fld"><span>Voyage</span><select id="cp-trip">${sorted().map(x => `<option value="${x.id}" ${x.id === t.id ? 'selected' : ''}>${esc(x.ville)}</option>`).join('')}</select></label>
+   <label class="fld"><span>Voyage</span><select id="cp-trip">${sorted().map(x => `<option value="${x.id}" ${x.id === t.id ? 'selected' : ''}>${esc(place(x))}</option>`).join('')}</select></label>
    <div class="fld"><span>Photos (6 maximum)</span><div class="pick-grid" id="cp-grid"></div></div>
    <label class="fld"><span>Légende</span><textarea id="cp-cap" maxlength="2200" placeholder="Raconte ce moment">${ch ? esc(`Défi de ${String(ch.other.display_name).split(' ')[0]} relevé : ${ch.place}.`) : ''}</textarea></label>
    <button type="button" class="togrow" id="cp-bud" aria-pressed="false"><div><b>Joindre le bilan des dépenses</b><span>Total, coût par jour et répartition par catégorie</span></div><i class="sw"></i></button>

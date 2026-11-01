@@ -4,14 +4,16 @@
 /* ---------- calculs ---------- */
 const fmt = n => Math.round(n || 0).toLocaleString('fr-FR') + ' €';
 const C = t => COUNTRIES[t.pays] || COUNTRIES.FR;
+/** Nom affiché d'un voyage : la ville si elle est renseignée, sinon le pays (roadtrip). */
+const place = t => (t && t.ville) || C(t).n;
 const fmtL = (n, t) => Math.round(n).toLocaleString('fr-FR') + ' ' + C(t).cur;
 const trip = id => S.trips.find(t => t.id === id);
 const sorted = () => S.trips.slice().sort((a, b) => D(b.du) - D(a.du));
 const currentTrip = () => S.trips.find(t => info(t).enCours) || null;
 function budgetsOf(t) { if (t.budgets) return t.budgets; const b = {}; Object.keys(CATS).forEach(k => b[k] = Math.round(t.budget * CATS[k].pct)); return b; }
-function catsOf(t) { const c = {}; Object.keys(CATS).forEach(k => c[k] = 0); t.depenses.forEach(d => c[d.c] += d.eur); return c; }
+function catsOf(t) { const c = {}; Object.keys(CATS).forEach(k => c[k] = 0); t.depenses.forEach(d => c[d.c] += myPart(d)); return c; }
 const spentOf = t => Object.values(catsOf(t)).reduce((a, b) => a + b, 0);
-function daysOf(t) { const n = Math.max(1, info(t).jour || info(t).jours), a = Array(n).fill(0); t.depenses.forEach(d => { if (d.c !== 'logement' && d.j <= n) a[d.j - 1] += d.eur; }); return a; }
+function daysOf(t) { const n = Math.max(1, info(t).jour || info(t).jours), a = Array(n).fill(0); t.depenses.forEach(d => { if (d.c !== 'logement' && d.j <= n) a[d.j - 1] += myPart(d); }); return a; }
 function projection(t) { const f = info(t); if (!f.enCours) return {}; const c = catsOf(t), b = budgetsOf(t); let worst = null;
   Object.keys(CATS).forEach(k => { if (k === 'logement') return; const proj = c[k] / f.jour * f.jours, over = proj - b[k]; if (over > 0 && (!worst || over > worst.over)) worst = { k, proj, over }; }); return { worst }; }
 function noteFor(t) {
@@ -24,7 +26,11 @@ function noteFor(t) {
 }
 const caps = s => s.toUpperCase();
 const photosCount = t => (t.cover ? 1 : 0) + t.entrees.reduce((a, e) => a + e.photos.filter(Boolean).length, 0);
-const short = t => t.ville.split(' et ')[0];
+const short = t => place(t).split(' et ')[0];
+/** Ta part d'une dépense : tout si elle n'est pas partagée, sinon ta part du partage. */
+const myPart = d => !d.split || !d.split.length ? (d.by && d.by !== 'me' ? 0 : d.eur) : d.split.includes('me') ? d.eur / d.split.length : 0;
+/** Montant en devise affiché pour une dépense (devise du pays ou autre devise choisie). */
+const fmtD = (d, t) => d.cur ? (Math.round(d.v * 100) / 100).toLocaleString('fr-FR') + ' ' + d.cur : fmtL(d.v, t);
 const pct = (a, b) => b ? Math.min(100, a / b * 100) : 0;
 
 /* ---------- photos ---------- */
@@ -67,7 +73,7 @@ const ACT = {
   addPlace: d => placeInput(d.trip),
   rmPlace: d => { const t = trip(d.trip), l = t.lieux[+d.i]; t.lieux.splice(+d.i, 1); save(); refresh(); if (l) toast(`${l} retiré des lieux`); },
   fav: d => { const t = trip(d.trip); t.fav = !t.fav; save(); refresh(); toast(t.fav ? 'Ajouté aux favoris' : 'Retiré des favoris'); },
-  share: d => { const t = trip(d.trip), txt = `${t.ville}, ${fd(t.du)} au ${fd(t.au)} : ${fmt(spentOf(t))} pour ${info(t).jours} jours.`; copyText(txt, 'Résumé du carnet copié'); },
+  share: d => { const t = trip(d.trip), txt = `${place(t)}, ${fd(t.du)} au ${fd(t.au)} : ${fmt(spentOf(t))} pour ${info(t).jours} jours.`; copyText(txt, 'Résumé du carnet copié'); },
   depTrip: d => { depId = d.trip; go('depenses'); }, editExp: d => expSheet(d.trip, d.id),
   catFilter: d => { catF = catF === d.k ? null : d.k; renderDepenses(true); },
   flip: () => $('flipcard').classList.toggle('on'), ask: d => { go('ia'); ask(d.q); },
@@ -89,22 +95,29 @@ const CLOSE = label => `<button class="ghostbtn" data-close>${label || 'Annuler'
 
 function tripSheet(id) {
   const t = id ? trip(id) : null;
-  openPanel(`<h2>${t ? 'Modifier le voyage' : 'Nouveau voyage'}</h2><p class="small">${t ? 'Change les infos de ce carnet.' : 'Un carnet se crée avec des emplacements vides pour tes photos.'}</p>
-   <label class="fld"><span>Pays</span><input id="f-pays" list="pays-list" autocomplete="off" maxlength="40" placeholder="Tape un pays, ex. Italie" value="${t ? esc(C(t).n) : ''}">${paysList()}</label>
-   <label class="fld"><span>Ville ou région</span><input id="f-ville" maxlength="80" value="${t ? esc(t.ville) : ''}" placeholder="Ex. Naples"></label>
-   <div class="two"><label class="fld"><span>Départ</span><input id="f-du" type="date" value="${t ? t.du : addDays(TODAY, 30)}"></label><label class="fld"><span>Retour</span><input id="f-au" type="date" value="${t ? t.au : addDays(TODAY, 36)}"></label></div>
-   <label class="fld"><span>Budget total en euros</span><input id="f-bud" type="number" inputmode="numeric" min="0" max="10000000" value="${t ? t.budget : 900}"></label>
+  openPanel(`<h2>${t ? 'Modifier le voyage' : 'Nouveau voyage'}</h2><p class="small">${t ? 'Change les infos de ce carnet.' : 'Un carnet se crée avec des emplacements vides pour tes photos.'} Les champs marqués <span class="req">*</span> sont obligatoires.</p>
+   <label class="fld" data-f="pays"><span>Pays <span class="req">*</span></span><input id="f-pays" list="pays-list" autocomplete="off" maxlength="40" placeholder="Tape un pays, ex. Italie" value="${t ? esc(C(t).n) : ''}" required>${paysList()}<em class="ferr"></em></label>
+   <label class="fld" data-f="ville"><span>Ville ou région <i class="opt">facultatif</i></span><input id="f-ville" maxlength="80" value="${t ? esc(t.ville) : ''}" placeholder="Ex. Naples, ou laisse vide pour un roadtrip"></label>
+   <div class="two"><label class="fld" data-f="du"><span>Départ <span class="req">*</span></span><input id="f-du" type="date" required value="${t ? t.du : addDays(TODAY, 30)}"><em class="ferr"></em></label><label class="fld" data-f="au"><span>Retour <span class="req">*</span></span><input id="f-au" type="date" required value="${t ? t.au : addDays(TODAY, 36)}"><em class="ferr"></em></label></div>
+   <label class="fld" data-f="bud"><span>Budget total en euros <span class="req">*</span></span><input id="f-bud" type="number" inputmode="numeric" min="0" max="10000000" required value="${t ? t.budget : 900}"><em class="ferr"></em></label>
    <button class="btn full" id="f-ok">${t ? 'Enregistrer' : 'Créer le carnet'}<i>${SV.arrow}</i></button>
    ${t ? `<button class="danger" id="f-del">Supprimer ce carnet</button>` : ''}${CLOSE()}`, p => {
+    const bad = (k, msg) => { const f = p.querySelector(`[data-f="${k}"]`); f.classList.add('bad'); f.querySelector('.ferr').textContent = msg; return true; };
+    p.querySelectorAll('.fld input').forEach(i => i.addEventListener('input', () => { const f = i.closest('.fld'); f.classList.remove('bad'); const e = f.querySelector('.ferr'); if (e) e.textContent = ''; }));
     p.querySelector('#f-ok').onclick = () => {
-      const ville = p.querySelector('#f-ville').value.trim(), du = p.querySelector('#f-du').value, au = p.querySelector('#f-au').value, b = +p.querySelector('#f-bud').value, pays = paysCode(p.querySelector('#f-pays').value);
-      if (!pays) { toast('Pays non reconnu, choisis-le dans les suggestions'); return; }
-      if (!ville) { toast('Indique une ville ou une région'); return; }
-      if (!du || !au || D(au) < D(du)) { toast('La date de retour doit suivre la date de départ'); return; }
-      if (diffDays(du, au) > 365) { toast('Un voyage dure un an au maximum'); return; }
-      if (!(b >= 0) || b > 1e7) { toast('Indique un budget valide'); return; }
+      p.querySelectorAll('.fld.bad').forEach(f => { f.classList.remove('bad'); f.querySelector('.ferr').textContent = ''; });
+      const ville = p.querySelector('#f-ville').value.trim(), du = p.querySelector('#f-du').value, au = p.querySelector('#f-au').value, bt = p.querySelector('#f-bud').value, b = +bt, praw = p.querySelector('#f-pays').value.trim(), pays = paysCode(praw);
+      let ko = false;
+      if (!praw) ko = bad('pays', 'Indique le pays du voyage');
+      else if (!pays) ko = bad('pays', 'Pays non reconnu, choisis-le dans les suggestions');
+      if (!du) ko = bad('du', 'Indique la date de départ');
+      if (!au) ko = bad('au', 'Indique la date de retour');
+      else if (du && D(au) < D(du)) ko = bad('au', 'Le retour doit suivre le départ');
+      else if (du && diffDays(du, au) > 365) ko = bad('au', 'Un voyage dure un an au maximum');
+      if (bt === '' || !(b >= 0) || b > 1e7) ko = bad('bud', 'Indique un budget, même approximatif (0 accepté)');
+      if (ko) { const f = p.querySelector('.fld.bad input'); f && f.focus(); toast('Il manque des informations'); return; }
       if (t) { Object.assign(t, { pays, ville, du, au, budget: b }); if (t.budgets) { const tot = Object.values(t.budgets).reduce((a, c) => a + c, 0); if (tot !== b) t.budgets = null; } save(); closePanel(); refresh(); toast('Carnet mis à jour'); }
-      else { const nt = { id: uid(), pays, ville, du, au, budget: b, cover: null, fav: false, vis: 'prive', lieux: [], entrees: [{ id: uid(), j: 1, t: 'Premier jour', n: '', photos: [null, null] }], depenses: [] };
+      else { const nt = { id: uid(), pays, ville, du, au, budget: b, cover: null, fav: false, vis: 'prive', lieux: [], membres: [], reglements: [], entrees: [{ id: uid(), j: 1, t: 'Premier jour', n: '', photos: [null, null] }], depenses: [] };
         S.trips.push(nt); S.envies = S.envies.filter(w => w.pays !== pays); save(); closePanel(); setTimeout(() => openTrip(nt.id), 380); toast('Carnet créé'); }
     };
     const del = p.querySelector('#f-del'); if (del) del.onclick = () => confirmIn(p, 'Supprimer ce carnet, ses dépenses et ses photos ?', () => {
@@ -113,31 +126,52 @@ function tripSheet(id) {
   });
 }
 function expSheet(tid, eid) {
-  let t = trip(tid); const d = eid ? t.depenses.find(x => x.id === eid) : null; const loc = C(t).rate !== 1;
-  let cur = d ? (d.v != null ? 'L' : 'E') : (loc ? 'L' : 'E'), cat = d ? d.c : 'repas';
-  const f = info(t);
+  let t = trip(tid); const d = eid ? t.depenses.find(x => x.id === eid) : null;
+  // E = euros, L = devise du pays, X = autre devise (ex. dollars au Cambodge, roadtrip sur plusieurs pays)
+  let cur = d ? (d.v == null ? 'E' : d.cur ? 'X' : 'L') : (C(t).rate !== 1 ? 'L' : 'E'), xcur = d && d.cur ? d.cur : 'USD', cat = d ? d.c : 'repas';
+  let by = d ? d.by || 'me' : 'me', split = d && d.split ? d.split.slice() : null;
   openPanel(`<h2>${d ? 'Modifier la dépense' : 'Nouvelle dépense'}</h2>
-   ${d ? '' : `<label class="fld"><span>Voyage</span><select id="e-trip">${sorted().map(x => `<option value="${x.id}" ${x.id === tid ? 'selected' : ''}>${esc(x.ville)}</option>`).join('')}</select></label>`}
+   ${d ? '' : `<label class="fld"><span>Voyage</span><select id="e-trip">${sorted().map(x => `<option value="${x.id}" ${x.id === tid ? 'selected' : ''}>${esc(place(x))}</option>`).join('')}</select></label>`}
    <div style="display:flex;justify-content:center;margin-top:12px"><div class="seg" id="e-cur"></div></div>
+   <div class="xcur" id="e-xwrap" hidden><select id="e-x" aria-label="Devise">${curList().map(c => `<option value="${c}" ${c === xcur ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
    <div class="amount"><input id="e-amt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="Montant" value="${d ? (d.v != null ? d.v : Math.round(d.eur * 100) / 100) : ''}"></div>
    <p class="conv num" id="e-conv"></p>
    <div class="fld"><span>Catégorie</span><div class="picker" id="e-cat">${Object.keys(CATS).map(k => `<button class="pill ${k === cat ? 'on' : ''}" data-c="${k}" type="button">${CATS[k].n}</button>`).join('')}</div></div>
    <div class="two"><label class="fld"><span>Description</span><input id="e-lbl" maxlength="80" value="${d ? esc(d.l) : ''}" placeholder="Ex. Dîner à Gion"></label><label class="fld"><span>Jour</span><select id="e-day"></select></label></div>
+   <div id="e-grp"></div>
+   ${!navigator.onLine ? `<p class="offnote">${SV.cloudOff}Hors connexion : la dépense est gardée sur ton téléphone et partira toute seule au retour du réseau.</p>` : ''}
    <button class="btn full" id="e-ok">${d ? 'Enregistrer' : 'Ajouter au carnet'}<i>${SV.arrow}</i></button>
    ${d ? `<button class="danger" id="e-del">Supprimer cette dépense</button>` : ''}${CLOSE()}`, p => {
-    const segs = () => { const l = C(t).rate !== 1; p.querySelector('#e-cur').innerHTML = `<button type="button" data-v="E" class="${cur === 'E' ? 'on' : ''}">Euros</button>` + (l ? `<button type="button" data-v="L" class="${cur === 'L' ? 'on' : ''}">${esc(C(t).cur)}</button>` : '');
-      if (!l) cur = 'E'; p.querySelectorAll('#e-cur button').forEach(b => b.onclick = () => { cur = b.dataset.v; segs(); conv(); }); };
+    const rate = () => cur === 'L' ? C(t).rate : cur === 'X' ? rateFor(xcur) : 1;
+    const curName = () => cur === 'L' ? C(t).cur : cur === 'X' ? xcur : '€';
+    const segs = () => { const l = C(t).rate !== 1;
+      if (cur === 'L' && !l) cur = 'E';
+      p.querySelector('#e-cur').innerHTML = `<button type="button" data-v="E" class="${cur === 'E' ? 'on' : ''}">Euros</button>` + (l ? `<button type="button" data-v="L" class="${cur === 'L' ? 'on' : ''}">${esc(C(t).cur)}</button>` : '') + `<button type="button" data-v="X" class="${cur === 'X' ? 'on' : ''}">Autre</button>`;
+      p.querySelector('#e-xwrap').hidden = cur !== 'X';
+      p.querySelectorAll('#e-cur button').forEach(b => b.onclick = () => { cur = b.dataset.v; segs(); conv(); }); };
     const days = () => { const n = info(t).jours, cd = info(t).enCours ? info(t).jour : 1; p.querySelector('#e-day').innerHTML = Array.from({ length: n }, (_, i) => `<option value="${i + 1}" ${(d ? d.j : cd) === i + 1 ? 'selected' : ''}>Jour ${i + 1}, ${fd(addDays(t.du, i))}</option>`).join(''); };
-    const conv = () => { const v = +p.querySelector('#e-amt').value; p.querySelector('#e-conv').textContent = v ? (cur === 'L' ? 'soit ' + (v / C(t).rate).toFixed(2).replace('.', ',') + ' €' : C(t).rate !== 1 ? 'soit ' + fmtL(v * C(t).rate, t) + ' (taux indicatif)' : '') : ''; };
-    segs(); days(); conv();
-    p.querySelector('#e-amt').oninput = conv;
-    const ts = p.querySelector('#e-trip'); if (ts) ts.onchange = () => { t = trip(ts.value); cur = C(t).rate !== 1 ? 'L' : 'E'; segs(); days(); conv(); };
+    const conv = () => { const v = +p.querySelector('#e-amt').value, r = rate(); const out = p.querySelector('#e-conv');
+      if (!v) { out.textContent = cur === 'E' ? '' : `1 € = ${fmtRate(r)} ${curName()}, ${rateNote()}`; return; }
+      out.textContent = cur === 'E' ? (C(t).rate !== 1 ? `soit ${fmtL(v * C(t).rate, t)}, ${rateNote()}` : '') : `soit ${(v / r).toFixed(2).replace('.', ',')} €, 1 € = ${fmtRate(r)} ${curName()} (${rateNote()})`; };
+    const grp = () => { const box = p.querySelector('#e-grp'), M = t.membres || []; if (!M.length) { box.innerHTML = `<button type="button" class="link small" id="e-addm">${SV.userPlus}Dépense partagée ? Ajoute des amis au voyage</button>`; box.querySelector('#e-addm').onclick = () => { closePanel(); setTimeout(() => membersSheet(t.id), 380); }; return; }
+      const all = ['me', ...M.map(m => m.id)]; if (!split) split = all.slice();
+      box.innerHTML = `<div class="fld"><span>Payé par</span><div class="picker" id="e-by">${all.map(id => `<button type="button" class="pill ${by === id ? 'on' : ''}" data-id="${id}">${esc(memberName(t, id))}</button>`).join('')}</div></div>
+        <div class="fld"><span>Pour qui <i class="opt">touche pour retirer</i></span><div class="picker" id="e-sp">${all.map(id => `<button type="button" class="pill ${split.includes(id) ? 'on' : ''}" data-id="${id}">${esc(memberName(t, id))}</button>`).join('')}</div><em class="small" id="e-each"></em></div>`;
+      box.querySelectorAll('#e-by .pill').forEach(b => b.onclick = () => { by = b.dataset.id; grp(); });
+      box.querySelectorAll('#e-sp .pill').forEach(b => b.onclick = () => { const id = b.dataset.id; split = split.includes(id) ? split.filter(x => x !== id) : [...split, id]; if (!split.length) { split = [id]; toast('Au moins une personne'); } grp(); });
+      each(); };
+    const each = () => { const e = p.querySelector('#e-each'); if (!e || !split) return; const v = +p.querySelector('#e-amt').value / rate(); e.textContent = v ? `${fmt(v / split.length)} par personne (${split.length})` : ''; };
+    segs(); days(); conv(); grp();
+    p.querySelector('#e-amt').oninput = () => { conv(); each(); };
+    p.querySelector('#e-x').onchange = e => { xcur = e.target.value; conv(); each(); };
+    const ts = p.querySelector('#e-trip'); if (ts) ts.onchange = () => { t = trip(ts.value); cur = C(t).rate !== 1 ? 'L' : 'E'; by = 'me'; split = null; segs(); days(); conv(); grp(); };
     p.querySelectorAll('#e-cat .pill').forEach(b => b.onclick = () => { cat = b.dataset.c; p.querySelectorAll('#e-cat .pill').forEach(x => x.classList.toggle('on', x === b)); });
     p.querySelector('#e-ok').onclick = () => {
-      const v = +p.querySelector('#e-amt').value; if (!(v > 0) || v > 1e9) { toast('Indique un montant'); return; }
-      const eur = cur === 'L' ? v / C(t).rate : v; if (eur > 1e7) { toast('Montant trop élevé'); return; }
-      const rec = { j: +p.querySelector('#e-day').value, l: p.querySelector('#e-lbl').value.trim().slice(0, 80) || CATS[cat].n, c: cat, v: cur === 'L' ? v : null, eur };
-      if (d) { Object.assign(d, rec); save(); closePanel(); refresh(); toast('Dépense mise à jour'); return; }
+      const v = +p.querySelector('#e-amt').value; if (!(v > 0) || v > 1e9) { toast('Indique un montant'); p.querySelector('#e-amt').focus(); return; }
+      const eur = v / rate(); if (eur > 1e7) { toast('Montant trop élevé'); return; }
+      const M = t.membres || [], shared = M.length && split && !(split.length === 1 && split[0] === 'me' && by === 'me');
+      const rec = { j: +p.querySelector('#e-day').value, l: p.querySelector('#e-lbl').value.trim().slice(0, 80) || CATS[cat].n, c: cat, v: cur === 'E' ? null : v, cur: cur === 'X' ? xcur : null, eur, by: M.length ? by : 'me', split: shared ? split : null };
+      if (d) { Object.assign(d, rec); save(); closePanel(); refresh(); toast(navigator.onLine ? 'Dépense mise à jour' : 'Dépense mise à jour sur ton téléphone'); return; }
       t.depenses.push({ id: uid(), ...rec, at: new Date().toISOString() }); save(); flyAndDone(rec, t);
     };
     const del = p.querySelector('#e-del'); if (del) del.onclick = () => confirmIn(p, 'Supprimer cette dépense ?', () => { t.depenses = t.depenses.filter(x => x.id !== d.id); save(); closePanel(); refresh(); toast('Dépense supprimée'); });
@@ -145,16 +179,16 @@ function expSheet(tid, eid) {
 }
 function flyAndDone(rec, t) {
   const ph = $('phone').getBoundingClientRect(), from = $('e-ok').getBoundingClientRect(), nb = document.querySelector('nav [data-go=depenses]'), to = nb.getBoundingClientRect();
-  const f = document.createElement('div'); f.className = 'flyer num'; f.textContent = (rec.v != null ? fmtL(rec.v, t) : fmt(rec.eur)) + '  ' + rec.l; $('phone').appendChild(f);
+  const f = document.createElement('div'); f.className = 'flyer num'; f.textContent = (rec.v != null ? fmtD(rec, t) : fmt(rec.eur)) + '  ' + rec.l; $('phone').appendChild(f);
   f.style.left = (from.left - ph.left + from.width / 2 - 70) + 'px'; f.style.top = (from.top - ph.top - 40) + 'px'; closePanel();
-  const done = () => { f.remove(); nb.classList.remove('ping'); void nb.offsetWidth; nb.classList.add('ping'); depId = t.id; if (current === 'depenses') renderDepenses(true); else go('depenses'); toast('Dépense ajoutée'); };
+  const done = () => { f.remove(); nb.classList.remove('ping'); void nb.offsetWidth; nb.classList.add('ping'); depId = t.id; if (current === 'depenses') renderDepenses(true); else go('depenses'); toast(navigator.onLine ? 'Dépense ajoutée' : 'Dépense notée, elle partira au retour du réseau'); };
   if (window.gsap && !REDUCED && !document.querySelector('nav').hidden) gsap.timeline({ onComplete: done }).to(f, { y: -60, rotation: -5, scale: 1.08, duration: .35, ease: 'power2.out' }).to(f, { x: to.left - from.left + to.width / 2 - from.width / 2, y: to.top - from.top + 40, scale: .2, opacity: 0, duration: .6, ease: 'power2.in' });
   else done();
 }
 function pageSheet(tid, eid) {
   const t = trip(tid), e = eid ? t.entrees.find(x => x.id === eid) : null, n = info(t).jours;
   let k = e ? e.photos.length : 2;
-  openPanel(`<h2>${e ? 'Modifier la page' : 'Nouvelle page'}</h2><p class="small">${esc(t.ville)}</p>
+  openPanel(`<h2>${e ? 'Modifier la page' : 'Nouvelle page'}</h2><p class="small">${esc(place(t))}</p>
    <label class="fld"><span>Titre</span><input id="p-t" maxlength="80" value="${e ? esc(e.t) : ''}" placeholder="Ex. Balade à Trastevere"></label>
    <label class="fld"><span>Ton souvenir</span><textarea id="p-n" maxlength="2000" placeholder="Ce que tu veux retenir de cette journée">${e ? esc(e.n) : ''}</textarea></label>
    <div class="two"><label class="fld"><span>Jour</span><select id="p-j">${Array.from({ length: n }, (_, i) => `<option value="${i + 1}" ${(e ? e.j : Math.min(n, (info(t).jour || 1))) === i + 1 ? 'selected' : ''}>Jour ${i + 1}, ${fd(addDays(t.du, i))}</option>`).join('')}</select></label>
@@ -182,7 +216,7 @@ function pageMenu(tid, eid) {
 }
 function budgetSheet(tid) {
   const t = trip(tid), b = budgetsOf(t);
-  openPanel(`<h2>Budget</h2><p class="small">${esc(t.ville)}, en euros</p>
+  openPanel(`<h2>Budget</h2><p class="small">${esc(place(t))}, en euros</p>
    <label class="fld"><span>Budget total</span><input id="b-tot" type="number" inputmode="numeric" min="0" value="${t.budget}"></label>
    ${Object.keys(CATS).map(k => `<label class="fld"><span>${CATS[k].n}</span><input data-k="${k}" class="b-cat" type="number" inputmode="numeric" min="0" value="${b[k]}"></label>`).join('')}
    <p class="small" id="b-sum" style="margin-top:10px"></p>
@@ -240,10 +274,11 @@ function openTrip(id, keep) {
       <div class="photos">${e.photos.map((p, i) => phHTML(p, `${t.id}|e|${e.id}|${i}`)).join('')}${e.photos.length < 6 ? `<button class="more" data-act="addSlot" data-trip="${t.id}" data-entry="${e.id}">${SV.plus}Cadre</button>` : ''}</div>
       <p class="spent num">Jour ${e.j}, dépenses hors logement : <b>${fmt(dayMap[e.j] || 0)}</b></p></div>`).join('') : `<div class="emptyj">Aucune page pour l'instant.</div>`}`;
   else if (dTab === 'depenses') { const list = t.depenses.slice().sort((a, b2) => b2.j - a.j);
-    body = `<div class="sec"><h2>Par catégorie</h2><button class="more" data-act="budget" data-trip="${t.id}">Budget</button></div>
+    body = `${statsHTML(t)}<div class="sec"><h2>Par catégorie</h2><button class="more" data-act="budget" data-trip="${t.id}">Budget</button></div>
     <div class="group">${Object.keys(CATS).map(k => `<div class="cat"><span class="ic">${ico(k)}</span><span><span class="n"><span>${CATS[k].n}</span><em class="num">sur ${fmt(b[k])}</em></span><span class="mb"><i class="${c[k] > b[k] ? 'over' : ''}" style="width:${pct(c[k], b[k])}%"></i></span></span><span class="v num">${fmt(c[k])}</span></div>`).join('')}</div>
     <div class="sec"><h2>${list.length} dépense${list.length > 1 ? 's' : ''}</h2><button class="pill dark" data-act="addExp" data-trip="${t.id}">${SV.plus}Dépense</button></div>
-    <div class="group dexp">${list.map(dd => `<button class="exp" data-act="editExp" data-trip="${t.id}" data-id="${dd.id}"><span class="ic">${ico(dd.c)}</span><span class="m"><b>${esc(dd.l)}</b><span>Jour ${dd.j}, ${CATS[dd.c].n}</span></span><span class="p num">${fmt(dd.eur)}${dd.v != null ? `<span>${fmtL(dd.v, t)}</span>` : ''}</span></button>`).join('') || `<p class="small" style="padding:14px">Aucune dépense pour l'instant.</p>`}</div>`; }
+    <div class="group dexp">${list.map(dd => `<button class="exp" data-act="editExp" data-trip="${t.id}" data-id="${dd.id}"><span class="ic">${ico(dd.c)}</span><span class="m"><b>${esc(dd.l)}</b><span>Jour ${dd.j}, ${CATS[dd.c].n}</span></span><span class="p num">${fmt(dd.eur)}${dd.v != null ? `<span>${fmtD(dd, t)}</span>` : ''}</span>${PENDING.has(dd.id) ? `<em class="pend" title="En attente d'envoi">${SV.cloudOff}</em>` : ''}</button>`).join('') || `<p class="small" style="padding:14px">Aucune dépense pour l'instant.</p>`}</div>`; }
+  else if (dTab === 'comptes') body = comptesHTML(t);
   else body = `<div class="sec"><h2>${photosCount(t)} photos</h2><button class="pill dark" data-act="photoTrip" data-trip="${t.id}">${SV.plus}Photo</button></div><div class="photogrid">${allPh.map(([p, tg]) => phHTML(p, tg)).join('')}</div>`;
   sc.innerHTML = `
    <div class="dhero">${phHTML(t.cover, `${t.id}|cover`, 'Ajouter une couverture')}<span class="sh"></span>
@@ -251,9 +286,9 @@ function openTrip(id, keep) {
        <button data-photo="${t.id}|cover" aria-label="Changer la couverture">${SV.cam}</button>
        <button class="${t.fav ? 'on' : ''}" data-act="fav" data-trip="${t.id}" aria-label="Favori">${t.fav ? SV.heartF : SV.heart}</button>
        <button data-act="share" data-trip="${t.id}" aria-label="Copier le résumé">${SV.share}</button></div>
-     <div class="dtitle"><h1>${esc(t.ville)}</h1><p class="m"><span>${SV.place}${esc(C(t).n)}</span><span>${SV.cal}${f.jours} jours, ${fd(t.du)} au ${fd(t.au)}</span></p><p class="r">${SV.star}<b>${status}</b><span>${f.futur || f.enCours ? '' : '(' + pc + ' % ' + (diff <= 0 ? 'sous le' : 'au-dessus du') + ' budget)'}</span></p></div></div>
-   <div class="dsheet"><div class="dtabs">${[['apercu', 'Aperçu'], ['journal', 'Journal'], ['depenses', 'Dépenses'], ['photos', 'Photos']].map(([k, l]) => `<button data-act="dtab" data-v="${k}" class="${dTab === k ? 'on' : ''}">${l}</button>`).join('')}</div>${body}<div style="height:110px"></div></div>`;
-  const act = { apercu: ['addExp', 'Ajouter une dépense'], journal: ['addPage', 'Nouvelle page'], depenses: ['addExp', 'Ajouter une dépense'], photos: ['photoTrip', 'Ajouter une photo'] }[dTab];
+     <div class="dtitle"><h1>${esc(place(t))}</h1><p class="m"><span>${SV.place}${esc(C(t).n)}</span><span>${SV.cal}${f.jours} jours, ${fd(t.du)} au ${fd(t.au)}</span></p><p class="r">${SV.star}<b>${status}</b><span>${f.futur || f.enCours ? '' : '(' + pc + ' % ' + (diff <= 0 ? 'sous le' : 'au-dessus du') + ' budget)'}</span></p></div></div>
+   <div class="dsheet"><div class="dtabs">${[['apercu', 'Aperçu'], ['journal', 'Journal'], ['depenses', 'Dépenses'], ['comptes', 'Entre amis'], ['photos', 'Photos']].map(([k, l]) => `<button data-act="dtab" data-v="${k}" class="${dTab === k ? 'on' : ''}">${l}</button>`).join('')}</div>${body}<div style="height:110px"></div></div>`;
+  const act = { apercu: ['addExp', 'Ajouter une dépense'], journal: ['addPage', 'Nouvelle page'], depenses: ['addExp', 'Ajouter une dépense'], photos: ['photoTrip', 'Ajouter une photo'], comptes: (t.membres || []).length ? ['addExp', 'Dépense partagée'] : ['members', 'Inviter des amis'] }[dTab];
   $('dock').innerHTML = `<div class="l num"><b>${fmt(f.futur ? t.budget : s)}</b><small>${f.futur ? 'de budget' : f.enCours ? 'dépensés à ce jour' : 'dépensés'}</small></div><button class="btn" data-act="${act[0]}" data-trip="${t.id}">${act[1]}<i>${SV.right}</i></button>`;
   if (!keep) { go('carnet', 'flip'); sc.scrollTop = 0; } else sc.scrollTop = y;
   const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { root: sc, threshold: .2 });
@@ -277,7 +312,7 @@ function renderDepenses(keep) {
   sc.innerHTML = `
    <h1 class="bigtitle sans">Budget</h1>
    <div class="tripchips">${sorted().map(x => `<button class="${x.id === t.id ? 'on' : ''}" data-dep="${x.id}">${flag(x.pays)}${esc(short(x))}</button>`).join('')}</div>
-   <div class="titlebar"><h1>${esc(t.ville)}</h1><button class="pill dark" data-act="addExp" data-trip="${t.id}">${SV.plus}Dépense</button></div>
+   <div class="titlebar"><h1>${esc(place(t))}</h1><button class="pill dark" data-act="addExp" data-trip="${t.id}">${SV.plus}Dépense</button></div>
    <div class="flipcard" id="flipcard"><div class="inner">
      <div class="face a"><div class="top"><span>${f.futur ? 'Budget du voyage' : f.enCours ? `Il te reste, jour ${f.jour} sur ${f.jours}` : 'Bilan du voyage'}</span>${loc ? `<button class="swap" data-act="flip">Voir en ${esc(C(t).cur)}</button>` : ''}</div>
        <p class="big num" data-count="${Math.round(f.enCours || f.futur ? left : s)}">${fmt(f.enCours || f.futur ? left : s)}</p>
@@ -287,15 +322,16 @@ function renderDepenses(keep) {
        ${p.worst ? `<div class="warn">${SV.warn || '!'}<span>Au rythme actuel, <b>${CATS[p.worst.k].n.toLowerCase()}</b> finira vers ${fmt(p.worst.proj)} pour ${fmt(b[p.worst.k])} prévus.</span></div>` : ''}
        <div class="actions"><button class="pill" data-act="budget" data-trip="${t.id}">Modifier le budget</button><button class="pill" data-open="${t.id}">Ouvrir le carnet</button></div>
      </div>
-     ${loc ? `<div class="face b"><div class="top"><span>En monnaie locale, 1 € pour ${C(t).rate.toLocaleString('fr-FR')} ${esc(C(t).cur)} (indicatif)</span><button class="swap" data-act="flip">Voir en euros</button></div>
+     ${loc ? `<div class="face b"><div class="top"><span>En monnaie locale, 1 € = ${fmtRate(C(t).rate)} ${esc(C(t).cur)} (${rateNote()})</span><button class="swap" data-act="flip">Voir en euros</button></div>
        <p class="big num">${fmtL((f.enCours || f.futur ? left : s) * C(t).rate, t)}</p>
        <div class="pills"><div><b class="num">${fmtL(per * C(t).rate, t)}</b><span>par jour</span></div><div><b class="num">${fmtL(s * C(t).rate, t)}</b><span>déjà dépensés</span></div></div></div>` : ''}
    </div></div>
+   ${statsHTML(t)}
    <div class="sec"><h2>Par catégorie</h2><span class="small">${catF ? 'filtre actif' : 'touche pour filtrer'}</span></div><div class="group">
    ${Object.keys(CATS).map(k => `<button class="cat ${catF === k ? 'on' : ''}" data-act="catFilter" data-k="${k}"><span class="ic">${ico(k)}</span><span><span class="n"><span>${CATS[k].n}</span><em class="num">sur ${fmt(b[k])}</em></span><span class="mb"><i class="${c[k] > b[k] ? 'over' : ''}" style="width:${pct(c[k], b[k])}%"></i></span></span><span class="v num">${fmt(c[k])}</span></button>`).join('')}
    </div><div class="sec"><h2>Le détail</h2>${catF ? `<button class="link" data-act="catFilter" data-k="${catF}">Tout afficher</button>` : ''}</div>
-   ${Object.keys(byDay).length ? Object.keys(byDay).sort((a, b2) => b2 - a).map(j => { const L = byDay[j], tot = L.reduce((a, d) => a + d.eur, 0);
-     return `<div class="dayh"><span>Jour ${j}, ${fd(addDays(t.du, j - 1))}</span><span class="num">${fmt(tot)}</span></div><div class="group">` + L.slice().reverse().map(d => `<button class="exp" data-act="editExp" data-trip="${t.id}" data-id="${d.id}"><span class="ic">${ico(d.c)}</span><span class="m"><b>${esc(d.l)}</b><span>${CATS[d.c].n}, touche pour modifier</span></span><span class="p num">${fmt(d.eur)}${d.v != null ? `<span>${fmtL(d.v, t)}</span>` : ''}</span></button>`).join('') + '</div>'; }).join('')
+   ${Object.keys(byDay).length ? Object.keys(byDay).sort((a, b2) => b2 - a).map(j => { const L = byDay[j], tot = L.reduce((a, d) => a + myPart(d), 0);
+     return `<div class="dayh"><span>Jour ${j}, ${fd(addDays(t.du, j - 1))}</span><span class="num">${fmt(tot)}</span></div><div class="group">` + L.slice().reverse().map(d => `<button class="exp" data-act="editExp" data-trip="${t.id}" data-id="${d.id}"><span class="ic">${ico(d.c)}</span><span class="m"><b>${esc(d.l)}</b><span>${CATS[d.c].n}${d.split || (d.by && d.by !== 'me') ? `, payé par ${esc(memberName(t, d.by || 'me'))}${d.split ? `, ta part ${fmt(myPart(d))}` : ''}` : ', touche pour modifier'}</span></span><span class="p num">${fmt(d.eur)}${d.v != null ? `<span>${fmtD(d, t)}</span>` : ''}</span>${PENDING.has(d.id) ? `<em class="pend" title="En attente d'envoi">${SV.cloudOff}</em>` : ''}</button>`).join('') + '</div>'; }).join('')
      : `<div class="emptyj">Aucune dépense ${catF ? 'dans cette catégorie' : 'pour ce voyage'}.<br><button class="pill dark" style="margin-top:12px" data-act="addExp" data-trip="${t.id}">${SV.plus}Ajouter une dépense</button></div>`}`;
   sc.querySelectorAll('[data-dep]').forEach(bn => bn.onclick = () => { depId = bn.dataset.dep; catF = null; renderDepenses(); });
   if (keep) sc.scrollTop = y; else countUp(sc.querySelector('[data-count]'));
@@ -322,9 +358,9 @@ function local(q) {
     q = q.toLowerCase(); const past = S.trips.filter(t => !info(t).futur && !info(t).enCours && spentOf(t) > 0);
     const perDay = past.map(t => [t, spentOf(t) / info(t).jours]).sort((a, b) => b[1] - a[1]);
     const named = S.trips.filter(t => q.includes(short(t).toLowerCase()));
-    if (q.includes('plus cher') && perDay.length) return `Par jour, c'est ${perDay[0][0].ville} qui a coûté le plus : ${fmt(perDay[0][1])} en moyenne. Le moins cher est ${perDay[perDay.length - 1][0].ville}, avec ${fmt(perDay[perDay.length - 1][1])} par jour.`;
-    if (q.includes('compare') && named.length >= 2) { const [a, b] = named; return `${a.ville} : ${fmt(spentOf(a))} en ${info(a).jours} jours, soit ${fmt(spentOf(a) / info(a).jours)} par jour. ${b.ville} : ${fmt(spentOf(b))} en ${info(b).jours} jours, soit ${fmt(spentOf(b) / info(b).jours)} par jour.`; }
-    if (q.includes('budget')) { const t = named[0] || currentTrip() || sorted()[0]; const s = spentOf(t), f = info(t); return `Tu as dépensé ${fmt(s)} sur ${fmt(t.budget)} pour ${t.ville}.${f.enCours ? ` Il te reste ${fmt((t.budget - s) / (f.jours - f.jour + 1))} par jour jusqu'au retour.` : ''}`; }
+    if (q.includes('plus cher') && perDay.length) return `Par jour, c'est ${place(perDay[0][0])} qui a coûté le plus : ${fmt(perDay[0][1])} en moyenne. Le moins cher est ${perDay[perDay.length - 1][0].ville}, avec ${fmt(perDay[perDay.length - 1][1])} par jour.`;
+    if (q.includes('compare') && named.length >= 2) { const [a, b] = named; return `${place(a)} : ${fmt(spentOf(a))} en ${info(a).jours} jours, soit ${fmt(spentOf(a) / info(a).jours)} par jour. ${place(b)} : ${fmt(spentOf(b))} en ${info(b).jours} jours, soit ${fmt(spentOf(b) / info(b).jours)} par jour.`; }
+    if (q.includes('budget')) { const t = named[0] || currentTrip() || sorted()[0]; const s = spentOf(t), f = info(t); return `Tu as dépensé ${fmt(s)} sur ${fmt(t.budget)} pour ${place(t)}.${f.enCours ? ` Il te reste ${fmt((t.budget - s) / (f.jours - f.jour + 1))} par jour jusqu'au retour.` : ''}`; }
     if (q.includes('prévoir') && perDay.length) { const avg = perDay.reduce((a, [, v]) => a + v, 0) / perDay.length; return `D'après tes carnets, tu dépenses en moyenne ${fmt(avg)} par jour. Pour une semaine, prévois autour de ${fmt(avg * 7)}, à ajuster selon le coût de la vie sur place.`; }
     if (q.includes('plus')) { const tot = {}; S.trips.forEach(t => Object.entries(catsOf(t)).forEach(([k, v]) => tot[k] = (tot[k] || 0) + v)); const top = Object.entries(tot).filter(([k]) => k !== 'logement').sort((a, b) => b[1] - a[1])[0]; if (top && top[1] > 0) return `Hors logement, ton plus gros poste sur tous tes voyages est ${CATS[top[0]].n.toLowerCase()}, avec ${fmt(top[1])} au total.`; }
     return 'Je peux répondre sur tes carnets, tes dépenses et tes budgets. Essaie une des suggestions juste au-dessus.';
@@ -367,7 +403,7 @@ function renderHome() {
      <div class="rec" data-open="${t.id}">${phHTML(t.cover, `${t.id}|cover`, 'Ajouter une photo')}<span class="sh"></span>
        <button class="heart ${t.fav ? 'on' : ''}" data-act="fav" data-trip="${t.id}" aria-label="Favori">${t.fav ? SV.heartF : SV.heart}</button>
        <div class="tx"><span class="badge">${SV.leaf}${cur ? `En cours, jour ${info(t).jour} sur ${info(t).jours}` : next ? `Départ dans ${diffDays(TODAY, t.du)} jours` : 'Terminé'}</span>
-         <h3>${esc(t.ville)} ${flag(t.pays)}</h3><p class="sub">${esc(C(t).n)}, ${fd(t.du)} au ${fd(t.au)}</p>
+         <h3>${esc(place(t))} ${flag(t.pays)}</h3><p class="sub">${esc(C(t).n)}, ${fd(t.du)} au ${fd(t.au)}</p>
          <p class="row num"><span>${SV.page}${t.entrees.length} page${t.entrees.length > 1 ? 's' : ''}</span><span>${SV.clock}${info(t).jours} jours</span><span>${cur ? `Reste <b>${fmt(t.budget - spentOf(t))}</b>` : `Budget <b>${fmt(t.budget)}</b>`}</span></p></div></div>` : ''}
      ${exps.length ? `<div class="sec"><h2>Dernières dépenses</h2><button class="more" data-act="depTrip" data-trip="${cur.id}">Tout voir</button></div>
      <div class="xlist">${exps.map(d => `<button class="xrow" data-act="editExp" data-trip="${cur.id}" data-id="${d.id}"><span class="ic">${ico(d.c)}</span><span class="m"><b>${esc(d.l)}</b><span>${esc(short(cur))}, jour ${d.j}, ${CATS[d.c].n}</span><strong class="num">${fmt(d.eur)}</strong></span><span class="r"><span>${d.v != null ? fmtL(d.v, cur) : ''}</span><span>${SV.dots.replace('<svg', '<svg width="16" height="16"')}</span></span></button>`).join('')}</div>` : ''}`}
@@ -383,7 +419,7 @@ function renderHome() {
 function renderPicks(q) {
   q = (q || '').trim().toLowerCase();
   const list = sorted().filter(t => { const f = info(t); return homeF === 'all' || (homeF === 'cur' && f.enCours) || (homeF === 'fut' && f.futur) || (homeF === 'fav' && t.fav) || String(D(t.du).getFullYear()) === homeF; })
-    .filter(t => !q || norm(t.ville + ' ' + C(t).n + ' ' + t.lieux.join(' ')).includes(norm(q)));
+    .filter(t => !q || norm(place(t) + ' ' + C(t).n + ' ' + t.lieux.join(' ')).includes(norm(q)));
   $('picks').innerHTML = list.map(t => `<div class="dcard">${phHTML(t.cover, `${t.id}|cover`, 'Photo')}<span class="sh"></span><button class="open" data-open="${t.id}"><b>${esc(short(t))}</b><span>${esc(C(t).n)}</span><em class="num">${SV.star}${photosCount(t)} photo${photosCount(t) > 1 ? 's' : ''}</em></button></div>`).join('')
     + (list.length ? '' : `<p class="small" style="padding:30px 0">Aucun voyage ne correspond.</p>`)
     + `<button class="dcard new" data-act="newTrip"><i>${SV.plus}</i>Nouveau</button>`;
@@ -401,7 +437,7 @@ function renderCards() {
    ${S.trips.length ? `<div class="vchips">${[['all', 'Tous'], ['fav', 'Favoris'], ['cur', 'En cours'], ...years.map(y => [String(y), String(y)])].map(([k, l]) => `<button data-act="vf" data-v="${k}" class="${vF === k ? 'on' : ''}">${l}</button>`).join('')}</div>` : ''}
    <div class="vlist">${list.map(t => { const f = info(t), s = spentOf(t);
      return `<div class="vcard"><div style="position:relative">${phHTML(t.cover, `${t.id}|cover`, 'Ajouter une couverture')}<button class="heart ${t.fav ? 'on' : ''}" data-act="fav" data-trip="${t.id}" aria-label="Favori">${t.fav ? SV.heartF : SV.heart}</button></div>
-       <button class="bd" data-open="${t.id}"><span class="l1"><b>${esc(t.ville)}</b><span class="num">${SV.star}${photosCount(t)}</span></span><span class="l2">${esc(C(t).n)}, ${fd(t.du)} au ${fd(t.au)} ${D(t.du).getFullYear()}, ${f.jours} jours</span>
+       <button class="bd" data-open="${t.id}"><span class="l1"><b>${esc(place(t))}</b><span class="num">${SV.star}${photosCount(t)}</span></span><span class="l2">${esc(C(t).n)}, ${fd(t.du)} au ${fd(t.au)} ${D(t.du).getFullYear()}, ${f.jours} jours</span>
        <span class="l3 num">${f.futur ? `Budget <b>${fmt(t.budget)}</b>` : s <= t.budget ? `<s>${fmt(t.budget)}</s><b>${fmt(s)}</b> dépensés` : `<b>${fmt(s)}</b> dépensés, budget ${fmt(t.budget)}`}</span></button></div>`; }).join('')}
      <button class="vcard new" data-act="newTrip">${SV.plus}Nouveau voyage</button></div>`;
 }
@@ -427,7 +463,7 @@ function renderJournal() {
    <button class="btn full" data-open="${t.id}" style="margin-top:24px">Ouvrir la fiche du voyage<i>${SV.arrow}</i></button>`;
 }
 ACT.jview = d => { jView = d.v; renderJournal(); };
-ACT.pickJournal = () => openPanel(`<h2>Choisir un voyage</h2><div class="menulist">${sorted().map(t => `<button data-act="setJournal" data-trip="${t.id}">${flag(t.pays)}${esc(t.ville)}<span class="small" style="margin-left:auto">${fd(t.du)}</span></button>`).join('')}</div>${CLOSE()}`, null, { nofocus: true });
+ACT.pickJournal = () => openPanel(`<h2>Choisir un voyage</h2><div class="menulist">${sorted().map(t => `<button data-act="setJournal" data-trip="${t.id}">${flag(t.pays)}${esc(place(t))}<span class="small" style="margin-left:auto">${fd(t.du)}</span></button>`).join('')}</div>${CLOSE()}`, null, { nofocus: true });
 ACT.setJournal = d => { jId = d.trip; closePanel(); renderJournal(); };
 
 /* ---------- carte à plat ---------- */
@@ -436,7 +472,7 @@ let mapMode = (() => { try { return localStorage.getItem('escale:map') || 'globe
 const mapToggle = () => `<div class="mtoggle" role="tablist"><button class="${mapMode === 'globe' ? 'on' : ''}" data-act="mapMode" data-v="globe">${SV.globe}Globe 3D</button><button class="${mapMode === 'plan' ? 'on' : ''}" data-act="mapMode" data-v="plan">${SV.flatmap}Plan</button></div>`;
 ACT.mapMode = d => { if (d.v === mapMode) return; mapMode = d.v; try { localStorage.setItem('escale:map', d.v); } catch (e) { } mapBuilt = false; renderCarte(); };
 const mapItems = () => [...S.trips.map(t => ({ t, wish: false })), ...S.envies.map(w => ({ t: w, wish: true }))];
-const pinHTML = ({ t, wish }, extra = '') => `<button class="mpin ${wish ? 'wish' : ''} ${!wish && t.id === mapSel ? 'on' : ''}" ${extra} data-pin="${wish ? '' : t.id}" data-wish="${wish ? esc(C(t).n) : ''}" aria-label="${wish ? 'Envie : ' + esc(C(t).n) : esc(t.ville)}"><span class="c">${!wish && t.cover ? IMG(t.cover) : flag(t.pays)}</span></button>`;
+const pinHTML = ({ t, wish }, extra = '') => `<button class="mpin ${wish ? 'wish' : ''} ${!wish && t.id === mapSel ? 'on' : ''}" ${extra} data-pin="${wish ? '' : t.id}" data-wish="${wish ? esc(C(t).n) : ''}" aria-label="${wish ? 'Envie : ' + esc(C(t).n) : esc(place(t))}"><span class="c">${!wish && t.cover ? IMG(t.cover) : flag(t.pays)}</span></button>`;
 function renderCarte() {
   if (mapMode !== 'plan') return renderGlobe();
   const sc = $('s-carte');
@@ -470,7 +506,7 @@ function zoomAt(f, cx, cy) { const r = $('mapwrap').getBoundingClientRect(), px 
 ACT.zoom = d => { if (mapMode === 'globe' && $('gwrap')) { const z = Math.max(.8, Math.min(4, GL.z * (+d.z > 1 ? 1.4 : 1 / 1.4))); GL.fly = null; if (window.gsap && !REDUCED) gsap.to(GL, { z, duration: .35, ease: 'power2.out' }); else GL.z = z; return; } zoomAt(+d.z); };
 ACT.zoomAll = () => { if (mapMode === 'globe' && $('gwrap')) { const t = trip(mapSel); glFly(t ? C(t).ll : [10, 35], 1); return; } centerOn([20, 30], .62, true); };
 function renderMapCard() { const t = trip(mapSel), host = $('mapcard'); if (!host) return; if (!t) { host.innerHTML = S.trips.length ? '' : `<div class="mapcard"><div class="m"><h3>Ta carte est vide</h3><p class="small">Chaque voyage ajoute un repère sur la carte.</p></div><button class="go" data-act="newTrip" aria-label="Créer un voyage">${SV.plus}</button></div>`; return; } const f = info(t);
-  host.innerHTML = `<div class="mapcard">${phHTML(t.cover, `${t.id}|cover`)}<div class="m"><h3>${esc(t.ville)}</h3><p class="small">${esc(C(t).n)}, ${f.enCours ? 'en cours' : f.futur ? 'à venir' : 'visité'} le ${fd(t.du)} ${D(t.du).getFullYear()}</p><p class="small num">${fmt(f.futur ? t.budget : spentOf(t))}, ${f.jours} jours</p></div><button class="go" data-open="${t.id}" aria-label="Ouvrir ${esc(t.ville)}">${SV.chev}</button></div>`;
+  host.innerHTML = `<div class="mapcard">${phHTML(t.cover, `${t.id}|cover`)}<div class="m"><h3>${esc(place(t))}</h3><p class="small">${esc(C(t).n)}, ${f.enCours ? 'en cours' : f.futur ? 'à venir' : 'visité'} le ${fd(t.du)} ${D(t.du).getFullYear()}</p><p class="small num">${fmt(f.futur ? t.budget : spentOf(t))}, ${f.jours} jours</p></div><button class="go" data-open="${t.id}" aria-label="Ouvrir ${esc(place(t))}">${SV.chev}</button></div>`;
   if (mapMode === 'plan') centerOn(C(t).ll, Math.max(mapT.k, 2.2), true); }
 
 /* ---------- globe 3D ---------- */
@@ -558,7 +594,7 @@ function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('sh
 /* ---------- menu + ---------- */
 const noTrip = () => { if (S.trips.length) return false; closePanel(); setTimeout(() => { tripSheet(); toast("Crée d'abord ton premier voyage"); }, $('panel').classList.contains('open') ? 380 : 0); return true; };
 ACT.plusMenu = () => { const t = currentTrip() || sorted()[0];
-  openPanel(`<h2>Ajouter</h2><p class="small">${t ? 'Au voyage ' + esc(t.ville) : ''}</p><div class="menulist">
+  openPanel(`<h2>Ajouter</h2><p class="small">${t ? 'Au voyage ' + esc(place(t)) : ''}</p><div class="menulist">
     <button data-act="compose">${SV.send}Publier un souvenir</button>
     <button data-act="addExp">${SV.receipt}Une dépense</button>
     <button data-act="addPage">${SV.page}Une page de journal</button>

@@ -153,9 +153,13 @@ function bindAuth(g) { g.querySelectorAll('[data-auth]').forEach(b => b.onclick 
 /* ---------- après connexion ---------- */
 let started = false;
 async function afterLogin(skipMfa) {
-  const { data: { user } } = await sb.auth.getUser(); if (!user) return welcome();
+  // hors connexion, getUser() échoue : on rouvre l'appli avec la session gardée sur l'appareil
+  let user = null, offlineStart = false;
+  try { const r = await sb.auth.getUser(); user = r.data && r.data.user; if (!user && r.error && isNetwork(r.error)) throw r.error; }
+  catch (e) { const { data: { session } } = await sb.auth.getSession(); user = session && session.user; offlineStart = !!user; }
+  if (!user) return welcome();
   ME = user;
-  if (!skipMfa) { const { data } = await sb.auth.mfa.getAuthenticatorAssuranceLevel(); if (data && data.nextLevel === 'aal2' && data.currentLevel !== 'aal2') return mfaForm(); }
+  if (!skipMfa && !offlineStart) { try { const { data } = await sb.auth.mfa.getAuthenticatorAssuranceLevel(); if (data && data.nextLevel === 'aal2' && data.currentLevel !== 'aal2') return mfaForm(); } catch (_) { } }
   const cache = readCache();
   try { await loadProfile(); }
   catch (e) { if (cache && isNetwork(e)) { PROFILE = cache.PROFILE; SETTINGS = cache.SETTINGS; S.user = (PROFILE.display_name || '').split(' ')[0]; setOnline(false); } else { toast('Connexion au serveur impossible'); return welcome(); } }

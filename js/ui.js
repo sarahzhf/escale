@@ -181,7 +181,7 @@ function flyAndDone(rec, t) {
   const ph = $('phone').getBoundingClientRect(), from = $('e-ok').getBoundingClientRect(), nb = document.querySelector('nav [data-go=depenses]'), to = nb.getBoundingClientRect();
   const f = document.createElement('div'); f.className = 'flyer num'; f.textContent = (rec.v != null ? fmtD(rec, t) : fmt(rec.eur)) + '  ' + rec.l; $('phone').appendChild(f);
   f.style.left = (from.left - ph.left + from.width / 2 - 70) + 'px'; f.style.top = (from.top - ph.top - 40) + 'px'; closePanel();
-  const done = () => { f.remove(); nb.classList.remove('ping'); void nb.offsetWidth; nb.classList.add('ping'); depId = t.id; if (current === 'depenses') renderDepenses(true); else go('depenses'); toast(navigator.onLine ? 'Dépense ajoutée' : 'Dépense notée, elle partira au retour du réseau'); };
+  const done = () => { f.remove(); nb.classList.remove('ping'); void nb.offsetWidth; nb.classList.add('ping'); depId = t.id; if (current === 'carnet' && openId === t.id) openTrip(t.id, true); else if (current === 'depenses') renderDepenses(true); else go('depenses'); toast(navigator.onLine ? 'Dépense ajoutée' : 'Dépense notée, elle partira au retour du réseau'); };
   if (window.gsap && !REDUCED && !document.querySelector('nav').hidden) gsap.timeline({ onComplete: done }).to(f, { y: -60, rotation: -5, scale: 1.08, duration: .35, ease: 'power2.out' }).to(f, { x: to.left - from.left + to.width / 2 - from.width / 2, y: to.top - from.top + 40, scale: .2, opacity: 0, duration: .6, ease: 'power2.in' });
   else done();
 }

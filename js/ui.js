@@ -64,7 +64,7 @@ document.addEventListener('click', e => {
   const cl = e.target.closest('[data-close]'); if (cl) { closePanel(); return; }
 }, true);
 const ACT = {
-  newTrip: () => tripSheet(), addExp: d => expSheet(d.trip || (currentTrip() || sorted()[0]).id), addPage: d => pageSheet(d.trip || (currentTrip() || sorted()[0]).id),
+  newTrip: () => tripSheet(), addExp: d => expSheet(d.trip || (currentTrip() || sorted()[0]).id, null, !!d.trip), addPage: d => pageSheet(d.trip || (currentTrip() || sorted()[0]).id),
   addWish: () => wishSheet(),
   rmWish: d => { S.envies = S.envies.filter(w => w.id !== d.id); save(); refresh(); toast('Envie retirée'); },
   go: d => go(d.to), back: () => go(prev && prev !== current ? prev : 'home'),
@@ -75,7 +75,7 @@ const ACT = {
   fav: d => { const t = trip(d.trip); t.fav = !t.fav; save(); refresh(); toast(t.fav ? 'Ajouté aux favoris' : 'Retiré des favoris'); },
   share: d => { const t = trip(d.trip), txt = `${place(t)}, ${fd(t.du)} au ${fd(t.au)} : ${fmt(spentOf(t))} pour ${info(t).jours} jours.`; copyText(txt, 'Résumé du carnet copié'); },
   depTrip: d => { depId = d.trip; go('depenses'); }, editExp: d => expSheet(d.trip, d.id),
-  catFilter: d => { catF = catF === d.k ? null : d.k; renderDepenses(true); },
+  catFilter: d => { const t = trip(depId); openTrip(t.id); expF = { trip: t.id, m: null, j: null, c: d.k || null }; dTab = 'depenses'; openTrip(t.id, true); },
   flip: () => $('flipcard').classList.toggle('on'), ask: d => { go('ia'); ask(d.q); },
 };
 function copyText(txt, ok) { try { navigator.clipboard.writeText(txt).then(() => toast(ok), () => toast('Copie impossible sur cet appareil')); } catch (e) { toast('Copie impossible sur cet appareil'); } }
@@ -125,13 +125,13 @@ function tripSheet(id) {
       S.trips = S.trips.filter(x => x.id !== t.id); save(); closePanel(); go('home'); toast('Carnet supprimé'); });
   });
 }
-function expSheet(tid, eid) {
+function expSheet(tid, eid, lock) {
   let t = trip(tid); const d = eid ? t.depenses.find(x => x.id === eid) : null;
   // E = euros, L = devise du pays, X = autre devise (ex. dollars au Cambodge, roadtrip sur plusieurs pays)
   let cur = d ? (d.v == null ? 'E' : d.cur ? 'X' : 'L') : (C(t).rate !== 1 ? 'L' : 'E'), xcur = d && d.cur ? d.cur : 'USD', cat = d ? d.c : 'repas';
   let by = d ? d.by || 'me' : 'me', split = d && d.split ? d.split.slice() : null;
-  openPanel(`<h2>${d ? 'Modifier la dépense' : 'Nouvelle dépense'}</h2>
-   ${d ? '' : `<label class="fld"><span>Voyage</span><select id="e-trip">${sorted().map(x => `<option value="${x.id}" ${x.id === tid ? 'selected' : ''}>${esc(place(x))}</option>`).join('')}</select></label>`}
+  openPanel(`<h2>${d ? 'Modifier la dépense' : 'Nouvelle dépense'}</h2>${d || lock ? `<p class="small">${esc(place(t))}</p>` : ''}
+   ${d || lock ? '' : `<label class="fld"><span>Voyage</span><select id="e-trip">${sorted().map(x => `<option value="${x.id}" ${x.id === tid ? 'selected' : ''}>${esc(place(x))}</option>`).join('')}</select></label>`}
    <div style="display:flex;justify-content:center;margin-top:12px"><div class="seg" id="e-cur"></div></div>
    <div class="xcur" id="e-xwrap" hidden><select id="e-x" aria-label="Devise">${curList().map(c => `<option value="${c}" ${c === xcur ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
    <div class="amount"><input id="e-amt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="Montant" value="${d ? (d.v != null ? d.v : Math.round(d.eur * 100) / 100) : ''}"></div>
@@ -263,7 +263,7 @@ function openTrip(id, keep) {
     <div class="sec"><h2>Album</h2><button class="more" data-act="albumVis" data-trip="${t.id}">${esc(VISN[t.vis || 'prive'])}</button></div>
     <p class="small">${t.vis === 'public' ? 'Tout le monde peut voir les photos et les pages de ce carnet (jamais les dépenses).' : t.vis === 'amis' ? 'Tes amis peuvent voir les photos et les pages de ce carnet (jamais les dépenses).' : 'Ce carnet est privé : toi seule le vois.'}</p>
     <div class="sec"><h2>Budget</h2><button class="more" data-act="budget" data-trip="${t.id}">Modifier</button></div>
-    <div class="bud num"><div class="t"><b>${fmt(s)}</b><span>sur ${fmt(t.budget)}</span></div><div class="tr"><i class="${s > t.budget ? 'ko' : ''}" style="width:${pct(s, t.budget)}%"></i></div><div class="rw"><span>${f.futur ? 'Pas encore de dépenses' : f.enCours ? fmt(t.budget - s) + ' restants' : (diff <= 0 ? pc + ' % sous le budget' : pc + ' % au-dessus')}</span><span>${top[1] ? 'plus gros poste : ' + CATS[top[0]].n.toLowerCase() : ''}</span></div></div>
+    <button class="bud num" data-act="depTrip" data-trip="${t.id}" aria-label="Voir l'analyse du budget"><div class="t"><b>${fmt(s)}</b><span>sur ${fmt(t.budget)}</span></div><div class="tr"><i class="${s > t.budget ? 'ko' : ''}" style="width:${pct(s, t.budget)}%"></i></div><div class="rw"><span>${f.futur ? 'Pas encore de dépenses' : f.enCours ? fmt(t.budget - s) + ' restants' : (diff <= 0 ? pc + ' % sous le budget' : pc + ' % au-dessus')}</span><span>${top[1] ? 'plus gros poste : ' + CATS[top[0]].n.toLowerCase() : ''}</span></div></button>
     <div class="sec"><h2>Moments</h2><button class="more" data-act="dtab" data-v="photos">Tout voir</button></div>
     <div class="mstrip">${allPh.slice(0, 12).map(([p, tg]) => phHTML(p, tg)).join('')}</div>
     <div class="ai-note"><b>Le mot de l'assistant</b>${esc(noteFor(t))}</div>`;
@@ -273,11 +273,7 @@ function openTrip(id, keep) {
       <div class="hd"><div class="dt"><b>${D(addDays(t.du, e.j - 1)).getDate()}</b>${D(addDays(t.du, e.j - 1)).toLocaleDateString('fr-FR', { month: 'short' })}</div><div><h3>${esc(e.t)}</h3>${e.n ? `<p class="note">${esc(e.n)}</p>` : ''}</div><button class="menu" data-act="pageMenu" data-trip="${t.id}" data-entry="${e.id}" aria-label="Options de la page">${SV.dots}</button></div>
       <div class="photos">${e.photos.map((p, i) => phHTML(p, `${t.id}|e|${e.id}|${i}`)).join('')}${e.photos.length < 6 ? `<button class="more" data-act="addSlot" data-trip="${t.id}" data-entry="${e.id}">${SV.plus}Cadre</button>` : ''}</div>
       <p class="spent num">Jour ${e.j}, dépenses hors logement : <b>${fmt(dayMap[e.j] || 0)}</b></p></div>`).join('') : `<div class="emptyj">Aucune page pour l'instant.</div>`}`;
-  else if (dTab === 'depenses') { const list = t.depenses.slice().sort((a, b2) => b2.j - a.j);
-    body = `${statsHTML(t)}<div class="sec"><h2>Par catégorie</h2><button class="more" data-act="budget" data-trip="${t.id}">Budget</button></div>
-    <div class="group">${Object.keys(CATS).map(k => `<div class="cat"><span class="ic">${ico(k)}</span><span><span class="n"><span>${CATS[k].n}</span><em class="num">sur ${fmt(b[k])}</em></span><span class="mb"><i class="${c[k] > b[k] ? 'over' : ''}" style="width:${pct(c[k], b[k])}%"></i></span></span><span class="v num">${fmt(c[k])}</span></div>`).join('')}</div>
-    <div class="sec"><h2>${list.length} dépense${list.length > 1 ? 's' : ''}</h2><button class="pill dark" data-act="addExp" data-trip="${t.id}">${SV.plus}Dépense</button></div>
-    <div class="group dexp">${list.map(dd => `<button class="exp" data-act="editExp" data-trip="${t.id}" data-id="${dd.id}"><span class="ic">${ico(dd.c)}</span><span class="m"><b>${esc(dd.l)}</b><span>Jour ${dd.j}, ${CATS[dd.c].n}</span></span><span class="p num">${fmt(dd.eur)}${dd.v != null ? `<span>${fmtD(dd, t)}</span>` : ''}</span>${PENDING.has(dd.id) ? `<em class="pend" title="En attente d'envoi">${SV.cloudOff}</em>` : ''}</button>`).join('') || `<p class="small" style="padding:14px">Aucune dépense pour l'instant.</p>`}</div>`; }
+  else if (dTab === 'depenses') body = expListHTML(t);
   else if (dTab === 'comptes') body = comptesHTML(t);
   else body = `<div class="sec"><h2>${photosCount(t)} photos</h2><button class="pill dark" data-act="photoTrip" data-trip="${t.id}">${SV.plus}Photo</button></div><div class="photogrid">${allPh.map(([p, tg]) => phHTML(p, tg)).join('')}</div>`;
   sc.innerHTML = `
@@ -294,6 +290,35 @@ function openTrip(id, keep) {
   const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { root: sc, threshold: .2 });
   sc.querySelectorAll('.entry').forEach(el => io.observe(el));
 }
+
+/* ---------- liste des dépenses d'un voyage, avec filtres mois / jour / catégorie ---------- */
+let expF = { trip: null, m: null, j: null, c: null };
+const monthKey = (t, j) => addDays(t.du, j - 1).slice(0, 7);
+const monthName = k => { const s = new Date(k + '-15').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }); return s[0].toUpperCase() + s.slice(1); };
+function expListHTML(t) {
+  if (expF.trip !== t.id) expF = { trip: t.id, m: null, j: null, c: null };
+  const n = info(t).jours, months = [...new Set(Array.from({ length: n }, (_, i) => monthKey(t, i + 1)))];
+  if (expF.m && !months.includes(expF.m)) expF.m = null;
+  const days = Array.from({ length: n }, (_, i) => i + 1).filter(j => !expF.m || monthKey(t, j) === expF.m);
+  if (expF.j && !days.includes(expF.j)) expF.j = null;
+  const list = t.depenses.filter(d => (!expF.m || monthKey(t, d.j) === expF.m) && (!expF.j || d.j === expF.j) && (!expF.c || d.c === expF.c));
+  const byDay = {}; list.forEach(d => (byDay[d.j] = byDay[d.j] || []).push(d));
+  const tot = list.reduce((a, d) => a + myPart(d), 0), any = expF.m || expF.j || expF.c;
+  const chip = (k, v, label, on) => `<button class="pill ${on ? 'on' : ''}" data-act="expF" data-k="${k}" data-v="${v}">${label}</button>`;
+  return `<div class="sec"><h2>${list.length} dépense${list.length > 1 ? 's' : ''}</h2><button class="pill dark" data-act="addExp" data-trip="${t.id}">${SV.plus}Dépense</button></div>
+    <div class="expf">
+      <div class="row"><select id="expf-day" aria-label="Filtrer par jour"><option value="">Tous les jours</option>${days.map(j => `<option value="${j}" ${expF.j === j ? 'selected' : ''}>Jour ${j}, ${fd(addDays(t.du, j - 1))}</option>`).join('')}</select>
+        ${months.length > 1 ? chip('m', '', 'Tous les mois', !expF.m) + months.map(m => chip('m', m, monthName(m), expF.m === m)).join('') : ''}</div>
+      <div class="row">${chip('c', '', 'Toutes', !expF.c)}${Object.keys(CATS).map(k => chip('c', k, CATS[k].n, expF.c === k)).join('')}</div>
+    </div>
+    <div class="exptot num"><span>${any ? 'Total filtré, ta part' : 'Total, ta part'}</span><b>${fmt(tot)}</b>${any ? `<button class="link" data-act="expF" data-k="all" data-v="">Effacer les filtres</button>` : ''}</div>
+    ${Object.keys(byDay).length ? Object.keys(byDay).sort((a, b2) => b2 - a).map(j => { const L = byDay[j], dt = L.reduce((a, d) => a + myPart(d), 0);
+      return `<div class="dayh"><span>Jour ${j}, ${fd(addDays(t.du, j - 1))}</span><span class="num">${fmt(dt)}</span></div><div class="group">` + L.slice().reverse().map(d => `<button class="exp" data-act="editExp" data-trip="${t.id}" data-id="${d.id}"><span class="ic">${ico(d.c)}</span><span class="m"><b>${esc(d.l)}</b><span>${CATS[d.c].n}${d.split || (d.by && d.by !== 'me') ? `, payé par ${esc(memberName(t, d.by || 'me'))}${d.split ? `, ta part ${fmt(myPart(d))}` : ''}` : ''}</span></span><span class="p num">${fmt(d.eur)}${d.v != null ? `<span>${fmtD(d, t)}</span>` : ''}</span>${PENDING.has(d.id) ? `<em class="pend" title="En attente d'envoi">${SV.cloudOff}</em>` : ''}</button>`).join('') + '</div>'; }).join('')
+      : `<div class="emptyj">${t.depenses.length ? 'Aucune dépense avec ces filtres.' : 'Aucune dépense pour ce voyage.'}<br><button class="pill dark" style="margin-top:12px" data-act="addExp" data-trip="${t.id}">${SV.plus}Ajouter une dépense</button></div>`}
+    <button class="link small" style="margin-top:16px" data-act="depTrip" data-trip="${t.id}">${SV.chart || ''}Voir l'analyse du budget</button>`;
+}
+ACT.expF = d => { if (d.k === 'all') expF = { trip: expF.trip, m: null, j: null, c: null }; else if (d.k === 'm') { expF.m = d.v || null; expF.j = null; } else expF[d.k] = d.v || null; refresh(); };
+document.addEventListener('change', e => { if (e.target.id === 'expf-day') { expF.j = +e.target.value || null; refresh(); } });
 const VISN = { public: 'Public', amis: 'Amis', prive: 'Privé' };
 ACT.dtab = d => { dTab = d.v; const sc = $('s-carnet'); openTrip(openId, true); const top = sc.querySelector('.dsheet').offsetTop - 60; if (sc.scrollTop > top) sc.scrollTop = top; };
 ACT.photoTrip = d => { const t = trip(d.trip); if (!t.cover) { pickPhoto(`${t.id}|cover`); return; } for (const e of t.entrees) { const i = e.photos.findIndex(p => !p); if (i >= 0) { pickPhoto(`${t.id}|e|${e.id}|${i}`); return; } } const e = t.entrees[t.entrees.length - 1]; if (!e) { pageSheet(t.id); return; } e.photos.push(null); save(); pickPhoto(`${t.id}|e|${e.id}|${e.photos.length - 1}`); };
@@ -327,12 +352,12 @@ function renderDepenses(keep) {
        <div class="pills"><div><b class="num">${fmtL(per * C(t).rate, t)}</b><span>par jour</span></div><div><b class="num">${fmtL(s * C(t).rate, t)}</b><span>déjà dépensés</span></div></div></div>` : ''}
    </div></div>
    ${statsHTML(t)}
-   <div class="sec"><h2>Par catégorie</h2><span class="small">${catF ? 'filtre actif' : 'touche pour filtrer'}</span></div><div class="group">
-   ${Object.keys(CATS).map(k => `<button class="cat ${catF === k ? 'on' : ''}" data-act="catFilter" data-k="${k}"><span class="ic">${ico(k)}</span><span><span class="n"><span>${CATS[k].n}</span><em class="num">sur ${fmt(b[k])}</em></span><span class="mb"><i class="${c[k] > b[k] ? 'over' : ''}" style="width:${pct(c[k], b[k])}%"></i></span></span><span class="v num">${fmt(c[k])}</span></button>`).join('')}
-   </div><div class="sec"><h2>Le détail</h2>${catF ? `<button class="link" data-act="catFilter" data-k="${catF}">Tout afficher</button>` : ''}</div>
-   ${Object.keys(byDay).length ? Object.keys(byDay).sort((a, b2) => b2 - a).map(j => { const L = byDay[j], tot = L.reduce((a, d) => a + myPart(d), 0);
-     return `<div class="dayh"><span>Jour ${j}, ${fd(addDays(t.du, j - 1))}</span><span class="num">${fmt(tot)}</span></div><div class="group">` + L.slice().reverse().map(d => `<button class="exp" data-act="editExp" data-trip="${t.id}" data-id="${d.id}"><span class="ic">${ico(d.c)}</span><span class="m"><b>${esc(d.l)}</b><span>${CATS[d.c].n}${d.split || (d.by && d.by !== 'me') ? `, payé par ${esc(memberName(t, d.by || 'me'))}${d.split ? `, ta part ${fmt(myPart(d))}` : ''}` : ', touche pour modifier'}</span></span><span class="p num">${fmt(d.eur)}${d.v != null ? `<span>${fmtD(d, t)}</span>` : ''}</span>${PENDING.has(d.id) ? `<em class="pend" title="En attente d'envoi">${SV.cloudOff}</em>` : ''}</button>`).join('') + '</div>'; }).join('')
-     : `<div class="emptyj">Aucune dépense ${catF ? 'dans cette catégorie' : 'pour ce voyage'}.<br><button class="pill dark" style="margin-top:12px" data-act="addExp" data-trip="${t.id}">${SV.plus}Ajouter une dépense</button></div>`}`;
+   <div class="sec"><h2>Par catégorie</h2><span class="small">touche pour voir le détail</span></div><div class="group">
+   ${Object.keys(CATS).map(k => `<button class="cat" data-act="catFilter" data-k="${k}"><span class="ic">${ico(k)}</span><span><span class="n"><span>${CATS[k].n}</span><em class="num">sur ${fmt(b[k])}</em></span><span class="mb"><i class="${c[k] > b[k] ? 'over' : ''}" style="width:${pct(c[k], b[k])}%"></i></span></span><span class="v num">${fmt(c[k])}</span></button>`).join('')}
+   </div><div class="sec"><h2>Dernières dépenses</h2>${t.depenses.length > 5 ? `<button class="link" data-act="catFilter" data-k="">Tout voir (${t.depenses.length})</button>` : ''}</div>
+   ${t.depenses.length ? '<div class="group">' + t.depenses.slice().sort((a, b2) => b2.j - a.j || String(b2.at || '').localeCompare(String(a.at || ''))).slice(0, 5).map(d => `<button class="exp" data-act="editExp" data-trip="${t.id}" data-id="${d.id}"><span class="ic">${ico(d.c)}</span><span class="m"><b>${esc(d.l)}</b><span>Jour ${d.j}, ${CATS[d.c].n}</span></span><span class="p num">${fmt(d.eur)}${d.v != null ? `<span>${fmtD(d, t)}</span>` : ''}</span>${PENDING.has(d.id) ? `<em class="pend" title="En attente d'envoi">${SV.cloudOff}</em>` : ''}</button>`).join('') + '</div>'
+     : `<div class="emptyj">Aucune dépense pour ce voyage.<br><button class="pill dark" style="margin-top:12px" data-act="addExp" data-trip="${t.id}">${SV.plus}Ajouter une dépense</button></div>`}
+   ${t.depenses.length ? `<button class="btn2 wide" style="margin-top:14px" data-act="catFilter" data-k="">Toutes les dépenses, par mois et par jour</button>` : ''}`;
   sc.querySelectorAll('[data-dep]').forEach(bn => bn.onclick = () => { depId = bn.dataset.dep; catF = null; renderDepenses(); });
   if (keep) sc.scrollTop = y; else countUp(sc.querySelector('[data-count]'));
   const on = sc.querySelector('.tripchips .on'); on && on.scrollIntoView({ inline: 'center', block: 'nearest' });
@@ -399,6 +424,9 @@ function renderHome() {
      <div class="chipsrow" id="homeChips">${[['all', 'Tous'], ['cur', 'En cours'], ['fut', 'À venir'], ['fav', 'Favoris'], ...years.map(y => [String(y), String(y)])].map(([k, l]) => `<button data-hf="${k}" class="${homeF === k ? 'on' : ''}">${l}</button>`).join('')}</div>
      <div class="sec"><h2>Mes voyages</h2><button class="more" data-act="go" data-to="carnets">Tout voir</button></div>
      <div class="dest" id="picks"></div>
+     ${first ? '' : (() => { const vis = new Set(S.trips.filter(x => !info(x).futur).map(x => x.pays)).size, pc = Math.round(vis / 195 * 1000) / 10;
+       return `<div class="hfeat"><button class="hf map" data-act="go" data-to="carte"><span class="ic">${SV.globe}</span><b>Ma carte du monde</b><span><strong class="num">${vis}</strong> pays visité${vis > 1 ? 's' : ''}${vis ? `, ${String(pc).replace('.', ',')} % du monde` : ''}, ${S.envies.length} envie${S.envies.length > 1 ? 's' : ''}</span><em>Voir le globe${SV.right}</em></button>
+         <button class="hf ai" data-act="go" data-to="ia"><span class="ic">${SV.spark}</span><b>Assistant de voyage</b><span>${cur ? 'Combien il me reste par jour ?' : 'Quel voyage m\'a coûté le plus ?'}</span><em>Poser une question${SV.right}</em></button></div>`; })()}
      ${t ? `<div class="sec"><h2>${cur ? 'En ce moment' : next ? 'Prochain départ' : 'Dernier voyage'}</h2><button class="more" data-open="${t.id}">Ouvrir</button></div>
      <div class="rec" data-open="${t.id}">${phHTML(t.cover, `${t.id}|cover`, 'Ajouter une photo')}<span class="sh"></span>
        <button class="heart ${t.fav ? 'on' : ''}" data-act="fav" data-trip="${t.id}" aria-label="Favori">${t.fav ? SV.heartF : SV.heart}</button>
@@ -426,22 +454,28 @@ function renderPicks(q) {
 }
 
 /* ---------- liste des voyages ---------- */
-let vF = 'all';
+// filtres combinables : statut (tous, en cours, à venir, passés, favoris) et année
+let vF = { s: 'all', y: 'all' };
+const V_STATUS = [['all', 'Tous', () => true], ['cur', 'En cours', t => info(t).enCours], ['fut', 'À venir', t => info(t).futur], ['past', 'Passés', t => !info(t).enCours && !info(t).futur], ['fav', 'Favoris', t => t.fav]];
 function renderCards() {
   const years = [...new Set(S.trips.map(x => D(x.du).getFullYear()))].sort((a, b) => b - a);
-  const list = sorted().filter(t => vF === 'all' || (vF === 'fav' && t.fav) || (vF === 'cur' && info(t).enCours) || String(D(t.du).getFullYear()) === vF);
+  if (vF.y !== 'all' && !years.includes(+vF.y)) vF.y = 'all';
+  const inYear = t => vF.y === 'all' || String(D(t.du).getFullYear()) === vF.y, stF = (V_STATUS.find(x => x[0] === vF.s) || V_STATUS[0])[2];
+  const list = sorted().filter(t => inYear(t) && stF(t));
   const days = S.trips.reduce((a, t) => a + info(t).jours, 0);
   $('s-carnets').innerHTML = `
    <div class="vtop"><button class="iconbtn" data-act="back" aria-label="Retour">${SV.back}</button><h1>Mes voyages</h1><div class="r"><button class="iconbtn" data-act="go" data-to="journal" aria-label="Journal">${SV.book}</button><button class="iconbtn" data-act="go" data-to="carte" aria-label="Carte">${SV.globe}</button><button class="iconbtn" data-act="newTrip" aria-label="Nouveau voyage">${SV.plus}</button></div></div>
    <div class="vsearch">${SV.globe}<div><b>${S.trips.length} carnet${S.trips.length > 1 ? 's' : ''}, ${new Set(S.trips.map(x => x.pays)).size} pays</b><span>${days} jours de voyage, ${fmt(S.trips.reduce((a, x) => a + spentOf(x), 0))} dépensés</span></div></div>
-   ${S.trips.length ? `<div class="vchips">${[['all', 'Tous'], ['fav', 'Favoris'], ['cur', 'En cours'], ...years.map(y => [String(y), String(y)])].map(([k, l]) => `<button data-act="vf" data-v="${k}" class="${vF === k ? 'on' : ''}">${l}</button>`).join('')}</div>` : ''}
+   ${S.trips.length ? `<div class="vchips">${V_STATUS.map(([k, l, fn]) => { const n = S.trips.filter(t => inYear(t) && fn(t)).length; return `<button data-act="vf" data-k="s" data-v="${k}" class="${vF.s === k ? 'on' : ''}" ${n || k === 'all' ? '' : 'disabled'}>${l}<i class="num">${n}</i></button>`; }).join('')}</div>
+   ${years.length > 1 ? `<div class="vchips years"><button data-act="vf" data-k="y" data-v="all" class="${vF.y === 'all' ? 'on' : ''}">Toutes les années</button>${years.map(y => `<button data-act="vf" data-k="y" data-v="${y}" class="${vF.y === String(y) ? 'on' : ''}">${y}</button>`).join('')}</div>` : ''}` : ''}
+   ${S.trips.length && !list.length ? `<div class="emptyj">Aucun voyage avec ces filtres. <button class="link" data-act="vf" data-k="reset">Tout afficher</button></div>` : ''}
    <div class="vlist">${list.map(t => { const f = info(t), s = spentOf(t);
      return `<div class="vcard"><div style="position:relative">${phHTML(t.cover, `${t.id}|cover`, 'Ajouter une couverture')}<button class="heart ${t.fav ? 'on' : ''}" data-act="fav" data-trip="${t.id}" aria-label="Favori">${t.fav ? SV.heartF : SV.heart}</button></div>
        <button class="bd" data-open="${t.id}"><span class="l1"><b>${esc(place(t))}</b><span class="num">${SV.star}${photosCount(t)}</span></span><span class="l2">${esc(C(t).n)}, ${fd(t.du)} au ${fd(t.au)} ${D(t.du).getFullYear()}, ${f.jours} jours</span>
        <span class="l3 num">${f.futur ? `Budget <b>${fmt(t.budget)}</b>` : s <= t.budget ? `<s>${fmt(t.budget)}</s><b>${fmt(s)}</b> dépensés` : `<b>${fmt(s)}</b> dépensés, budget ${fmt(t.budget)}`}</span></button></div>`; }).join('')}
      <button class="vcard new" data-act="newTrip">${SV.plus}Nouveau voyage</button></div>`;
 }
-ACT.vf = d => { vF = d.v; renderCards(); };
+ACT.vf = d => { if (d.k === 'reset') vF = { s: 'all', y: 'all' }; else vF[d.k] = d.v; renderCards(); };
 
 /* ---------- journal ---------- */
 let jId = null, jView = 'pages';
@@ -471,6 +505,9 @@ let mapSel = null, mapT = { x: 0, y: 0, k: 1 }, mapBuilt = false, mproj = null;
 let mapMode = (() => { try { return localStorage.getItem('escale:map') || 'globe'; } catch (e) { return 'globe'; } })();
 const mapToggle = () => `<div class="mtoggle" role="tablist"><button class="${mapMode === 'globe' ? 'on' : ''}" data-act="mapMode" data-v="globe">${SV.globe}Globe 3D</button><button class="${mapMode === 'plan' ? 'on' : ''}" data-act="mapMode" data-v="plan">${SV.flatmap}Plan</button></div>`;
 ACT.mapMode = d => { if (d.v === mapMode) return; mapMode = d.v; try { localStorage.setItem('escale:map', d.v); } catch (e) { } mapBuilt = false; renderCarte(); };
+// légende lisible : couleurs franches et nombre de pays dans chaque groupe
+const mapLegend = () => { const cur = currentTrip(), vis = new Set(S.trips.filter(t => !info(t).futur && t !== cur).map(t => t.pays)), wi = new Set(S.envies.map(w => w.pays));
+  return `<div class="glegend"><span><i class="v"></i>Visités <b class="num">${vis.size}</b></span>${cur ? `<span><i class="c"></i>En cours</span>` : ''}<span><i class="w"></i>Envies <b class="num">${wi.size}</b></span></div>`; };
 const mapItems = () => [...S.trips.map(t => ({ t, wish: false })), ...S.envies.map(w => ({ t: w, wish: true }))];
 const pinHTML = ({ t, wish }, extra = '') => `<button class="mpin ${wish ? 'wish' : ''} ${!wish && t.id === mapSel ? 'on' : ''}" ${extra} data-pin="${wish ? '' : t.id}" data-wish="${wish ? esc(C(t).n) : ''}" aria-label="${wish ? 'Envie : ' + esc(C(t).n) : esc(place(t))}"><span class="c">${!wish && t.cover ? IMG(t.cover) : flag(t.pays)}</span></button>`;
 function renderCarte() {
@@ -485,7 +522,7 @@ function renderCarte() {
   sc.innerHTML = `<div class="mapwrap" id="mapwrap"><div class="mapinner" id="mapinner"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-label="Carte du monde de tes voyages">${feats.map(f => `<path class="land ${cur && f.id === C(cur).iso ? 'c' : visited.has(f.id) ? 'v' : wish.has(f.id) ? 'w' : ''}" d="${path(f)}"/>`).join('')}</svg>
      ${mapItems().map(it => { const [x, y] = mproj(C(it.t).ll); return pinHTML(it, `style="left:${x}px;top:${y}px"`) + `<span class="mlabel" style="left:${x}px;top:${y}px">${esc(it.wish ? C(it.t).n : short(it.t))}</span>`; }).join('')}</div></div>
    <div class="maphead"><h1 class="bigtitle">Carte</h1><p class="caps" style="margin-top:6px">${new Set(S.trips.map(t => t.pays)).size} pays visités, ${S.envies.length} envie${S.envies.length > 1 ? 's' : ''}</p></div>
-   ${mapToggle()}
+   ${mapToggle()}${mapLegend()}
    <div class="zoom"><button data-act="zoom" data-z="1.4" aria-label="Zoomer">${SV.plus}</button><button data-act="zoom" data-z="0.7" aria-label="Dézoomer">${SV.minus}</button><button data-act="zoomAll" aria-label="Tout afficher">${SV.globe}</button></div>
    <div id="mapcard"></div>`;
   const wrap = $('mapwrap');
@@ -520,7 +557,7 @@ function renderGlobe() {
   if (!mapSel || !trip(mapSel)) mapSel = (currentTrip() || sorted()[0] || {}).id;
   sc.innerHTML = `<div class="gwrap" id="gwrap"><canvas id="gcv2"></canvas><div class="gpins2" id="gpins2">${items.map(it => pinHTML(it, 'data-act="gpin"')).join('')}</div></div>
    <div class="maphead"><h1 class="bigtitle">Carte</h1><p class="caps" style="margin-top:6px">${new Set(S.trips.map(t => t.pays)).size} pays visités, ${S.envies.length} envie${S.envies.length > 1 ? 's' : ''}</p></div>
-   ${mapToggle()}<div class="glegend"><span><i class="v"></i>Visités</span><span><i class="c"></i>En cours</span><span><i class="w"></i>Envies</span></div>
+   ${mapToggle()}${mapLegend()}
    <div class="zoom"><button data-act="zoom" data-z="1.4" aria-label="Zoomer">${SV.plus}</button><button data-act="zoom" data-z="0.7" aria-label="Dézoomer">${SV.minus}</button><button data-act="zoomAll" aria-label="Recentrer">${SV.globe}</button></div>
    <div id="mapcard"></div>`;
   glPins = [...sc.querySelectorAll('.gpins2 .mpin')].map((b, i) => ({ b, ll: C(items[i].t).ll }));
@@ -550,7 +587,7 @@ function glDraw() {
   ctx.beginPath(); glPath({ type: 'Sphere' }); ctx.fillStyle = g; ctx.fill();
   ctx.beginPath(); glPath(glGrat); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = .6; ctx.stroke();
   const visited = new Set(S.trips.map(t => C(t).iso)), cur = currentTrip(), curIso = cur ? C(cur).iso : null, wish = new Set(S.envies.map(w => C(w).iso));
-  glFeats.forEach(f => { ctx.beginPath(); glPath(f); ctx.fillStyle = f.id === curIso ? '#2E5E3E' : visited.has(f.id) ? '#9DBFA6' : wish.has(f.id) ? '#B9D2E6' : '#FBFAF7'; ctx.fill(); ctx.strokeStyle = 'rgba(120,125,115,.35)'; ctx.lineWidth = .5; ctx.stroke(); });
+  glFeats.forEach(f => { ctx.beginPath(); glPath(f); const isW = !visited.has(f.id) && f.id !== curIso && wish.has(f.id); ctx.fillStyle = f.id === curIso ? '#2E5E3E' : visited.has(f.id) ? '#6FA882' : isW ? '#F3C979' : '#FBFAF7'; ctx.fill(); ctx.strokeStyle = isW ? '#D9962B' : 'rgba(120,125,115,.35)'; ctx.lineWidth = isW ? 1.1 : .5; ctx.stroke(); });
   g = ctx.createRadialGradient(cx - R * .3, cy - R * .35, R * .2, cx, cy, R * 1.02); g.addColorStop(0, 'rgba(255,255,255,.14)'); g.addColorStop(.7, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(15,25,20,.25)');
   ctx.beginPath(); glPath({ type: 'Sphere' }); ctx.fillStyle = g; ctx.fill();
   const center = [-GL.rot[0], -GL.rot[1]];

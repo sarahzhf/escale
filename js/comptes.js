@@ -89,7 +89,7 @@ function transfers(bal) {
 }
 function comptesHTML(t) {
   const M = t.membres || [];
-  if (!M.length) return `<div class="emptycard tc"><b>Voyage entre amis ?</b><p>Ajoute les personnes qui partent avec toi. Tu noteras qui a payé quoi et pour qui, et Escale calcule qui doit combien à qui.</p><button class="btn2 g wide" data-act="members" data-trip="${t.id}">${SV.userPlus}Ajouter des amis</button></div>`;
+  if (!M.length) return `<div class="emptycard ec"><b>Voyage entre amis ?</b><p>Ajoute les personnes qui partent avec toi. Tu noteras qui a payé quoi et pour qui, et Escale calcule qui doit combien à qui.</p><button class="btn2 g wide" data-act="members" data-trip="${t.id}">${SV.userPlus}Ajouter des amis</button></div>`;
   const { bal, group } = balances(t), tr = transfers(bal), shared = t.depenses.filter(d => d.split || (d.by && d.by !== 'me')).slice().sort((a, b) => b.j - a.j);
   return `<div class="sec"><h2>Participants</h2><button class="more" data-act="members" data-trip="${t.id}">Gérer</button></div>
    <div class="tc-who">${['me', ...M.map(m => m.id)].map(id => { const v = bal[id] || 0; return `<div class="tc-wb"><span class="av">${esc(memberName(t, id).slice(0, 1).toUpperCase())}</span><b>${esc(memberName(t, id))}</b><em class="num ${v > 0.005 ? 'pos' : v < -0.005 ? 'neg' : ''}">${v > 0.005 ? '+ ' : v < -0.005 ? '− ' : ''}${fmt(Math.abs(v))}</em></div>`; }).join('')}</div>

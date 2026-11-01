@@ -819,9 +819,9 @@ nav button svg{width:22px;height:22px}
 .tl::before{background:var(--line)}
 .mapwrap{background:#BFD8DA}
 .mapinner .land{fill:#F3F2EC;stroke:#D8D5CB}
-.mapinner .land.v{fill:#CFE0D2}
+.mapinner .land.v{fill:#6FA882}
 .mapinner .land.c{fill:#2E5E3E}
-.mapinner .land.w{fill:#EADFC9}
+.mapinner .land.w{fill:#F3C979;stroke:#D9962B;stroke-width:1.2}
 .mpin.on .c{border-color:var(--green)}
 .mapcard .go{background:var(--green)}
 .msg.me{background:var(--green)}
@@ -1087,9 +1087,11 @@ nav button svg{width:22px;height:22px}
 .mtoggle button{border:0;background:none;border-radius:11px;padding:7px 14px;font-size:.76rem;font-weight:600;color:#5b5e58;display:flex;align-items:center;gap:6px}
 .mtoggle button svg{width:14px;height:14px}
 .mtoggle button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.1)}
-.glegend{position:absolute;left:20px;top:calc(env(safe-area-inset-top,0px) + 140px);z-index:3;display:flex;gap:12px;font-size:.68rem;color:#4a4d48;pointer-events:none}
-.glegend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px}
-.glegend .v{background:#9DBFA6}.glegend .c{background:#2E5E3E}.glegend .w{background:#B9D2E6}
+.glegend{position:absolute;left:20px;top:calc(env(safe-area-inset-top,0px) + 140px);z-index:3;display:flex;gap:6px;font-size:.74rem;color:var(--ink);pointer-events:none}
+.glegend span{background:rgba(255,255,255,.92);border-radius:20px;padding:5px 10px;box-shadow:0 4px 12px -6px rgba(0,0,0,.25);display:inline-flex;align-items:center;font-weight:500}
+.glegend b{margin-left:5px;font-weight:700}
+.glegend i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.glegend .v{background:#6FA882}.glegend .c{background:#2E5E3E}.glegend .w{background:#F3C979;box-shadow:inset 0 0 0 1.5px #D9962B}
 .chal h3{font-family:var(--ui)}
 .chalban b{color:var(--ink)}
 .chal .ctx .flag{width:14px;height:14px;display:inline-flex;vertical-align:-3px;margin-right:4px}
@@ -1286,7 +1288,7 @@ img[data-wait]{background:#E4E3DD}
 .tc-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;font-size:.86rem;border-bottom:1px solid var(--line)}
 .tc-row:last-child{border-bottom:0}.tc-row.done{color:var(--muted)}
 .tc-row .pill{flex:none}
-.emptycard.tc{margin-top:14px}
+.emptycard.ec{margin-top:14px}
 .mlist{display:grid;gap:8px;margin:14px 0}
 .mrow{display:flex;align-items:center;gap:10px}
 .mrow input{flex:1;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;min-width:0}
@@ -1296,3 +1298,44 @@ img[data-wait]{background:#E4E3DD}
 .madd input{flex:1;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;min-width:0}
 .dtabs{overflow-x:auto;scrollbar-width:none}.dtabs::-webkit-scrollbar{display:none}
 .dtabs button{white-space:nowrap}
+
+/* v1.2 : budget cliquable, filtres de la liste des dépenses */
+button.bud{display:block;width:100%;border:0;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.expf{display:flex;flex-direction:column;gap:8px;margin:4px -20px 0;padding:0 20px}
+.expf .row{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0;align-items:center}
+.expf .row::-webkit-scrollbar{display:none}
+.expf .pill{flex:none;font-family:var(--ui);font-size:.78rem;padding:6px 12px;border-color:var(--line);color:#4a4d57}
+.expf .pill.on{background:var(--green);border-color:var(--green);color:#fff}
+.expf select{flex:none;font:inherit;font-size:.78rem;border:1px solid var(--line);border-radius:22px;padding:6px 12px;background:#fff;color:var(--ink)}
+.exptot{display:flex;align-items:baseline;gap:10px;margin-top:14px;font-size:.8rem;color:var(--muted)}
+.exptot b{color:var(--ink);font-size:1rem}
+.exptot .link{margin-left:auto}
+.vchips button i{font-style:normal;margin-left:6px;font-size:.7rem;opacity:.6}
+.vchips button:disabled{opacity:.35}
+.vchips.years{margin-top:8px}
+.vchips.years button{border-width:1px;border-color:var(--line);padding:6px 13px;font-size:.76rem;color:#4a4d57}
+.vchips.years button.on{background:var(--green);border-color:var(--green);color:#fff}
+/* v1.2 : carte et assistant mis en avant sur l'accueil */
+.hfeat{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px}
+.hf{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;border:0;border-radius:22px;padding:16px 14px 14px;font:inherit;color:#fff;min-height:150px;position:relative;overflow:hidden;cursor:pointer}
+.hf.map{background:linear-gradient(150deg,#1f4e5f,#2e6b55)}
+.hf.ai{background:linear-gradient(150deg,#3a3360,#6b4f86)}
+.hf .ic{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center;margin-bottom:6px}
+.hf .ic svg{width:18px;height:18px}
+.hf b{font-size:.95rem}
+.hf span{font-size:.74rem;line-height:1.4;opacity:.85}
+.hf strong{font-size:.9rem;opacity:1}
+.hf em{margin-top:auto;padding-top:8px;font-style:normal;font-size:.74rem;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+.hf em svg{width:14px;height:14px}
+/* v1.2 : recherche du fil, réactions aux commentaires */
+#s-fil .fsearch{margin:12px 0 4px}
+.fsearch button{border:0;background:none;padding:0;display:grid;place-items:center;color:var(--muted)}
+.cmt{align-items:flex-start}
+.crx{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;align-items:center}
+.cchip{border:1px solid var(--line);background:#fff;border-radius:14px;padding:2px 8px;font-size:.8rem;display:inline-flex;align-items:center;gap:4px}
+.cchip i{font-style:normal;font-size:.7rem;color:var(--muted)}
+.cchip.on{border-color:var(--green);background:#E7F0E9}
+.cadd{border:0;background:none;font-size:.74rem;color:var(--muted);font-weight:600;padding:2px 4px}
+.ctray{display:flex;gap:4px;margin-top:6px;background:#fff;border-radius:18px;padding:4px 6px;box-shadow:0 6px 16px -8px rgba(0,0,0,.3);width:max-content}
+.ctray[hidden]{display:none}
+.ctray button{border:0;background:none;font-size:1.25rem;padding:2px 4px}

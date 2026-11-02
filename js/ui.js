@@ -75,7 +75,7 @@ const ACT = {
   fav: d => { const t = trip(d.trip); t.fav = !t.fav; save(); refresh(); toast(t.fav ? 'Ajouté aux favoris' : 'Retiré des favoris'); },
   share: d => { const t = trip(d.trip), txt = `${place(t)}, ${fd(t.du)} au ${fd(t.au)} : ${fmt(spentOf(t))} pour ${info(t).jours} jours.`; copyText(txt, 'Résumé du carnet copié'); },
   depTrip: d => { depId = d.trip; go('depenses'); }, editExp: d => expSheet(d.trip, d.id),
-  catFilter: d => { const t = trip(depId); openTrip(t.id); expF = { trip: t.id, m: null, j: null, c: d.k || null }; dTab = 'depenses'; openTrip(t.id, true); },
+  catFilter: d => { const t = trip(depId); openTrip(t.id); expF = { trip: t.id, y: null, m: null, j: null, c: d.k || null }; dTab = 'depenses'; openTrip(t.id, true); },
   flip: () => $('flipcard').classList.toggle('on'), ask: d => { go('ia'); ask(d.q); },
 };
 function copyText(txt, ok) { try { navigator.clipboard.writeText(txt).then(() => toast(ok), () => toast('Copie impossible sur cet appareil')); } catch (e) { toast('Copie impossible sur cet appareil'); } }
@@ -291,34 +291,41 @@ function openTrip(id, keep) {
   sc.querySelectorAll('.entry').forEach(el => io.observe(el));
 }
 
+
+/* ---------- menu déroulant en forme de pastille (année, mois, jour, catégorie, période) ---------- */
+const ddHTML = (key, label, opts, val) => `<label class="dd ${val != null && val !== '' ? 'on' : ''}"><select data-dd="${key}" aria-label="${esc(label)}"><option value="">${esc(label)}</option>${opts.map(([v, l]) => `<option value="${esc(String(v))}" ${String(v) === String(val ?? '') ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>${SV.down || ''}</label>`;
+const DD = {};
+document.addEventListener('change', e => { const k = e.target.dataset && e.target.dataset.dd; if (k && DD[k]) DD[k](e.target.value); });
 /* ---------- liste des dépenses d'un voyage, avec filtres mois / jour / catégorie ---------- */
-let expF = { trip: null, m: null, j: null, c: null };
+let expF = { trip: null, y: null, m: null, j: null, c: null };
 const monthKey = (t, j) => addDays(t.du, j - 1).slice(0, 7);
 const monthName = k => { const s = new Date(k + '-15').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }); return s[0].toUpperCase() + s.slice(1); };
 function expListHTML(t) {
-  if (expF.trip !== t.id) expF = { trip: t.id, m: null, j: null, c: null };
-  const n = info(t).jours, months = [...new Set(Array.from({ length: n }, (_, i) => monthKey(t, i + 1)))];
+  if (expF.trip !== t.id) expF = { trip: t.id, y: null, m: null, j: null, c: null };
+  const n = info(t).jours, allDays = Array.from({ length: n }, (_, i) => i + 1);
+  const years = [...new Set(allDays.map(j => monthKey(t, j).slice(0, 4)))];
+  if (expF.y && !years.includes(expF.y)) expF.y = null;
+  const months = [...new Set(allDays.map(j => monthKey(t, j)))].filter(m => !expF.y || m.startsWith(expF.y));
   if (expF.m && !months.includes(expF.m)) expF.m = null;
-  const days = Array.from({ length: n }, (_, i) => i + 1).filter(j => !expF.m || monthKey(t, j) === expF.m);
+  const okDay = j => (!expF.y || monthKey(t, j).startsWith(expF.y)) && (!expF.m || monthKey(t, j) === expF.m);
+  const days = allDays.filter(okDay);
   if (expF.j && !days.includes(expF.j)) expF.j = null;
-  const list = t.depenses.filter(d => (!expF.m || monthKey(t, d.j) === expF.m) && (!expF.j || d.j === expF.j) && (!expF.c || d.c === expF.c));
+  const list = t.depenses.filter(d => okDay(d.j) && (!expF.j || d.j === expF.j) && (!expF.c || d.c === expF.c));
   const byDay = {}; list.forEach(d => (byDay[d.j] = byDay[d.j] || []).push(d));
-  const tot = list.reduce((a, d) => a + myPart(d), 0), any = expF.m || expF.j || expF.c;
-  const chip = (k, v, label, on) => `<button class="pill ${on ? 'on' : ''}" data-act="expF" data-k="${k}" data-v="${v}">${label}</button>`;
+  const tot = list.reduce((a, d) => a + myPart(d), 0), any = expF.y || expF.m || expF.j || expF.c;
   return `<div class="sec"><h2>${list.length} dépense${list.length > 1 ? 's' : ''}</h2><button class="pill dark" data-act="addExp" data-trip="${t.id}">${SV.plus}Dépense</button></div>
-    <div class="expf">
-      <div class="row"><select id="expf-day" aria-label="Filtrer par jour"><option value="">Tous les jours</option>${days.map(j => `<option value="${j}" ${expF.j === j ? 'selected' : ''}>Jour ${j}, ${fd(addDays(t.du, j - 1))}</option>`).join('')}</select>
-        ${months.length > 1 ? chip('m', '', 'Tous les mois', !expF.m) + months.map(m => chip('m', m, monthName(m), expF.m === m)).join('') : ''}</div>
-      <div class="row">${chip('c', '', 'Toutes', !expF.c)}${Object.keys(CATS).map(k => chip('c', k, CATS[k].n, expF.c === k)).join('')}</div>
-    </div>
-    <div class="exptot num"><span>${any ? 'Total filtré, ta part' : 'Total, ta part'}</span><b>${fmt(tot)}</b>${any ? `<button class="link" data-act="expF" data-k="all" data-v="">Effacer les filtres</button>` : ''}</div>
+    <div class="ddrow">${years.length ? ddHTML('exp-y', 'Année', years.map(y => [y, y]), expF.y) : ''}${months.length > 1 ? ddHTML('exp-m', 'Mois', months.map(m => [m, monthName(m)]), expF.m) : ''}${ddHTML('exp-j', 'Jour', days.map(j => [j, `Jour ${j}, ${fd(addDays(t.du, j - 1))}`]), expF.j)}${ddHTML('exp-c', 'Catégorie', Object.keys(CATS).map(k => [k, CATS[k].n]), expF.c)}</div>
+    <div class="exptot num"><span>${any ? 'Total filtré, ta part' : 'Total, ta part'}</span><b>${fmt(tot)}</b>${any ? `<button class="link" data-act="expClear">Effacer les filtres</button>` : ''}</div>
     ${Object.keys(byDay).length ? Object.keys(byDay).sort((a, b2) => b2 - a).map(j => { const L = byDay[j], dt = L.reduce((a, d) => a + myPart(d), 0);
       return `<div class="dayh"><span>Jour ${j}, ${fd(addDays(t.du, j - 1))}</span><span class="num">${fmt(dt)}</span></div><div class="group">` + L.slice().reverse().map(d => `<button class="exp" data-act="editExp" data-trip="${t.id}" data-id="${d.id}"><span class="ic">${ico(d.c)}</span><span class="m"><b>${esc(d.l)}</b><span>${CATS[d.c].n}${d.split || (d.by && d.by !== 'me') ? `, payé par ${esc(memberName(t, d.by || 'me'))}${d.split ? `, ta part ${fmt(myPart(d))}` : ''}` : ''}</span></span><span class="p num">${fmt(d.eur)}${d.v != null ? `<span>${fmtD(d, t)}</span>` : ''}</span>${PENDING.has(d.id) ? `<em class="pend" title="En attente d'envoi">${SV.cloudOff}</em>` : ''}</button>`).join('') + '</div>'; }).join('')
       : `<div class="emptyj">${t.depenses.length ? 'Aucune dépense avec ces filtres.' : 'Aucune dépense pour ce voyage.'}<br><button class="pill dark" style="margin-top:12px" data-act="addExp" data-trip="${t.id}">${SV.plus}Ajouter une dépense</button></div>`}
     <button class="link small" style="margin-top:16px" data-act="depTrip" data-trip="${t.id}">${SV.chart || ''}Voir l'analyse du budget</button>`;
 }
-ACT.expF = d => { if (d.k === 'all') expF = { trip: expF.trip, m: null, j: null, c: null }; else if (d.k === 'm') { expF.m = d.v || null; expF.j = null; } else expF[d.k] = d.v || null; refresh(); };
-document.addEventListener('change', e => { if (e.target.id === 'expf-day') { expF.j = +e.target.value || null; refresh(); } });
+ACT.expClear = () => { expF = { trip: expF.trip, y: null, m: null, j: null, c: null }; refresh(); };
+DD['exp-y'] = v => { expF.y = v || null; expF.m = null; expF.j = null; refresh(); };
+DD['exp-m'] = v => { expF.m = v || null; expF.j = null; refresh(); };
+DD['exp-j'] = v => { expF.j = +v || null; refresh(); };
+DD['exp-c'] = v => { expF.c = v || null; refresh(); };
 const VISN = { public: 'Public', amis: 'Amis', prive: 'Privé' };
 ACT.dtab = d => { dTab = d.v; const sc = $('s-carnet'); openTrip(openId, true); const top = sc.querySelector('.dsheet').offsetTop - 60; if (sc.scrollTop > top) sc.scrollTop = top; };
 ACT.photoTrip = d => { const t = trip(d.trip); if (!t.cover) { pickPhoto(`${t.id}|cover`); return; } for (const e of t.entrees) { const i = e.photos.findIndex(p => !p); if (i >= 0) { pickPhoto(`${t.id}|e|${e.id}|${i}`); return; } } const e = t.entrees[t.entrees.length - 1]; if (!e) { pageSheet(t.id); return; } e.photos.push(null); save(); pickPhoto(`${t.id}|e|${e.id}|${e.photos.length - 1}`); };
@@ -352,9 +359,7 @@ function renderDepenses(keep) {
        <div class="pills"><div><b class="num">${fmtL(per * C(t).rate, t)}</b><span>par jour</span></div><div><b class="num">${fmtL(s * C(t).rate, t)}</b><span>déjà dépensés</span></div></div></div>` : ''}
    </div></div>
    ${statsHTML(t)}
-   <div class="sec"><h2>Par catégorie</h2><span class="small">touche pour voir le détail</span></div><div class="group">
-   ${Object.keys(CATS).map(k => `<button class="cat" data-act="catFilter" data-k="${k}"><span class="ic">${ico(k)}</span><span><span class="n"><span>${CATS[k].n}</span><em class="num">sur ${fmt(b[k])}</em></span><span class="mb"><i class="${c[k] > b[k] ? 'over' : ''}" style="width:${pct(c[k], b[k])}%"></i></span></span><span class="v num">${fmt(c[k])}</span></button>`).join('')}
-   </div><div class="sec"><h2>Dernières dépenses</h2>${t.depenses.length > 5 ? `<button class="link" data-act="catFilter" data-k="">Tout voir (${t.depenses.length})</button>` : ''}</div>
+<div class="sec"><h2>Dernières dépenses</h2>${t.depenses.length > 5 ? `<button class="link" data-act="catFilter" data-k="">Tout voir (${t.depenses.length})</button>` : ''}</div>
    ${t.depenses.length ? '<div class="group">' + t.depenses.slice().sort((a, b2) => b2.j - a.j || String(b2.at || '').localeCompare(String(a.at || ''))).slice(0, 5).map(d => `<button class="exp" data-act="editExp" data-trip="${t.id}" data-id="${d.id}"><span class="ic">${ico(d.c)}</span><span class="m"><b>${esc(d.l)}</b><span>Jour ${d.j}, ${CATS[d.c].n}</span></span><span class="p num">${fmt(d.eur)}${d.v != null ? `<span>${fmtD(d, t)}</span>` : ''}</span>${PENDING.has(d.id) ? `<em class="pend" title="En attente d'envoi">${SV.cloudOff}</em>` : ''}</button>`).join('') + '</div>'
      : `<div class="emptyj">Aucune dépense pour ce voyage.<br><button class="pill dark" style="margin-top:12px" data-act="addExp" data-trip="${t.id}">${SV.plus}Ajouter une dépense</button></div>`}
    ${t.depenses.length ? `<button class="btn2 wide" style="margin-top:14px" data-act="catFilter" data-k="">Toutes les dépenses, par mois et par jour</button>` : ''}`;
@@ -408,6 +413,7 @@ $('askForm').onsubmit = e => { e.preventDefault(); ask($('askIn').value); };
 
 /* ---------- accueil ---------- */
 let homeF = 'all';
+DD.hy = v => { homeF = v || 'all'; document.querySelectorAll('#homeChips button').forEach(x => x.classList.toggle('on', !v && x.dataset.hf === 'all')); const hy = document.querySelector('#homeChips [data-dd=hy]'); if (hy) hy.parentNode.classList.toggle('on', !!v); renderPicks($('q') ? $('q').value : ''); };
 function renderHome() {
   const cur = currentTrip(), next = S.trips.filter(x => info(x).futur).sort((a, b) => D(a.du) - D(b.du))[0], t = cur || next || sorted()[0];
   const heroT = (t && t.cover) ? t : (S.trips.find(x => x.cover) || t);
@@ -421,7 +427,7 @@ function renderHome() {
        ${first ? `<button class="hcta" data-act="newTrip">${SV.plus}Créer mon premier voyage</button>` : `<label class="hsearch" for="q">${SV.search}<input id="q" placeholder="Chercher un voyage, un lieu" autocomplete="off" maxlength="60"><button type="button" data-act="go" data-to="carnets" aria-label="Voir mes voyages">${SV.right}</button></label>`}</div></div>
    <div class="hsheet">
      ${first ? `<div class="steps"><div class="step"><b>1</b><span><strong>Crée un voyage</strong>Pays, dates et budget.</span></div><div class="step"><b>2</b><span><strong>Note tes dépenses</strong>En euros ou en monnaie locale, en deux secondes.</span></div><div class="step"><b>3</b><span><strong>Garde tes souvenirs</strong>Pages, photos, lieux, et partage avec tes amis si tu veux.</span></div></div>` : `
-     <div class="chipsrow" id="homeChips">${[['all', 'Tous'], ['cur', 'En cours'], ['fut', 'À venir'], ['fav', 'Favoris'], ...years.map(y => [String(y), String(y)])].map(([k, l]) => `<button data-hf="${k}" class="${homeF === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+     <div class="chipsrow" id="homeChips">${years.length ? ddHTML('hy', 'Année', years.map(y => [y, String(y)]), /^\d{4}$/.test(homeF) ? homeF : '') : ''}${[['all', 'Tous'], ['cur', 'En cours'], ['fut', 'À venir'], ['fav', 'Favoris']].map(([k, l]) => `<button data-hf="${k}" class="${homeF === k ? 'on' : ''}">${l}</button>`).join('')}</div>
      <div class="sec"><h2>Mes voyages</h2><button class="more" data-act="go" data-to="carnets">Tout voir</button></div>
      <div class="dest" id="picks"></div>
      ${first ? '' : (() => { const vis = new Set(S.trips.filter(x => !info(x).futur).map(x => x.pays)).size, pc = Math.round(vis / 195 * 1000) / 10;
@@ -439,7 +445,7 @@ function renderHome() {
      <div class="wishes">${S.envies.map(w => `<span class="pill">${flag(w.pays)}${esc(C(w).n)}${w.note ? `<span class="small">${esc(w.note)}</span>` : ''}<button class="x" data-act="rmWish" data-id="${w.id}" aria-label="Retirer ${esc(C(w).n)}">${SV.x.replace('<svg', '<svg width="11" height="11"')}</button></span>`).join('')}<button class="pill add" data-act="addWish">${SV.plus}Une envie</button></div>
    </div>`;
   if (!first) {
-    document.querySelectorAll('#homeChips button').forEach(b => b.onclick = () => { homeF = b.dataset.hf; document.querySelectorAll('#homeChips button').forEach(x => x.classList.toggle('on', x === b)); renderPicks($('q').value); });
+    document.querySelectorAll('#homeChips button').forEach(b => b.onclick = () => { homeF = b.dataset.hf; document.querySelectorAll('#homeChips button').forEach(x => x.classList.toggle('on', x === b)); const hy = document.querySelector('#homeChips [data-dd=hy]'); if (hy) { hy.value = ''; hy.parentNode.classList.remove('on'); } renderPicks($('q').value); });
     renderPicks(''); $('q').addEventListener('input', e => renderPicks(e.target.value));
   }
   if (typeof updateBadges === 'function') updateBadges();
@@ -466,8 +472,8 @@ function renderCards() {
   $('s-carnets').innerHTML = `
    <div class="vtop"><button class="iconbtn" data-act="back" aria-label="Retour">${SV.back}</button><h1>Mes voyages</h1><div class="r"><button class="iconbtn" data-act="go" data-to="journal" aria-label="Journal">${SV.book}</button><button class="iconbtn" data-act="go" data-to="carte" aria-label="Carte">${SV.globe}</button><button class="iconbtn" data-act="newTrip" aria-label="Nouveau voyage">${SV.plus}</button></div></div>
    <div class="vsearch">${SV.globe}<div><b>${S.trips.length} carnet${S.trips.length > 1 ? 's' : ''}, ${new Set(S.trips.map(x => x.pays)).size} pays</b><span>${days} jours de voyage, ${fmt(S.trips.reduce((a, x) => a + spentOf(x), 0))} dépensés</span></div></div>
-   ${S.trips.length ? `<div class="vchips">${V_STATUS.map(([k, l, fn]) => { const n = S.trips.filter(t => inYear(t) && fn(t)).length; return `<button data-act="vf" data-k="s" data-v="${k}" class="${vF.s === k ? 'on' : ''}" ${n || k === 'all' ? '' : 'disabled'}>${l}<i class="num">${n}</i></button>`; }).join('')}</div>
-   ${years.length > 1 ? `<div class="vchips years"><button data-act="vf" data-k="y" data-v="all" class="${vF.y === 'all' ? 'on' : ''}">Toutes les années</button>${years.map(y => `<button data-act="vf" data-k="y" data-v="${y}" class="${vF.y === String(y) ? 'on' : ''}">${y}</button>`).join('')}</div>` : ''}` : ''}
+   ${S.trips.length ? `<div class="vchips">${years.length ? ddHTML('vy', 'Année', years.map(y => [y, String(y)]), vF.y === 'all' ? '' : vF.y) : ''}${V_STATUS.map(([k, l, fn]) => { const n = S.trips.filter(t => inYear(t) && fn(t)).length; return `<button data-act="vf" data-k="s" data-v="${k}" class="${vF.s === k ? 'on' : ''}" ${n || k === 'all' ? '' : 'disabled'}>${l}<i class="num">${n}</i></button>`; }).join('')}</div>
+` : ''}
    ${S.trips.length && !list.length ? `<div class="emptyj">Aucun voyage avec ces filtres. <button class="link" data-act="vf" data-k="reset">Tout afficher</button></div>` : ''}
    <div class="vlist">${list.map(t => { const f = info(t), s = spentOf(t);
      return `<div class="vcard"><div style="position:relative">${phHTML(t.cover, `${t.id}|cover`, 'Ajouter une couverture')}<button class="heart ${t.fav ? 'on' : ''}" data-act="fav" data-trip="${t.id}" aria-label="Favori">${t.fav ? SV.heartF : SV.heart}</button></div>
@@ -475,6 +481,7 @@ function renderCards() {
        <span class="l3 num">${f.futur ? `Budget <b>${fmt(t.budget)}</b>` : s <= t.budget ? `<s>${fmt(t.budget)}</s><b>${fmt(s)}</b> dépensés` : `<b>${fmt(s)}</b> dépensés, budget ${fmt(t.budget)}`}</span></button></div>`; }).join('')}
      <button class="vcard new" data-act="newTrip">${SV.plus}Nouveau voyage</button></div>`;
 }
+DD.vy = v => { vF.y = v || 'all'; renderCards(); };
 ACT.vf = d => { if (d.k === 'reset') vF = { s: 'all', y: 'all' }; else vF[d.k] = d.v; renderCards(); };
 
 /* ---------- journal ---------- */

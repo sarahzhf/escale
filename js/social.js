@@ -37,7 +37,7 @@ function postCard(p) {
    ${p.budget_summary ? budHTML(p) : ''}
    <div class="pbody">${tot ? `<p class="rsum"><span class="em">${top}</span>${tot} réaction${tot > 1 ? 's' : ''}${p.my_reaction ? ', dont la tienne' : ''}</p>` : ''}
      ${p.caption ? `<p class="cap"><b>${first(u.display_name)}</b>${esc(p.caption)}</p>` : ''}
-     ${(p.comments || []).map(c => `<p class="cm"><b>${first(c.display_name)}</b>${esc(c.body)}</p>`).join('')}
+     ${(p.comments || []).map(c => cmtLine(c, p)).join('')}
      ${p.comment_count ? `<button class="allc" data-act="allComments" data-p="${p.id}">${p.comment_count > (p.comments || []).length ? `Voir les ${p.comment_count} commentaires et réagir` : `Réagir ${p.comment_count > 1 ? 'aux commentaires' : 'au commentaire'}`}</button>` : ''}
      <p class="time">${ago(p.created_at)}</p></div>
    <form class="cform" data-cform="${p.id}">${avatar(meUser(), 'sm')}<input aria-label="Commenter" maxlength="1000" placeholder="Ajouter un commentaire…" autocomplete="off"><button>Publier</button></form>
@@ -68,22 +68,36 @@ ACT.savePost = async d => { const p = POSTS.get(d.p), on = !p.saved;
   if (error) { toast('Action impossible'); return; } POSTS.set(p.id, { ...p, saved: on }); rerenderPost(p.id); toast(on ? 'Enregistré dans ton profil' : 'Retiré des enregistrements'); };
 ACT.sharePost = d => { const p = POSTS.get(d.p); if (p.author_id === ME.id && p.visibility === 'private') { toast('Cette publication est privée : rends-la publique ou visible par tes amis pour la partager'); return; }
   copyText(`${p.author.display_name} sur Escale : ${p.place}. ${p.caption}`.slice(0, 500), 'Texte de la publication copié'); };
-let CMTS = [], cmtPost = null;
+let CMTS = [], cmtPost = null, lpT = null;
 const CRX = ['❤️', '😂', '😍', '🙌', '🔥'];
-function cmtHTML(c, p) { const rx = Object.entries(c.reactions || {}).filter(([, n]) => n > 0);
+const HEART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>';
+/** Réactions d'un commentaire : pastilles cliquables (ajoute ou retire la même réaction). */
+const cmtChips = (c, p) => Object.entries(c.reactions || {}).filter(([, n]) => n > 0).sort((x, y) => y[1] - x[1]).map(([e, n]) => `<button class="cchip ${c.my_reaction === e ? 'on' : ''}" data-act="cReact" data-c="${c.id}" data-p="${p.id}" data-e="${esc(e)}" aria-label="${esc(e)} ${n}">${esc(e)}<i class="num">${n}</i></button>`).join('');
+/** Cœur rapide à droite : une touche pour aimer, une touche longue (ou le +) pour choisir un autre émoji. */
+const cmtHeart = (c, p) => `<button class="cheart ${c.my_reaction ? 'on' : ''}" data-act="cQuick" data-c="${c.id}" data-p="${p.id}" aria-label="${c.my_reaction ? 'Retirer ta réaction' : 'Aimer ce commentaire'}">${c.my_reaction && c.my_reaction !== '❤️' ? `<span class="em">${esc(c.my_reaction)}</span>` : HEART}</button>`;
+const cmtTray = (c, p) => `<div class="ctray" hidden>${CRX.map(e => `<button data-act="cReact" data-c="${c.id}" data-p="${p.id}" data-e="${e}" class="${c.my_reaction === e ? 'on' : ''}" aria-label="Réagir ${e}">${e}</button>`).join('')}</div>`;
+function cmtLine(c, p) { // aperçu dans le fil
+  return `<div class="cm2" data-cmt="${c.id}"><div class="t"><p><b>${first(c.display_name)}</b>${esc(c.body)}</p><div class="crx">${cmtChips(c, p)}<button class="cadd" data-act="cTray" data-c="${c.id}" aria-label="Choisir une réaction">${SV.smile || '+'}</button></div>${cmtTray(c, p)}</div>${cmtHeart(c, p)}</div>`; }
+function cmtHTML(c, p) { // panneau de tous les commentaires
   return `<div class="frow cmt" data-cmt="${c.id}">${avatar({ id: c.author_id, display_name: c.display_name, avatar_path: c.avatar_path }, 'sm')}<div class="m"><b>${esc(c.display_name)}</b><span class="wrap">${esc(c.body)}</span>
-    <div class="crx">${rx.map(([e, n]) => `<button class="cchip ${c.my_reaction === e ? 'on' : ''}" data-act="cReact" data-c="${c.id}" data-e="${esc(e)}">${esc(e)}<i class="num">${n}</i></button>`).join('')}<button class="cadd" data-act="cTray" data-c="${c.id}" aria-label="Réagir à ce commentaire">${c.my_reaction ? 'Changer' : 'Réagir'}</button></div>
-    <div class="ctray" hidden>${CRX.map(e => `<button data-act="cReact" data-c="${c.id}" data-e="${e}" aria-label="Réagir ${e}">${e}</button>`).join('')}</div></div>
-    ${c.author_id === ME.id || p.author_id === ME.id ? `<button class="btn2" data-act="delComment" data-c="${c.id}" data-p="${p.id}" aria-label="Supprimer le commentaire">${SV.trash}</button>` : ''}</div>`; }
+    <div class="crx">${cmtChips(c, p)}<button class="cadd" data-act="cTray" data-c="${c.id}" aria-label="Choisir une réaction">${SV.smile || '+'}</button>${c.author_id === ME.id || p.author_id === ME.id ? `<button class="cadd" data-act="delComment" data-c="${c.id}" data-p="${p.id}">Supprimer</button>` : ''}</div>${cmtTray(c, p)}</div>
+    ${cmtHeart(c, p)}</div>`; }
 function renderCmts() { const box = document.querySelector('#panel .flist.cmts'), p = POSTS.get(cmtPost); if (box && p) box.innerHTML = CMTS.map(c => cmtHTML(c, p)).join('') || '<p class="small">Aucun commentaire.</p>'; }
 ACT.allComments = async d => { CMTS = await rpc('post_comments', { p_post: d.p }); cmtPost = d.p;
   openPanel(`<h2>Commentaires</h2><div class="flist cmts"></div>${CLOSE('Fermer')}`, null, { nofocus: true }); renderCmts(); };
-ACT.cTray = d => { const t = document.querySelector(`#panel [data-cmt="${d.c}"] .ctray`); if (t) t.hidden = !t.hidden; };
-ACT.cReact = async d => { const c = CMTS.find(x => x.id === d.c); if (!c) return; const old = { ...c, reactions: { ...(c.reactions || {}) } }, next = c.my_reaction === d.e ? null : d.e, r = { ...(c.reactions || {}) };
-  if (c.my_reaction) { r[c.my_reaction] = (r[c.my_reaction] || 1) - 1; if (r[c.my_reaction] <= 0) delete r[c.my_reaction]; } if (next) r[next] = (r[next] || 0) + 1;
-  Object.assign(c, { reactions: r, my_reaction: next }); renderCmts();
-  try { await rpc('react_comment', { p_comment: c.id, p_emoji: next }); } catch (e) { Object.assign(c, old); renderCmts(); toast(errMsg(e)); } };
-ACT.delComment = async d => { const { error } = await sb.from('comments').delete().eq('id', d.c); if (error) { toast('Suppression impossible'); return; } closePanel(); await reloadPost(d.p); toast('Commentaire supprimé'); };
+ACT.cTray = (d, el) => { const host = el.closest('[data-cmt]'), t = host && host.querySelector('.ctray'); document.querySelectorAll('.ctray').forEach(x => { if (x !== t) x.hidden = true; }); if (t) t.hidden = !t.hidden; };
+ACT.cQuick = d => { if (lpT === 'done') { lpT = null; return; } const c = findC(d.c, d.p)[0]; if (!c) return; return ACT.cReact({ c: d.c, p: d.p, e: c.my_reaction || '❤️' }); };
+function findC(id, pid) { const out = CMTS.filter(x => x.id === id); const p = POSTS.get(pid); if (p) (p.comments || []).forEach(x => { if (x.id === id) out.push(x); }); return out; }
+ACT.cReact = async d => { const all = findC(d.c, d.p); if (!all.length) return; const c0 = all[0], before = all.map(c => ({ c, r: { ...(c.reactions || {}) }, m: c.my_reaction }));
+  const next = c0.my_reaction === d.e ? null : d.e, r = { ...(c0.reactions || {}) };
+  if (c0.my_reaction) { r[c0.my_reaction] = (r[c0.my_reaction] || 1) - 1; if (r[c0.my_reaction] <= 0) delete r[c0.my_reaction]; } if (next) r[next] = (r[next] || 0) + 1;
+  all.forEach(c => Object.assign(c, { reactions: { ...r }, my_reaction: next })); renderCmts(); rerenderPost(d.p);
+  document.querySelectorAll(`[data-cmt="${d.c}"] .cheart`).forEach(b => { b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); });
+  try { await rpc('react_comment', { p_comment: d.c, p_emoji: next }); } catch (e) { before.forEach(x => Object.assign(x.c, { reactions: x.r, my_reaction: x.m })); renderCmts(); rerenderPost(d.p); toast(errMsg(e)); } };
+// touche longue sur le cœur : ouvre le choix d'émojis
+document.addEventListener('pointerdown', e => { const h = e.target.closest('.cheart'); if (!h) return; lpT = setTimeout(() => { lpT = 'done'; const host = h.closest('[data-cmt]'), t = host && host.querySelector('.ctray'); if (t) t.hidden = false; }, 450); }, true);
+document.addEventListener('pointerup', () => { if (lpT && lpT !== 'done') clearTimeout(lpT); }, true);
+ACT.delComment = async d => { const { error } = await sb.from('comments').delete().eq('id', d.c); if (error) { toast('Suppression impossible'); return; } CMTS = CMTS.filter(x => x.id !== d.c); renderCmts(); await reloadPost(d.p); toast('Commentaire supprimé'); };
 ACT.postMenu = d => { const p = POSTS.get(d.p);
   if (p.author_id !== ME.id) return openPanel(`<h2>Publication de ${first(p.author.display_name)}</h2><div class="menulist">
     <button data-act="openUser" data-u="${p.author_id}">${SV.users}Voir son profil</button>
@@ -134,7 +148,7 @@ const countryCodes = q => { const n = normQ(q); return n.length < 2 ? null : Obj
 ACT.fsClear = () => { fQ = ''; renderFil(); };
 async function renderFil(more) {
   const sc = $('s-fil');
-  if (!more) sc.innerHTML = `<div class="fhead"><h1>Fil</h1><div class="r"><button class="iconbtn" data-act="openChals" aria-label="Défis">${SV.target}<span class="bdg" id="chalBadge" hidden></span></button><button class="iconbtn" data-act="findFriends" aria-label="Trouver des amis">${SV.userPlus}</button><button class="iconbtn" data-act="compose" aria-label="Publier">${SV.plus}</button></div></div>
+  if (!more) sc.innerHTML = `<div class="fhead"><h1>Posts</h1><div class="r"><button class="iconbtn" data-act="openChals" aria-label="Défis">${SV.target}<span class="bdg" id="chalBadge" hidden></span></button><button class="iconbtn" data-act="findFriends" aria-label="Trouver des amis">${SV.userPlus}</button><button class="iconbtn" data-act="compose" aria-label="Publier">${SV.plus}</button></div></div>
    <div class="stories" id="stories"></div>
    <div class="seg2"><button class="${fView === 'amis' ? 'on' : ''}" data-act="fview" data-v="amis">Mes amis</button><button class="${fView === 'decouvrir' ? 'on' : ''}" data-act="fview" data-v="decouvrir">Découvrir</button><button class="${fView === 'defis' ? 'on' : ''}" data-act="fview" data-v="defis">Défis</button></div>
    ${fView !== 'defis' ? `<label class="fsearch">${SV.search}<input id="fsq" placeholder="Chercher une ville, un pays" autocomplete="off" maxlength="60" value="${esc(fQ)}">${fQ ? `<button type="button" data-act="fsClear" aria-label="Effacer la recherche">${SV.x}</button>` : ''}</label>` : ''}

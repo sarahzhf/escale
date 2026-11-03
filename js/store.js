@@ -28,7 +28,7 @@ const VIS_FROM_DB = { public: 'public', friends: 'amis', private: 'prive' };
 const ROW = {
   trips: t => ({ id: t.id, country_code: t.pays, city: t.ville || null, start_date: t.du, end_date: t.au, budget: Number(t.budget) || 0,
     category_budgets: t.budgets || null, places: t.lieux || [], is_favorite: !!t.fav, album_visibility: VIS_TO_DB[t.vis || 'prive'], cover_path: t.cover || null,
-    members: t.membres || [], settlements: t.reglements || [] }),
+    members: t.membres || [], settlements: t.reglements || [], book_color: t.bk || null }),
   expenses: ([t, d]) => ({ id: d.id, trip_id: t.id, day: d.j, label: d.l, category: d.c,
     amount_local: d.v == null ? null : Number(d.v), currency: d.v == null ? null : (d.cur || C(t).code || null), amount_eur: Math.round(Number(d.eur) * 100) / 100,
     paid_by: d.by || 'me', split: d.split || null, sub: d.s || null, end_day: d.j2 || null }),
@@ -43,7 +43,7 @@ const LIST = {
 };
 // colonnes modifiables (les autres sont figées par la base)
 const UPDATABLE = {
-  trips: ['country_code', 'city', 'start_date', 'end_date', 'budget', 'category_budgets', 'places', 'is_favorite', 'album_visibility', 'cover_path', 'members', 'settlements'],
+  trips: ['country_code', 'city', 'start_date', 'end_date', 'budget', 'category_budgets', 'places', 'is_favorite', 'album_visibility', 'cover_path', 'members', 'settlements', 'book_color'],
   expenses: ['day', 'label', 'category', 'amount_local', 'currency', 'amount_eur', 'paid_by', 'split', 'sub', 'end_day'],
   journal_entries: ['day', 'title', 'note', 'photo_paths', 'description', 'stickers'],
   wishes: ['note'],
@@ -52,7 +52,7 @@ const ORDER_INS = ['trips', 'expenses', 'journal_entries', 'wishes'];
 const ORDER_DEL = ['expenses', 'journal_entries', 'wishes', 'trips'];
 
 function fromDb(trips, exps, entries, wishes) {
-  const T = trips.map(r => ({ id: r.id, pays: r.country_code, ville: r.city || '', membres: r.members || [], reglements: r.settlements || [], du: r.start_date, au: r.end_date, budget: Number(r.budget),
+  const T = trips.map(r => ({ id: r.id, pays: r.country_code, ville: r.city || '', membres: r.members || [], reglements: r.settlements || [], bk: r.book_color || null, du: r.start_date, au: r.end_date, budget: Number(r.budget),
     budgets: r.category_budgets || null, lieux: r.places || [], fav: r.is_favorite, vis: VIS_FROM_DB[r.album_visibility] || 'prive',
     cover: r.cover_path, entrees: [], depenses: [] }));
   const byId = Object.fromEntries(T.map(t => [t.id, t]));

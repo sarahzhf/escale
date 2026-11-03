@@ -51,11 +51,21 @@ function stickerHTML(s, i, edit) {
   const st = `left:${s.x}%;top:${s.y}%;--r:${s.r || 0}deg;--s:${s.s || 1}`;
   const inner = s.k === 'e' ? `<span class="se">${esc(s.v || '⭐')}</span>`
     : s.k === 'w' ? `<span class="sw" style="--c:${esc(s.c || '#F3C979')}"></span>`
-    : s.k === 't' ? `<span class="sl" style="--c:${esc(s.c || '#2E5E3E')}">${esc(s.v || '')}</span>`
+    : s.k === 't' ? letterHTML(s)
+    : s.k === 'd' ? `<span class="sd ${DECOS[s.v] ? 'deco dv-' + esc(s.v) : 'doodle'}">${DECOS[s.v] ? decoSVG(s.v, esc(s.c || '#C0392B')) : doodleSVG(s.v, esc(s.c || '#20243A'))}</span>`
     : `<span class="sp sh-${esc(s.sh || 'circle')}"><span class="cut">${IMG(s.p)}</span></span>`;
   return `<div class="stk ${edit ? 'ed' : ''} ${BK && BK.sel === i ? 'sel' : ''}" data-si="${i}" style="${st}">${inner}</div>`;
 }
-const pola = (src, k, target) => `<figure class="pola" style="--rot:${[-4, 3, -2, 5, -5, 2][k % 6]}deg">${src ? IMG(src) : `<button class="ph-empty" ${target ? `data-photo="${target}"` : ''} aria-label="Ajouter une photo">${SV.cam}</button>`}<i class="tape t${k % 3}"></i></figure>`;
+function letterHTML(s) { const f = s.f || 'label', v = String(s.v || ''), c = esc(s.c || '#2E5E3E');
+  if (f === 'bead') return `<span class="sb">${[...v].map(ch => ch === ' ' ? '<i class="gap"></i>' : `<i>${esc(ch.toUpperCase())}</i>`).join('')}</span>`;
+  if (f === 'tile') return `<span class="st">${[...v].map((ch, i) => ch === ' ' ? '<i class="gap"></i>' : `<i style="--tr:${[-3, 2, -1, 3, -2][i % 5]}deg">${esc(ch.toUpperCase())}</i>`).join('')}</span>`;
+  if (f === 'script' || f === 'serif') return `<span class="s-${f}" style="color:${c}">${esc(v)}</span>`;
+  return `<span class="sl" style="--c:${c}">${esc(v)}</span>`; }
+const ORN = '<svg class="orn" viewBox="0 0 100 130" preserveAspectRatio="none" aria-hidden="true"><ellipse cx="50" cy="65" rx="46" ry="60" fill="none" stroke="currentColor" stroke-width="3"/><ellipse cx="50" cy="65" rx="41" ry="55" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M38 5c5-5 19-5 24 0M38 125c5 5 19 5 24 0M4 58c-3 4-3 10 0 14M96 58c3 4 3 10 0 14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="50" cy="3" r="3" fill="currentColor"/><circle cx="50" cy="127" r="3" fill="currentColor"/></svg>';
+const WAVE = '<svg class="orn" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M6 10q8-6 16 0t16 0 16 0 16 0 16 0 8 4q6 8 0 16t0 16 0 16 0 16 0 16-4 6q-8 6-16 0t-16 0-16 0-16 0-16 0-8-4q-6-8 0-16t0-16 0-16 0-16 0-16z" fill="none" stroke="currentColor" stroke-width="2.4" vector-effect="non-scaling-stroke"/></svg>';
+const pageFrame = (e, k) => { const l = e.lay || {}; return (l.fr && l.fr[k]) || 'polaroid'; };
+const pola = (src, k, target, fr = 'polaroid') => fr !== 'polaroid' ? `<figure class="phf fr-${fr}" style="--rot:${[-3, 2, -1, 3, -2, 1][k % 6]}deg"><span class="in">${src ? IMG(src) : `<button class="ph-empty" ${target ? `data-photo="${target}"` : ''} aria-label="Ajouter une photo">${SV.cam}</button>`}</span>${fr === 'ovale' ? ORN : fr === 'vague' ? WAVE : ''}</figure>` : polaroid(src, k, target);
+const polaroid = (src, k, target) => `<figure class="pola" style="--rot:${[-4, 3, -2, 5, -5, 2][k % 6]}deg">${src ? IMG(src) : `<button class="ph-empty" ${target ? `data-photo="${target}"` : ''} aria-label="Ajouter une photo">${SV.cam}</button>`}<i class="tape t${k % 3}"></i></figure>`;
 function pageHTML(b, s, side) {
   const edit = BK && BK.edit && b.own, idx = b.spreads.indexOf(s), num = idx * 2 + (side === 'l' ? 1 : 2);
   const foot = `<span class="pg-num num">${num}</span>`;
@@ -69,9 +79,10 @@ function pageHTML(b, s, side) {
   if (s.kind === 'add') return side === 'l' ? `<div class="pg"><p class="pg-hand" style="margin-top:40px">Une nouvelle journée à raconter ?</p>${foot}</div>`
     : `<div class="pg center">${b.own ? `<button class="btn2 g" data-act="bkNewPage">${SV.plus}Ajouter une page</button>` : `<p class="pg-hand">Fin du carnet</p>`}${foot}</div>`;
   const e = s.e, t = bookTrip(), date = addDays(b.du, e.j - 1), dn = D(date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const lay = e.lay || {}, cls = `ft-${lay.font || 'carnet'} pp-${lay.paper || (BOOKS[b.color].m === 'B' ? 'blanc' : 'ligne')}`;
   if (side === 'l') { const ph = e.photos.map((x, i) => ({ x, i })).filter(o => o.x || edit).slice(0, 6);
-    return `<div class="pg"><p class="pg-kicker">Jour ${e.j} · ${esc(dn)}</p>${ph.length ? `<div class="pg-ph n${ph.length}">${ph.map((o, k) => pola(o.x, k, o.x || !t ? '' : `${t.id}|e|${e.id}|${o.i}`)).join('')}</div>` : `<p class="pg-hand" style="margin-top:18px">${edit ? 'Touche « Photo » pour coller tes photos ici.' : ''}</p>`}${foot}</div>`; }
-  return `<div class="pg"><h2 class="pg-h">${esc(e.t)}</h2>${e.d ? `<p class="pg-desc">${esc(e.d)}</p>` : ''}${e.n ? `<div class="pg-note">${esc(e.n)}</div>` : edit ? `<button class="pg-note empty" data-act="bkText">Touche ici pour écrire ta journée…</button>` : ''}${foot}</div>`;
+    return `<div class="pg ${cls}"><p class="pg-kicker">Jour ${e.j} · ${esc(dn)}</p>${ph.length ? `<div class="pg-ph n${ph.length}">${ph.map((o, k) => pola(o.x, k, o.x || !t ? '' : `${t.id}|e|${e.id}|${o.i}`, pageFrame(e, o.i))).join('')}</div>` : `<p class="pg-hand" style="margin-top:18px">${edit ? 'Touche « Photo » pour coller tes photos ici.' : ''}</p>`}${foot}</div>`; }
+  return `<div class="pg ${cls}"><h2 class="pg-h">${esc(e.t)}</h2>${e.d ? `<p class="pg-desc">${esc(e.d)}</p>` : ''}${e.n ? `<div class="pg-note">${esc(e.n)}</div>` : edit ? `<button class="pg-note empty" data-act="bkText">Touche ici pour écrire ta journée…</button>` : ''}${foot}</div>`;
 }
 const stkLayerHTML = () => { const e = curEntry(); return e ? (e.st || []).map((s, i) => stickerHTML(s, i, BK.edit && BK.book.own)).join('') : ''; };
 
@@ -87,7 +98,7 @@ function openBook(book, start = 0) {
     <div class="bk-stage" id="bkStage"><div class="bk-book closed" id="bkBook">
       <div class="bk-case"></div>
       <div class="bk-spread"><div class="bk-pg l" id="bkL"></div><div class="bk-pg r" id="bkR"></div><div class="bk-gutter"></div>
-        <div class="bk-stk" id="bkStk"></div><div class="bk-leaf" id="bkLeaf"><div class="f"></div><div class="b"></div></div></div>
+        <div class="bk-shade" id="bkShade"></div><div class="bk-stk" id="bkStk"></div><div class="bk-leaf" id="bkLeaf"></div></div>
       ${col.m === 'B' ? `<span class="bk-clip cl">${clipSVG}</span><span class="bk-clip cr">${clipSVG}</span>` : '<span class="bk-ribbon"><i></i></span>'}
       <div class="bk-cover" id="bkCover"><div class="front"><span class="hinge"></span><span class="emboss">${esc(book.title)}</span></div><div class="back"></div></div>
     </div></div>
@@ -124,7 +135,7 @@ function bkBar() {
   const n = BK.book.spreads.length, e = curEntry(), s = e && BK.sel != null ? (e.st || [])[BK.sel] : null;
   const zoomBtn = !BK.wide ? `<button class="bk-ic" data-act="bkZoomToggle" aria-label="${BK.zoom ? 'Voir la double page' : 'Zoomer sur la page'}">${BK.zoom ? '⤢' : '⤡'}</button>` : '';
   $('bkBot').innerHTML = BK.edit && e ? (s ? `<div class="bk-tools"><button data-act="bkStk" data-op="small" aria-label="Plus petit">−</button><button data-act="bkStk" data-op="big" aria-label="Plus grand">+</button><button data-act="bkStk" data-op="left" aria-label="Tourner à gauche">↺</button><button data-act="bkStk" data-op="right" aria-label="Tourner à droite">↻</button><button data-act="bkStk" data-op="front" aria-label="Mettre devant">⧉</button><button data-act="bkStk" data-op="del" class="red" aria-label="Retirer le sticker">${SV.trash}</button><button data-act="bkStk" data-op="ok" class="ok">OK</button></div>`
-      : `<div class="bk-tools wide"><button data-act="bkText">${SV.edit || ''}<span>Texte</span></button><button data-act="bkPhoto">${SV.cam}<span>Photo</span></button><button data-act="bkStickers">${SV.smile || '☺'}<span>Sticker</span></button><button data-act="bkEdit" class="ok"><span>Terminé</span></button></div><p class="bk-hint">Glisse un sticker pour le placer, touche-le pour le régler.</p>`)
+      : `<div class="bk-tools wide"><button data-act="bkText">${SV.edit || ''}<span>Texte</span></button><button data-act="bkStyle"><b class="aa">Aa</b><span>Style</span></button><button data-act="bkPhoto">${SV.cam}<span>Photo</span></button><button data-act="bkStickers">${SV.smile || '☺'}<span>Sticker</span></button><button data-act="bkEdit" class="ok"><span>Terminé</span></button></div><p class="bk-hint">Glisse un sticker pour le placer, touche-le pour le régler.</p>`)
     : `<div class="bk-nav"><button class="bk-ic" data-act="bkPrev" aria-label="Page précédente" ${BK.i || BK.zoom === 'r' ? '' : 'disabled'}>${SV.back}</button><div class="bk-dots">${BK.book.spreads.map((_, k) => `<i class="${k === BK.i ? 'on' : ''}"></i>`).join('')}</div>${zoomBtn}<button class="bk-ic" data-act="bkNext" aria-label="Page suivante" ${BK.i < n - 1 || BK.zoom === 'l' ? '' : 'disabled'}>${SV.right}</button></div>`;
 }
 function closeBook() { const el = $('book'); if (el) { el.classList.add('closing'); setTimeout(() => { el.hidden = true; el.innerHTML = ''; el.classList.remove('closing'); }, reduced() ? 0 : 280); } BK = null; }
@@ -136,14 +147,40 @@ function flipTo(k) {
   BK.sel = null;
   if (reduced() || !leaf.animate) { BK.i = k; bkRender(); return; }
   BK.busy = true; stk.style.opacity = 0;
-  const f = leaf.querySelector('.f'), b = leaf.querySelector('.b');
-  if (next) { f.innerHTML = R.innerHTML; b.innerHTML = pageHTML(BK.book, to, 'l'); R.innerHTML = pageHTML(BK.book, to, 'r'); leaf.classList.add('on');
-    const a = leaf.animate([{ transform: 'rotateY(0deg)' }, { transform: 'rotateY(-180deg)' }], { duration: 750, easing: 'cubic-bezier(.45,.05,.3,1)' });
-    a.onfinish = () => { L.innerHTML = b.innerHTML; leaf.classList.remove('on'); f.innerHTML = b.innerHTML = ''; end(); }; }
-  else { b.innerHTML = L.innerHTML; f.innerHTML = pageHTML(BK.book, to, 'r'); L.innerHTML = pageHTML(BK.book, to, 'l'); leaf.classList.add('on');
-    const a = leaf.animate([{ transform: 'rotateY(-180deg)' }, { transform: 'rotateY(0deg)' }], { duration: 750, easing: 'cubic-bezier(.45,.05,.3,1)' });
-    a.onfinish = () => { R.innerHTML = f.innerHTML; leaf.classList.remove('on'); f.innerHTML = b.innerHTML = ''; end(); }; }
+  // sur téléphone : on recule pour voir la double page, la feuille tourne, puis on revient sur une page
+  if (!BK.wide && BK.zoom) { BK.zoom = null; bkApplyZoom(); setTimeout(turn, 480); } else turn();
+  function turn() {
+  if (next) { const front = R.innerHTML, back = pageHTML(BK.book, to, 'l'); R.innerHTML = pageHTML(BK.book, to, 'r'); curl(leaf, front, back, true, () => { L.innerHTML = back; end(); }); }
+  else { const front = pageHTML(BK.book, to, 'r'), back = L.innerHTML; L.innerHTML = pageHTML(BK.book, to, 'l'); curl(leaf, front, back, false, () => { R.innerHTML = front; end(); }); }
+  }
   function end() { BK.i = k; BK.busy = false; stk.innerHTML = stkLayerHTML(); stk.style.opacity = ''; if (!BK.wide) BK.zoom = next ? 'l' : 'r'; bkApplyZoom(); bkBar(); }
+}
+/** Feuille souple : la page est découpée en bandes verticales qui tournent chacune un peu plus
+ *  que la précédente. Le bord libre part en premier et la feuille se courbe comme un magazine. */
+function curl(leaf, front, back, next, done) {
+  const N = 14; leaf.innerHTML = ''; let parent = leaf; const parts = [];
+  for (let i = 0; i < N; i++) {
+    const s = document.createElement('div'); s.className = 'cs'; s.style.cssText = i ? 'left:100%;width:100%' : `left:0;width:${100 / N}%`;
+    // chaque face déborde d'1 px sur la bande suivante pour qu'aucune couture ne se voie
+    const cin = j => `width:calc((100% - 1.5px) * ${N});left:calc((100% - 1.5px) * ${-j})`;
+    s.innerHTML = `<div class="cf"><div class="cin" style="${cin(i)}">${front}</div><i class="sh"></i></div><div class="cb"><div class="cin" style="${cin(N - 1 - i)}">${back}</div><i class="sh"></i></div>`;
+    parent.appendChild(s); parts.push({ s, f: s.querySelector('.cf .sh'), b: s.querySelector('.cb .sh') }); parent = s;
+  }
+  const shade = $('bkShade'); leaf.classList.add('on');
+  const dur = 950, t0 = performance.now();
+  const frame = now => {
+    const p = Math.min(1, (now - t0) / dur), e = p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+    const base = next ? 180 * e : 180 * (1 - e), bend = 85 * Math.sin(Math.PI * e); let prev = 0;
+    parts.forEach((o, i) => { const f = Math.pow(i / (N - 1), 1.4), a = next ? Math.min(180, base + bend * f) : Math.max(0, base - bend * f);
+      o.s.style.transform = `rotateY(${-(a - prev)}deg)`;
+      // ombre continue d'une bande à l'autre : dégradé entre l'angle du bord gauche et celui du bord droit
+      const l0 = Math.sin(prev * Math.PI / 180), l1 = Math.sin(a * Math.PI / 180); prev = a;
+      o.f.style.background = `linear-gradient(90deg,rgba(40,30,20,${(l0 * .3).toFixed(3)}),rgba(40,30,20,${(l1 * .3).toFixed(3)}))`;
+      o.b.style.background = `linear-gradient(270deg,rgba(40,30,20,${(l0 * .22).toFixed(3)}),rgba(40,30,20,${(l1 * .22).toFixed(3)}))`; });
+    if (shade) shade.style.opacity = Math.sin(Math.PI * e) * .5;
+    if (p < 1) requestAnimationFrame(frame); else { leaf.classList.remove('on'); leaf.innerHTML = ''; if (shade) shade.style.opacity = 0; done(); }
+  };
+  requestAnimationFrame(frame);
 }
 /* sur téléphone : page de gauche, page de droite, puis double page suivante */
 function step(dir) { if (!BK) return; if (!BK.wide && BK.zoom) { if (dir > 0 && BK.zoom === 'l') return bkZoom('r'); if (dir < 0 && BK.zoom === 'r') return bkZoom('l'); } flipTo(BK.i + dir); }
@@ -207,19 +244,49 @@ function addSticker(s) { const e = curEntry(); if (!e) return; e.st = e.st || []
   e.st.push({ ...s, x: r1(cx - 10 + Math.random() * 20), y: r1(35 + Math.random() * 25), s: 1, r: Math.round(Math.random() * 16 - 8) }); BK.sel = e.st.length - 1; save(); closePanel(); bkRender(); }
 ACT.bkStickers = () => {
   const t = bookTrip(), mine = t ? [...new Set(t.entrees.flatMap(x => (x.st || []).filter(s => s.k === 'p').map(s => s.p + '|' + (s.sh || 'circle'))))] : [];
-  openPanel(`<h2>Stickers</h2><div class="stk-tabs" role="tablist"><button class="on" data-tab="e">Émojis</button><button data-tab="p">Mes photos</button><button data-tab="w">Masking tape</button><button data-tab="t">Étiquette</button></div>
+  let ink = INK[0];
+  const inkRow = id => `<div class="stk-ink" data-ink-row="${id}">${INK.map((c, i) => `<button data-ink="${c}" class="${i ? '' : 'on'}" style="background:${c}" aria-label="Couleur"></button>`).join('')}</div>`;
+  openPanel(`<h2>Stickers et décos</h2><div class="stk-tabs" role="tablist"><button class="on" data-tab="e">Émojis</button><button data-tab="d">Doodles</button><button data-tab="o">Décos</button><button data-tab="l">Lettres</button><button data-tab="p">Mes photos</button><button data-tab="w">Masking tape</button></div>
     <div class="stk-pane" data-pane="e"><div class="stk-grid">${STK.e.map(x => `<button data-add="e" data-v="${x}">${x}</button>`).join('')}</div></div>
-    <div class="stk-pane" data-pane="p" hidden><p class="small">Choisis une forme puis une photo : elle devient un sticker découpé, à coller où tu veux.</p><div class="stk-shapes">${STK.sh.map(([k, n]) => `<button data-shape="${k}"><span class="sp sh-${k}"><span class="cut"></span></span>${n}</button>`).join('')}</div>
+    <div class="stk-pane" data-pane="d" hidden>${inkRow('d')}<div class="stk-grid doodles">${Object.keys(DOODLES).map(k => `<button data-add="d" data-v="${k}" aria-label="${k}">${doodleSVG(k, 'currentColor')}</button>`).join('')}</div></div>
+    <div class="stk-pane" data-pane="o" hidden>${inkRow('o')}<div class="stk-grid decos">${Object.keys(DECOS).map(k => `<button data-add="d" data-v="${k}"><span>${decoSVG(k, 'currentColor')}</span><i>${DECO_N[k]}</i></button>`).join('')}</div></div>
+    <div class="stk-pane" data-pane="l" hidden><label class="fld"><span>Ton texte</span><input id="stk-txt" maxlength="24" placeholder="Ex. ROME 2026"></label>
+      <div class="stk-lt">${Object.entries(LETTERS).map(([k, n], i) => `<button data-lt="${k}" class="${i ? '' : 'on'}">${letterHTML({ f: k, v: k === 'bead' || k === 'tile' ? 'ABC' : 'Abc', c: '#20243A' })}<i>${n}</i></button>`).join('')}</div>${inkRow('l')}
+      <button class="btn full" id="stk-ok">Ajouter<i>${SV.arrow}</i></button></div>
+    <div class="stk-pane" data-pane="p" hidden><p class="small">Importe une photo de ta galerie : choisis une forme, elle devient un sticker découpé.</p><div class="stk-shapes">${STK.sh.map(([k, n]) => `<button data-shape="${k}"><span class="sp sh-${k}"><span class="cut"></span></span>${n}</button>`).join('')}</div>
       ${mine.length ? `<p class="small" style="margin-top:14px">Déjà créés dans ce carnet</p><div class="stk-grid big">${mine.map(m => { const [pth, sh] = m.split('|'); return `<button data-add="p" data-p="${esc(pth)}" data-sh="${sh}"><span class="sp sh-${sh}"><span class="cut">${IMG(pth)}</span></span></button>`; }).join('')}</div>` : ''}</div>
-    <div class="stk-pane" data-pane="w" hidden><div class="stk-grid tapes">${STK.w.map(c => `<button data-add="w" data-c="${c}"><span class="sw" style="--c:${c}"></span></button>`).join('')}</div></div>
-    <div class="stk-pane" data-pane="t" hidden><label class="fld"><span>Ton texte</span><input id="stk-txt" maxlength="40" placeholder="Ex. Meilleur jour !"></label><div class="stk-colors">${STK.t.map((c, i) => `<button data-col="${c}" class="${i ? '' : 'on'}" style="background:${c}" aria-label="Couleur"></button>`).join('')}</div><button class="btn full" id="stk-ok">Ajouter l'étiquette<i>${SV.arrow}</i></button></div>${CLOSE('Fermer')}`, p => {
+    <div class="stk-pane" data-pane="w" hidden><div class="stk-grid tapes">${STK.w.map(c => `<button data-add="w" data-c="${c}"><span class="sw" style="--c:${c}"></span></button>`).join('')}</div></div>${CLOSE('Fermer')}`, p => {
     p.querySelectorAll('.stk-tabs button').forEach(b => b.onclick = () => { p.querySelectorAll('.stk-tabs button').forEach(x => x.classList.toggle('on', x === b)); p.querySelectorAll('.stk-pane').forEach(x => x.hidden = x.dataset.pane !== b.dataset.tab); });
-    p.querySelectorAll('[data-add]').forEach(b => b.onclick = () => { const k = b.dataset.add; addSticker(k === 'e' ? { k, v: b.dataset.v } : k === 'w' ? { k, c: b.dataset.c } : { k, p: b.dataset.p, sh: b.dataset.sh }); });
+    const paint = () => { p.querySelectorAll('.stk-grid.doodles button, .stk-grid.decos button').forEach(b => b.style.color = ink === '#FFFFFF' ? '#b9b2a6' : ink); };
+    p.querySelectorAll('[data-ink]').forEach(b => b.onclick = () => { ink = b.dataset.ink; p.querySelectorAll('[data-ink]').forEach(x => x.classList.toggle('on', x.dataset.ink === ink)); paint(); }); paint();
+    p.querySelectorAll('[data-add]').forEach(b => b.onclick = () => { const k = b.dataset.add; addSticker(k === 'e' ? { k, v: b.dataset.v } : k === 'w' ? { k, c: b.dataset.c } : k === 'd' ? { k, v: b.dataset.v, c: ink } : { k, p: b.dataset.p, sh: b.dataset.sh }); });
     p.querySelectorAll('[data-shape]').forEach(b => b.onclick = () => { const e = curEntry(); if (!t || !e) return; closePanel(); pickPhoto(`stk|${t.id}|${e.id}|${b.dataset.shape}`); });
-    let col = STK.t[0]; p.querySelectorAll('[data-col]').forEach(b => b.onclick = () => { col = b.dataset.col; p.querySelectorAll('[data-col]').forEach(x => x.classList.toggle('on', x === b)); });
-    p.querySelector('#stk-ok').onclick = () => { const v = p.querySelector('#stk-txt').value.trim().slice(0, 40); if (!v) { toast('Écris un petit texte'); return; } addSticker({ k: 't', v, c: col }); };
+    let lt = 'label'; p.querySelectorAll('[data-lt]').forEach(b => b.onclick = () => { lt = b.dataset.lt; p.querySelectorAll('[data-lt]').forEach(x => x.classList.toggle('on', x === b)); });
+    p.querySelector('#stk-ok').onclick = () => { const v = p.querySelector('#stk-txt').value.trim().slice(0, 24); if (!v) { toast('Écris un petit texte'); return; } addSticker({ k: 't', v, f: lt, c: ink === '#FFFFFF' ? '#20243A' : ink }); };
   }, { nofocus: true });
 };
+/* style de la page : typographie, papier, cadres des photos */
+ACT.bkStyle = () => { const e = curEntry(); if (!e) return; e.lay = e.lay || {}; let target = 'all';
+  const ph = e.photos.map((x, i) => ({ x, i })).filter(o => o.x);
+  const draw = p => {
+    const lay = e.lay, def = BOOKS[BK.book.color].m === 'B' ? 'blanc' : 'ligne', curFr = target === 'all' ? null : pageFrame(e, +target);
+    p.querySelector('#sty-f').innerHTML = Object.entries(FONTS).map(([k, f]) => `<button data-font="${k}" class="${(lay.font || 'carnet') === k ? 'on' : ''}"><span class="pg ft-${k} demo"><b class="pg-h">Rome</b><i class="pg-note">Une belle journée</i></span><em>${f.n}</em></button>`).join('');
+    p.querySelector('#sty-p').innerHTML = Object.entries(PAPERS).map(([k, n]) => `<button data-paper="${k}" class="${(lay.paper || def) === k ? 'on' : ''}"><span class="pg pp-${k} demo"></span><em>${n}</em></button>`).join('');
+    p.querySelector('#sty-t').innerHTML = ph.length ? `<button data-tg="all" class="${target === 'all' ? 'on' : ''}">Toutes</button>${ph.map(o => `<button data-tg="${o.i}" class="th ${target === String(o.i) ? 'on' : ''}">${IMG(o.x)}</button>`).join('')}` : '<p class="small">Ajoute des photos à la page pour leur choisir un cadre.</p>';
+    p.querySelector('#sty-fr').innerHTML = ph.length ? Object.entries(FRAMES).map(([k, n]) => `<button data-fr="${k}" class="${curFr === k || (target === 'all' && ph.every(o => pageFrame(e, o.i) === k)) ? 'on' : ''}">${pola(ph[0].x, 0, '', k)}<em>${n}</em></button>`).join('') : '';
+    p.querySelectorAll('[data-font]').forEach(b => b.onclick = () => { lay.font = b.dataset.font; if (lay.font === 'carnet') delete lay.font; save(); bkRender(); draw(p); });
+    p.querySelectorAll('[data-paper]').forEach(b => b.onclick = () => { lay.paper = b.dataset.paper; save(); bkRender(); draw(p); });
+    p.querySelectorAll('[data-tg]').forEach(b => b.onclick = () => { target = b.dataset.tg; draw(p); });
+    p.querySelectorAll('[data-fr]').forEach(b => b.onclick = () => { const fr = Array.from({ length: Math.max(e.photos.length, 1) }, (_, i) => pageFrame(e, i));
+      if (target === 'all') fr.fill(b.dataset.fr); else fr[+target] = b.dataset.fr; lay.fr = fr.slice(0, 6); if (lay.fr.every(x => x === 'polaroid')) delete lay.fr; save(); bkRender(); draw(p); });
+  };
+  openPanel(`<h2>Style de la page</h2><div class="stk-tabs" role="tablist"><button class="on" data-tab="f">Typographie</button><button data-tab="fr">Cadres photo</button><button data-tab="p">Papier</button></div>
+    <div class="stk-pane" data-pane="f"><div class="sty-fonts" id="sty-f"></div></div>
+    <div class="stk-pane" data-pane="fr" hidden><div class="sty-tg" id="sty-t"></div><div class="sty-frames" id="sty-fr"></div></div>
+    <div class="stk-pane" data-pane="p" hidden><div class="sty-papers" id="sty-p"></div></div>${CLOSE('Fermer')}`, p => {
+    p.querySelectorAll('.stk-tabs button').forEach(b => b.onclick = () => { p.querySelectorAll('.stk-tabs button').forEach(x => x.classList.toggle('on', x === b)); p.querySelectorAll('.stk-pane').forEach(x => x.hidden = x.dataset.pane !== b.dataset.tab); });
+    draw(p);
+  }, { nofocus: true }); };
 
 /* ---------- branchements sur les photos et l'actualisation ---------- */
 { const up0 = uploadPhoto; uploadPhoto = (f, kind, o) => up0(f, kind, o || (String(photoTarget || '').startsWith('stk|') ? { max: 700, square: true } : undefined)); }

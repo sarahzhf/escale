@@ -1511,9 +1511,7 @@ nav button.on .lb{font-weight:700}
 /* feuille qui tourne */
 .bk-leaf{position:absolute;top:0;bottom:0;left:50%;width:50%;transform-origin:left center;transform-style:preserve-3d;display:none;z-index:4}
 .bk-leaf.on{display:block}
-.bk-leaf .f,.bk-leaf .b{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden;box-shadow:0 0 18px rgba(0,0,0,.18)}
-.bk-leaf .b{transform:rotateY(180deg)}
-.bk-leaf .b .pg{padding-left:24px;padding-right:30px}
+
 /* couverture fermée : cuir lisse, charnière près du dos, sans fermoir */
 .bk-cover{position:absolute;top:calc(-14px * var(--k));bottom:calc(-14px * var(--k));left:50%;right:calc(-12px * var(--k));transform-origin:left center;transform-style:preserve-3d;z-index:6;transition:transform 1.15s cubic-bezier(.5,.05,.25,1)}
 .bk-book.opening .bk-cover{transform:rotateY(-180deg)}
@@ -1613,3 +1611,91 @@ nav button.on .lb{font-weight:700}
 .mini-book img{width:100%;height:100%;object-fit:cover}
 .mini-book i{display:none}
 @media (prefers-reduced-motion:reduce){.bk-cover,.bk-book,.spine{transition:none}}
+
+/* v1.5 : feuille souple qui se courbe en tournant */
+.bk-leaf .cs{position:absolute;top:0;bottom:0;transform-origin:left center;transform-style:preserve-3d;will-change:transform}
+.bk-leaf .cf,.bk-leaf .cb{position:absolute;inset:0 -1.5px 0 0;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.bk-leaf .cb{inset:0 0 0 -1.5px;transform:rotateY(180deg)}
+.bk-leaf .cin{position:absolute;top:0;bottom:0}
+.bk-leaf .cb .pg{padding-left:24px;padding-right:30px}
+.bk-leaf .sh{position:absolute;inset:0;pointer-events:none}
+.bk-shade{position:absolute;top:0;bottom:0;right:0;width:50%;background:linear-gradient(90deg,rgba(40,30,20,.4),rgba(40,30,20,0) 55%);opacity:0;pointer-events:none;z-index:2}
+/* typographies */
+.ft-romantique .pg-h{font-family:'Great Vibes',var(--hand);font-weight:400;font-size:36px;line-height:1.05}
+.ft-romantique .pg-desc,.ft-romantique .pg-note{font-family:'Cormorant Garamond',var(--serif);font-style:italic;font-size:15.5px}
+.ft-calligraphie .pg-h{font-family:'Pinyon Script',var(--hand);font-weight:400;font-size:32px;line-height:1.1}
+.ft-calligraphie .pg-desc,.ft-calligraphie .pg-note{font-family:'Cormorant Garamond',var(--serif);font-size:15.5px}
+.ft-oldmoney .pg-h{font-family:'Bodoni Moda',var(--serif);font-weight:600;font-size:27px;letter-spacing:-.01em}
+.ft-oldmoney .pg-desc{font-family:'Bodoni Moda',var(--serif);font-style:italic}
+.ft-oldmoney .pg-note{font-family:'Cormorant Garamond',var(--serif);font-size:15.5px}
+.ft-magazine .pg-h{font-family:'Bodoni Moda',var(--serif);font-weight:400;font-size:32px;line-height:1}
+.ft-magazine .pg-kicker,.ft-magazine .pg-desc{font-family:'Josefin Sans',var(--ui);font-style:normal}
+.ft-magazine .pg-note{font-family:'Josefin Sans',var(--ui);font-weight:300;font-size:12.5px}
+.ft-moderne .pg-h{font-family:'Josefin Sans',var(--ui);font-weight:600;font-size:19px;text-transform:uppercase;letter-spacing:.14em;line-height:1.3}
+.ft-moderne .pg-desc{font-family:'Josefin Sans',var(--ui);font-style:normal;font-weight:400}
+.ft-moderne .pg-note{font-family:'Josefin Sans',var(--ui);font-weight:300;font-size:12.5px}
+.ft-machine .pg-h,.ft-machine .pg-desc,.ft-machine .pg-note,.ft-machine .pg-kicker{font-family:'Special Elite',monospace;font-style:normal}
+.ft-machine .pg-h{font-size:21px}.ft-machine .pg-note{font-size:12.5px}
+/* papiers */
+.pg.pp-ligne{background:repeating-linear-gradient(180deg,transparent 0 21px,#d7d1c5 21px 22px) 0 52px/100% calc(100% - 82px) no-repeat,var(--paperg),var(--paper)}
+.pg.pp-blanc{background:var(--paperg),var(--paper)}.mB .pg.pp-blanc{background:var(--paperg),#fff}
+.pg.pp-quadrille{background:linear-gradient(#e3ddd0 1px,transparent 1px) 0 8px/22px 22px,linear-gradient(90deg,#e3ddd0 1px,transparent 1px) 0 0/22px 22px,var(--paperg),var(--paper)}
+.pg.pp-points{background:radial-gradient(circle,#cbc4b5 1.1px,transparent 1.4px) 0 8px/22px 22px,var(--paperg),var(--paper)}
+.pg.pp-kraft{background:var(--grain),var(--paperg),#CDAF86;color:#3a2c1c}.pg.pp-kraft .pg-kicker,.pg.pp-kraft .pg-num{color:#6b5638}
+.pg.pp-rose{background:var(--paperg),#F8E7E5}
+/* cadres de photos */
+.phf{position:relative;margin:0;transform:rotate(var(--rot,0deg));filter:drop-shadow(0 6px 6px rgba(0,0,0,.18))}
+.phf .in{display:block;overflow:hidden;aspect-ratio:1;background:#ece6d8}
+.phf .in img,.phf .in .ph-empty{display:block;width:100%;height:100%;object-fit:cover;border:0;background:#ece6d8;color:#8a8577;display:grid;place-items:center}
+.phf .in .ph-empty svg{width:20px;height:20px}
+.phf .orn{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.fr-simple .in{border:7px solid #fff}
+.fr-cercle .in{border-radius:50%;border:5px solid #fff}
+.fr-arche .in{aspect-ratio:3/4;border-radius:999px 999px 6px 6px;border:5px solid #fff}
+.fr-ovale{padding:8% 9%;color:#A88C5F}.fr-ovale .in{aspect-ratio:3/4;border-radius:50%}
+.fr-vague{padding:8%;color:#C0392B}.fr-vague .in{border-radius:4px}
+.fr-festonne{padding:9px;background:#fff;-webkit-mask:linear-gradient(#000 0 0) 8px 8px/calc(100% - 16px) calc(100% - 16px) no-repeat,radial-gradient(circle,#000 6.5px,#0000 7px) 0 0/16px 16px round;mask:linear-gradient(#000 0 0) 8px 8px/calc(100% - 16px) calc(100% - 16px) no-repeat,radial-gradient(circle,#000 6.5px,#0000 7px) 0 0/16px 16px round}
+.fr-dentelle{padding:13px;background:radial-gradient(circle,rgba(0,0,0,0) 1.4px,#FBF8F1 1.8px) 0 0/6px 6px,#FBF8F1;-webkit-mask:linear-gradient(#000 0 0) 11px 11px/calc(100% - 22px) calc(100% - 22px) no-repeat,radial-gradient(circle,#000 9.5px,#0000 10px) 0 0/22px 22px round;mask:linear-gradient(#000 0 0) 11px 11px/calc(100% - 22px) calc(100% - 22px) no-repeat,radial-gradient(circle,#000 9.5px,#0000 10px) 0 0/22px 22px round}
+.fr-dentelle .in{outline:1.5px dotted #cbbfa6;outline-offset:3px}
+.fr-timbre .in{border:7px solid #fff;-webkit-mask:linear-gradient(#000 0 0) 8px 8px/calc(100% - 16px) calc(100% - 16px) no-repeat,radial-gradient(circle 2.6px,#0000 95%,#000) 0 0/8px 8px round;mask:linear-gradient(#000 0 0) 8px 8px/calc(100% - 16px) calc(100% - 16px) no-repeat,radial-gradient(circle 2.6px,#0000 95%,#000) 0 0/8px 8px round}
+/* lettres, doodles et décos en stickers */
+.sb,.st{display:inline-flex;white-space:nowrap}
+.sb i{display:inline-grid;place-items:center;width:30px;height:30px;margin:0 1px;border-radius:50%;background:radial-gradient(circle at 35% 28%,#fff,#efece6 62%,#d6d1c6);box-shadow:0 2px 3px rgba(0,0,0,.28),inset 0 -2px 3px rgba(0,0,0,.08);font:600 15px 'Josefin Sans',var(--ui);font-style:normal;color:#111;padding-top:2px}
+.st i{display:inline-grid;place-items:center;width:25px;height:30px;margin:0 1px;background:var(--grain),#EDE5D3;box-shadow:0 1px 2px rgba(0,0,0,.25);font:22px 'Special Elite',monospace;font-style:normal;color:#2b2118;transform:rotate(var(--tr,0deg))}
+.sb i.gap,.st i.gap{width:10px;background:none;box-shadow:none}
+.s-script{font-family:'Great Vibes',var(--hand);font-size:42px;line-height:1;white-space:nowrap;text-shadow:0 1px 0 rgba(255,255,255,.5)}
+.s-serif{font-family:'Bodoni Moda',var(--serif);font-style:italic;font-size:30px;white-space:nowrap}
+.sd svg{display:block}
+.sd.doodle svg{width:58px;height:58px}
+.sd.deco svg{width:120px;height:auto}
+.dv-flourish1 svg,.dv-flourish2 svg,.dv-heartline svg,.dv-stringlights svg{width:170px}
+.dv-lace svg,.dv-lace2 svg{width:220px}
+.dv-corner svg{width:90px}.dv-frameoval svg{width:100px}
+/* panneaux stickers et style */
+.stk-ink{display:flex;gap:8px;margin:2px 0 12px}
+.stk-ink button{width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px var(--line)}
+.stk-ink button.on{box-shadow:0 0 0 2px var(--ink)}
+.stk-grid.doodles{grid-template-columns:repeat(6,1fr)}.stk-grid.doodles svg{width:30px;height:30px}
+.stk-grid.decos{grid-template-columns:repeat(3,1fr)}.stk-grid.decos button{aspect-ratio:auto;height:80px;display:flex;flex-direction:column;gap:4px;padding:6px}
+.stk-grid.decos span{flex:1;display:grid;place-items:center;width:100%;overflow:hidden}.stk-grid.decos svg{max-width:100%;max-height:44px}
+.stk-grid.decos i{font-style:normal;font-size:.62rem;color:var(--muted)}
+.stk-lt{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 12px}
+.stk-lt button{border:1.5px solid var(--line);background:#fff;border-radius:14px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:6px;overflow:hidden}
+.stk-lt button.on{border-color:var(--green);background:#F1F6F2}
+.stk-lt button>i{font-style:normal;font-size:.66rem;color:var(--muted)}
+.stk-lt .sb i{width:20px;height:20px;font-size:10px}.stk-lt .st i{width:17px;height:20px;font-size:14px}.stk-lt .s-script{font-size:24px}.stk-lt .s-serif{font-size:18px}.stk-lt .sl{font-size:15px}
+.bk-tools .aa{font-family:var(--serif);font-size:1.05rem;line-height:19px}
+.sty-fonts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sty-fonts button,.sty-papers button,.sty-frames button{border:1.5px solid var(--line);background:#fff;border-radius:14px;padding:6px;display:flex;flex-direction:column;gap:6px;text-align:left}
+.sty-fonts button.on,.sty-papers button.on,.sty-frames button.on{border-color:var(--green);background:#F1F6F2}
+.sty-fonts em,.sty-papers em,.sty-frames em{font-style:normal;font-size:.7rem;color:var(--muted);padding:0 4px}
+.pg.demo{position:relative;left:auto;top:auto;width:auto;height:78px;transform:none;padding:8px 12px;border-radius:10px;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+.pg.demo .pg-h{font-size:22px;margin:0;line-height:1.1}.pg.demo .pg-note{margin:2px 0 0;font-size:14px;line-height:18px;max-height:none}
+.ft-romantique.demo .pg-h{font-size:28px}.ft-calligraphie.demo .pg-h{font-size:26px}.ft-moderne.demo .pg-h{font-size:15px}.ft-magazine.demo .pg-note,.ft-moderne.demo .pg-note,.ft-machine.demo .pg-note{font-size:11px}
+.sty-papers{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.sty-papers .pg.demo{height:70px;background-position:0 6px}
+.sty-tg{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px;align-items:center}
+.sty-tg button{flex:none;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:6px 10px;font:500 .78rem var(--ui)}
+.sty-tg button.th{width:44px;height:44px;padding:0;overflow:hidden}.sty-tg button.th img{width:100%;height:100%;object-fit:cover}
+.sty-tg button.on{border-color:var(--green);box-shadow:0 0 0 2px var(--green)}
+.sty-frames{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sty-frames button{align-items:center;padding:12px 8px 8px;background:#F3EEE4}.sty-frames figure{width:70%}

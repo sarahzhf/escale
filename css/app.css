@@ -1699,3 +1699,12 @@ nav button.on .lb{font-weight:700}
 .sty-tg button.on{border-color:var(--green);box-shadow:0 0 0 2px var(--green)}
 .sty-frames{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .sty-frames button{align-items:center;padding:12px 8px 8px;background:#F3EEE4}.sty-frames figure{width:70%}
+
+/* v1.5 : barre du bas plus compacte, collée au bas de l'écran (on garde juste la place de la barre d'accueil de l'iPhone) */
+:root{--navb:max(10px,calc(env(safe-area-inset-bottom,0px) - 8px));--navh:calc(58px + var(--navb))}
+nav{padding-top:6px;padding-bottom:var(--navb)}
+nav button{padding:3px 0 1px;gap:3px}
+.fab{bottom:calc(var(--navh) + 12px)}
+.askbar{bottom:var(--navh)}
+.mapcard{bottom:calc(var(--navh) + 10px)}
+.screen{padding-bottom:calc(var(--navh) + 36px)}

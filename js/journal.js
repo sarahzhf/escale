@@ -50,7 +50,7 @@ const nDays = b => Math.max(1, Math.round((D(b.au) - D(b.du)) / 864e5) + 1);
 function stickerHTML(s, i, edit) {
   const st = `left:${s.x}%;top:${s.y}%;--r:${s.r || 0}deg;--s:${s.s || 1}`;
   const inner = s.k === 'e' ? `<span class="se">${esc(s.v || '⭐')}</span>`
-    : s.k === 'w' ? `<span class="sw" style="--c:${esc(s.c || '#F3C979')}"></span>`
+    : s.k === 'w' ? `<span class="stape" style="--c:${esc(s.c || '#F3C979')}"></span>`
     : s.k === 't' ? letterHTML(s)
     : s.k === 'x' ? `${edit ? '<span class="sx-grip" aria-label="Déplacer le texte">⠿</span>' : ''}<div class="sx tf-${esc(s.f || 'carnet')}" style="--w:${+s.w || 38};color:${esc(s.c || '#20243A')}"${edit ? ' contenteditable="plaintext-only" spellcheck="true" data-ph="Écris ici…"' : ''}>${esc(s.v || '')}</div>`
     : s.k === 'd' ? `<span class="sd ${DECOS[s.v] ? 'deco dv-' + esc(s.v) : 'doodle'}">${DECOS[s.v] ? decoSVG(s.v, esc(s.c || '#C0392B')) : doodleSVG(s.v, esc(s.c || '#20243A'))}</span>`
@@ -417,7 +417,7 @@ ACT.bkStickers = () => {
       <button class="btn full" id="stk-ok">Ajouter<i>${SV.arrow}</i></button></div>
     <div class="stk-pane" data-pane="p" hidden><p class="small">Importe une photo de ta galerie : choisis une forme, elle devient un sticker découpé.</p><div class="stk-shapes">${STK.sh.map(([k, n]) => `<button data-shape="${k}"><span class="sp sh-${k}"><span class="cut"></span></span>${n}</button>`).join('')}</div>
       ${mine.length ? `<p class="small" style="margin-top:14px">Déjà créés dans ce carnet</p><div class="stk-grid big">${mine.map(m => { const [pth, sh] = m.split('|'); return `<button data-add="p" data-p="${esc(pth)}" data-sh="${sh}"><span class="sp sh-${sh}"><span class="cut">${IMG(pth)}</span></span></button>`; }).join('')}</div>` : ''}</div>
-    <div class="stk-pane" data-pane="w" hidden><div class="stk-grid tapes">${STK.w.map(c => `<button data-add="w" data-c="${c}"><span class="sw" style="--c:${c}"></span></button>`).join('')}</div></div>${CLOSE('Fermer')}`, p => {
+    <div class="stk-pane" data-pane="w" hidden><div class="stk-grid tapes">${STK.w.map(c => `<button data-add="w" data-c="${c}"><span class="stape" style="--c:${c}"></span></button>`).join('')}</div></div>${CLOSE('Fermer')}`, p => {
     p.querySelectorAll('.stk-tabs button').forEach(b => b.onclick = () => { p.querySelectorAll('.stk-tabs button').forEach(x => x.classList.toggle('on', x === b)); p.querySelectorAll('.stk-pane').forEach(x => x.hidden = x.dataset.pane !== b.dataset.tab); });
     const paint = () => { p.querySelectorAll('.stk-grid.doodles button, .stk-grid.decos button').forEach(b => b.style.color = ink === '#FFFFFF' ? '#b9b2a6' : ink); };
     p.querySelectorAll('[data-ink]').forEach(b => b.onclick = () => { ink = b.dataset.ink; p.querySelectorAll('[data-ink]').forEach(x => x.classList.toggle('on', x.dataset.ink === ink)); paint(); }); paint();

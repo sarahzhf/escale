@@ -152,7 +152,7 @@ async function renderFil(more) {
    <div class="stories" id="stories"></div>
    <div class="seg2"><button class="${fView === 'amis' ? 'on' : ''}" data-act="fview" data-v="amis">Mes amis</button><button class="${fView === 'decouvrir' ? 'on' : ''}" data-act="fview" data-v="decouvrir">Découvrir</button><button class="${fView === 'defis' ? 'on' : ''}" data-act="fview" data-v="defis">Défis</button></div>
    ${fView !== 'defis' ? `<label class="fsearch">${SV.search}<input id="fsq" placeholder="Chercher une ville, un pays" autocomplete="off" maxlength="60" value="${esc(fQ)}">${fQ ? `<button type="button" data-act="fsClear" aria-label="Effacer la recherche">${SV.x}</button>` : ''}</label>` : ''}
-   <div id="feedbox"><div class="loading">Chargement…</div></div>`;
+   <div id="feedbox"><div class="skel" aria-label="Chargement" role="status">${'<div class="skc"><i class="a"></i><i class="l1"></i><i class="l2"></i><i class="ph"></i></div>'.repeat(2)}</div></div>`;
   if (!more) { const q = $('fsq'); if (q) q.oninput = e => { fQ = e.target.value; clearTimeout(fsTimer); fsTimer = setTimeout(() => renderFil().then(() => { const n = $('fsq'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }), 400); }; }
   updateBadges(); renderStories();
   if (fView === 'defis') return renderDefis();

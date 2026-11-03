@@ -198,10 +198,23 @@ ACT.profile = () => { let ko = 0; try { ko = Math.round((localStorage.getItem(ca
     <a href="legal/confidentialite.html" target="_blank" rel="noopener">${SV.page}Politique de confidentialité</a>
     <a href="legal/cgu.html" target="_blank" rel="noopener">${SV.page}Conditions d'utilisation</a>
     <a href="legal/mentions-legales.html" target="_blank" rel="noopener">${SV.page}Mentions légales</a>
+    <button data-act="faq">${SV.spark}Aide et questions fréquentes</button>
     <a href="mailto:${esc(CFG.contactEmail || '')}">${SV.send}Nous contacter</a></div>
    <p class="setmeta">Une copie de tes carnets (${ko} Ko) est gardée sur cet appareil pour fonctionner hors connexion. Elle est effacée quand tu te déconnectes.</p>
    <button class="danger" data-act="logout">Se déconnecter</button>${CLOSE('Fermer')}`, null, { nofocus: true }); };
 ACT.logout = () => logout();
+const FAQ = [
+  ['Comment créer un voyage ?', 'Touche le bouton + vert, puis « Un nouveau voyage ». Choisis le pays, les dates et ton budget : un carnet est créé avec son journal, ses photos et ses dépenses.'],
+  ['Comment noter une dépense dans une autre monnaie ?', 'Dans « Ajouter une dépense », choisis la monnaie du pays : Escale convertit en euros avec le taux du jour. Tu peux aussi répartir un hôtel sur plusieurs nuits ou sur tout le séjour.'],
+  ['Qui peut voir mes photos et mes dépenses ?', 'Tout est privé par défaut. Pour chaque album ou publication, tu choisis : toi seule, tes amis ou tout le monde. Tes dépenses et ton budget ne sont jamais montrés, sauf si tu joins toi-même le bilan à une publication.'],
+  ['Comment écrire dans mon carnet ?', 'Ouvre le carnet, touche une page pour l’ouvrir en grand, puis touche un endroit vide pour écrire. Les boutons Style, Photo et Sticker décorent la page.'],
+  ['Escale fonctionne-t-elle sans réseau ?', 'Oui. Tes carnets restent sur ton téléphone et tes nouvelles dépenses sont envoyées dès que le réseau revient. Tire l’écran vers le bas pour recharger.'],
+  ['Comment installer Escale sur mon iPhone ?', 'Dans Safari, touche le bouton Partager puis « Sur l’écran d’accueil ». Escale s’ouvre ensuite en plein écran comme une appli.'],
+  ['Comment fonctionne l’assistant ?', 'En mode simple, il répond directement sur ton téléphone. Si tu actives l’assistant IA dans le profil, il peut comparer des destinations et estimer un budget à partir des totaux de tes voyages.'],
+  ['Comment récupérer ou supprimer mes données ?', 'Profil, puis « Télécharger toutes mes données » pour une copie complète, ou « Supprimer mon compte » pour tout effacer définitivement.']
+];
+ACT.faq = () => openPanel(`<h2>Aide</h2><p class="small">Les réponses aux questions les plus fréquentes.</p><div class="faq">${FAQ.map(([q, r]) => `<details><summary>${esc(q)}</summary><p>${esc(r)}</p></details>`).join('')}</div>
+  <p class="small" style="margin-top:14px">Une autre question ? <a href="mailto:${esc(CFG.contactEmail || '')}">Écris-nous</a>, on répond rapidement.</p>${CLOSE('Fermer')}`, null, { nofocus: true });
 ACT.logoutAll = () => openPanel(`<h2>Déconnecter tous les appareils ?</h2><p class="small" style="line-height:1.5">Tu seras déconnectée partout, y compris ici. Utile si tu as perdu un téléphone ou utilisé un ordinateur partagé.</p><button class="danger" data-act="logoutAllOk" style="margin-top:16px">Tout déconnecter</button>${CLOSE()}`, null, { nofocus: true });
 ACT.logoutAllOk = () => logout('global');
 ACT.setPrivacy = async () => { const { data: bl } = await sb.from('blocks').select('blocked_id, created_at'); const ids = (bl || []).map(b => b.blocked_id);

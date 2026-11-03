@@ -32,7 +32,7 @@ const ROW = {
   expenses: ([t, d]) => ({ id: d.id, trip_id: t.id, day: d.j, label: d.l, category: d.c,
     amount_local: d.v == null ? null : Number(d.v), currency: d.v == null ? null : (d.cur || C(t).code || null), amount_eur: Math.round(Number(d.eur) * 100) / 100,
     paid_by: d.by || 'me', split: d.split || null, sub: d.s || null, end_day: d.j2 || null }),
-  journal_entries: ([t, e]) => ({ id: e.id, trip_id: t.id, day: e.j, title: e.t, note: e.n || '', photo_paths: e.photos }),
+  journal_entries: ([t, e]) => ({ id: e.id, trip_id: t.id, day: e.j, title: e.t, note: e.n || '', photo_paths: e.photos, description: e.d || '', stickers: e.st || [] }),
   wishes: w => ({ id: w.id, country_code: w.pays, note: w.note || '' }),
 };
 const LIST = {
@@ -45,7 +45,7 @@ const LIST = {
 const UPDATABLE = {
   trips: ['country_code', 'city', 'start_date', 'end_date', 'budget', 'category_budgets', 'places', 'is_favorite', 'album_visibility', 'cover_path', 'members', 'settlements'],
   expenses: ['day', 'label', 'category', 'amount_local', 'currency', 'amount_eur', 'paid_by', 'split', 'sub', 'end_day'],
-  journal_entries: ['day', 'title', 'note', 'photo_paths'],
+  journal_entries: ['day', 'title', 'note', 'photo_paths', 'description', 'stickers'],
   wishes: ['note'],
 };
 const ORDER_INS = ['trips', 'expenses', 'journal_entries', 'wishes'];
@@ -57,7 +57,7 @@ function fromDb(trips, exps, entries, wishes) {
     cover: r.cover_path, entrees: [], depenses: [] }));
   const byId = Object.fromEntries(T.map(t => [t.id, t]));
   exps.forEach(r => { const t = byId[r.trip_id]; if (t) t.depenses.push({ id: r.id, j: r.day, l: r.label, c: r.category, v: r.amount_local == null ? null : Number(r.amount_local), cur: r.amount_local == null || r.currency === C(t).code ? null : r.currency, eur: Number(r.amount_eur), by: r.paid_by || 'me', split: r.split || null, s: r.sub || null, j2: r.end_day || null, at: r.created_at }); });
-  entries.forEach(r => { const t = byId[r.trip_id]; if (t) t.entrees.push({ id: r.id, j: r.day, t: r.title, n: r.note, photos: r.photo_paths || [] }); });
+  entries.forEach(r => { const t = byId[r.trip_id]; if (t) t.entrees.push({ id: r.id, j: r.day, t: r.title, n: r.note, d: r.description || '', st: r.stickers || [], photos: r.photo_paths || [] }); });
   T.forEach(t => { t.entrees.sort((a, b) => a.j - b.j); t.depenses.sort((a, b) => (a.at || '').localeCompare(b.at || '')); });
   return { trips: T, envies: wishes.map(r => ({ id: r.id, pays: r.country_code, note: r.note })) };
 }
@@ -158,18 +158,24 @@ async function signWaiting() {
   }
   document.querySelectorAll('img[data-wait]').forEach(im => { const c = URLS.get(im.dataset.p); if (c) { im.removeAttribute('data-wait'); if (c.url) im.src = c.url; else { const ph = im.closest('.ph'); if (ph) ph.classList.remove('has'); im.remove(); } } });
 }
-new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1 && (n.matches?.('img[data-wait]') || n.querySelector?.('img[data-wait]'))) { (n.matches('img[data-wait]') ? [n] : n.querySelectorAll('img[data-wait]')).forEach(im => M(im.dataset.p)); } })
+new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1 && (n.matches?.('img[data-wait]') || n.querySelector?.('img[data-wait]'))) { (n.matches('img[data-wait]') ? [n] : n.querySelectorAll('img[data-wait]')).forEach(im => { const u = M(im.dataset.p); if (u) { im.src = u; im.removeAttribute('data-wait'); } }); } })
   .observe(document.documentElement, { childList: true, subtree: true });
 
 /** Redimensionne, retire les métadonnées (position GPS, appareil) et envoie une photo. */
-async function uploadPhoto(file, kind) {
+async function uploadPhoto(file, kind, opt = {}) {
   if (!ME) throw new Error('non connecté');
   if (!/^image\//.test(file.type) && !/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)) throw new Error("Ce fichier n'est pas une image");
   if (file.size > 40e6) throw new Error('Image trop lourde (40 Mo maximum)');
   const bmp = await new Promise((res, rej) => { const img = new Image(), u = URL.createObjectURL(file); img.onload = () => { URL.revokeObjectURL(u); res(img); }; img.onerror = () => { URL.revokeObjectURL(u); rej(new Error("Ce fichier n'est pas une image lisible")); }; img.src = u; });
-  const max = 1600, k = Math.min(1, max / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
-  c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
-  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  const max = opt.max || 1600, c = document.createElement('canvas');
+  if (opt.square) { // carré centré (stickers)
+    const side = Math.min(bmp.width, bmp.height), out = Math.min(max, side);
+    c.width = c.height = out; c.getContext('2d').drawImage(bmp, (bmp.width - side) / 2, (bmp.height - side) / 2, side, side, 0, 0, out, out);
+  } else {
+    const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  }
   let q = 0.82, blob = await new Promise(r => c.toBlob(r, 'image/jpeg', q));
   while (blob && blob.size > 2.8e6 && q > 0.4) { q -= 0.12; blob = await new Promise(r => c.toBlob(r, 'image/jpeg', q)); }
   if (!blob) throw new Error('Conversion impossible');
@@ -185,7 +191,7 @@ function releaseMedia(path) { if (path && !/^(data:|blob:)/.test(path)) DROP.add
 async function flushMediaDeletes() {
   if (!DROP.size) return;
   const list = [...DROP]; DROP.clear();
-  const used = new Set([...S.trips.flatMap(t => [t.cover, ...t.entrees.flatMap(e => e.photos)]), PROFILE && PROFILE.avatar_path, PROFILE && PROFILE.cover_path].filter(Boolean));
+  const used = new Set([...S.trips.flatMap(t => [t.cover, ...t.entrees.flatMap(e => [...e.photos, ...(e.st || []).map(x => x.p)])]), PROFILE && PROFILE.avatar_path, PROFILE && PROFILE.cover_path].filter(Boolean));
   const r = await sb.from('post_photos').select('path').in('path', list);
   (r.data || []).forEach(x => used.add(x.path));
   const gone = list.filter(p => !used.has(p) && p.startsWith(ME.id + '/'));

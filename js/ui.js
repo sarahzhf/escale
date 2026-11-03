@@ -227,18 +227,19 @@ function pageSheet(tid, eid) {
   let k = e ? e.photos.length : 2;
   openPanel(`<h2>${e ? 'Modifier la page' : 'Nouvelle page'}</h2><p class="small">${esc(place(t))}</p>
    <label class="fld"><span>Titre</span><input id="p-t" maxlength="80" value="${e ? esc(e.t) : ''}" placeholder="Ex. Balade à Trastevere"></label>
-   <label class="fld"><span>Ton souvenir</span><textarea id="p-n" maxlength="2000" placeholder="Ce que tu veux retenir de cette journée">${e ? esc(e.n) : ''}</textarea></label>
+   <label class="fld"><span>Description <i class="opt">facultatif</i></span><input id="p-d" maxlength="200" value="${e ? esc(e.d || '') : ''}" placeholder="Ex. Pique-nique au bord du Tibre"></label>
+   <label class="fld"><span>Ton texte, tes notes</span><textarea id="p-n" maxlength="2000" placeholder="Ce que tu veux retenir de cette journée">${e ? esc(e.n) : ''}</textarea></label>
    <div class="two"><label class="fld"><span>Jour</span><select id="p-j">${Array.from({ length: n }, (_, i) => `<option value="${i + 1}" ${(e ? e.j : Math.min(n, (info(t).jour || 1))) === i + 1 ? 'selected' : ''}>Jour ${i + 1}, ${fd(addDays(t.du, i))}</option>`).join('')}</select></label>
    <div class="fld"><span>Emplacements photo</span><div class="seg" id="p-k">${[1, 2, 3, 4].map(i => `<button type="button" data-k="${i}" class="${i === k ? 'on' : ''}">${i}</button>`).join('')}</div></div></div>
    <button class="btn full" id="p-ok">${e ? 'Enregistrer' : 'Ajouter la page'}<i>${SV.arrow}</i></button>
    ${e ? `<button class="danger" id="p-del">Supprimer cette page</button>` : ''}${CLOSE()}`, p => {
     p.querySelectorAll('#p-k button').forEach(b => b.onclick = () => { k = +b.dataset.k; p.querySelectorAll('#p-k button').forEach(x => x.classList.toggle('on', x === b)); });
     p.querySelector('#p-ok').onclick = () => { const ti = p.querySelector('#p-t').value.trim(); if (!ti) { toast('Donne un titre à la page'); return; }
-      const rec = { t: ti.slice(0, 80), n: p.querySelector('#p-n').value.trim().slice(0, 2000), j: +p.querySelector('#p-j').value };
+      const rec = { t: ti.slice(0, 80), d: p.querySelector('#p-d').value.trim().slice(0, 200), n: p.querySelector('#p-n').value.trim().slice(0, 2000), j: +p.querySelector('#p-j').value };
       if (e) { Object.assign(e, rec); if (k > e.photos.length) e.photos = e.photos.concat(Array(k - e.photos.length).fill(null)); else if (k < e.photos.length) { const kept = e.photos.filter(Boolean); e.photos = kept.slice(0, Math.max(k, kept.length)).concat(Array(Math.max(0, k - kept.length)).fill(null)); } }
-      else t.entrees.push({ id: uid(), ...rec, photos: Array(k).fill(null) });
+      else t.entrees.push({ id: uid(), ...rec, st: [], photos: Array(k).fill(null) });
       t.entrees.sort((a, b) => a.j - b.j); save(); closePanel(); refresh(); toast(e ? 'Page mise à jour' : 'Page ajoutée, ajoute tes photos'); };
-    const del = p.querySelector('#p-del'); if (del) del.onclick = () => confirmIn(p, 'Supprimer cette page et ses photos ?', () => { e.photos.forEach(releaseMedia); t.entrees = t.entrees.filter(x => x.id !== e.id); save(); closePanel(); refresh(); toast('Page supprimée'); });
+    const del = p.querySelector('#p-del'); if (del) del.onclick = () => confirmIn(p, 'Supprimer cette page et ses photos ?', () => { e.photos.forEach(releaseMedia); (e.st || []).forEach(x => releaseMedia(x.p)); t.entrees = t.entrees.filter(x => x.id !== e.id); save(); closePanel(); refresh(); toast('Page supprimée'); });
   });
 }
 function pageMenu(tid, eid) {
@@ -305,6 +306,7 @@ function openTrip(id, keep) {
     <div class="mstrip">${allPh.slice(0, 12).map(([p, tg]) => phHTML(p, tg)).join('')}</div>
     <div class="ai-note"><b>Le mot de l'assistant</b>${esc(noteFor(t))}</div>`;
   else if (dTab === 'journal') body = `
+    <button class="bookbanner" data-act="openBook" data-trip="${t.id}"><span class="mini-book">${t.cover ? IMG(t.cover) : ''}<i></i></span><span><b>Ouvrir le carnet</b><em>Feuillette ton journal page par page, ajoute photos, textes et stickers</em></span>${SV.right}</button>
     <div class="sec"><h2>${t.entrees.length} page${t.entrees.length > 1 ? 's' : ''}</h2><button class="pill dark" data-act="addPage" data-trip="${t.id}">${SV.plus}Page</button></div>
     ${t.entrees.length ? t.entrees.map(e => `<div class="entry" id="en-${e.id}">
       <div class="hd"><div class="dt"><b>${D(addDays(t.du, e.j - 1)).getDate()}</b>${D(addDays(t.du, e.j - 1)).toLocaleDateString('fr-FR', { month: 'short' })}</div><div><h3>${esc(e.t)}</h3>${e.n ? `<p class="note">${esc(e.n)}</p>` : ''}</div><button class="menu" data-act="pageMenu" data-trip="${t.id}" data-entry="${e.id}" aria-label="Options de la page">${SV.dots}</button></div>

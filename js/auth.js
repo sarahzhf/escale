@@ -211,6 +211,8 @@ const FAQ = [
   ['Escale fonctionne-t-elle sans réseau ?', 'Oui. Tes carnets restent sur ton téléphone et tes nouvelles dépenses sont envoyées dès que le réseau revient. Tire l’écran vers le bas pour recharger.'],
   ['Comment installer Escale sur mon iPhone ?', 'Dans Safari, touche le bouton Partager puis « Sur l’écran d’accueil ». Escale s’ouvre ensuite en plein écran comme une appli.'],
   ['Comment fonctionne l’assistant ?', 'En mode simple, il répond directement sur ton téléphone. Si tu actives l’assistant IA dans le profil, il peut comparer des destinations et estimer un budget à partir des totaux de tes voyages.'],
+  ['Comment marchent les défis ?', 'Défie un ou plusieurs amis : un lieu à photographier avant la fin du délai. À plusieurs, chacun publie sa photo et le groupe vote pour la plus belle. Tu gagnes 10 points par défi relevé, 5 de plus en moins de 24 h, 15 si ta photo est élue, et des badges en chemin.'],
+  ['Mes amis savent-ils quand je voyage ?', 'Seulement si tu partages l\u2019album du voyage avec eux : pendant ses dates, ils voient que tu es en voyage dans ce pays et peuvent te lancer un défi. Un album privé n\u2019est jamais signalé.'],
   ['Comment récupérer ou supprimer mes données ?', 'Profil, puis « Télécharger toutes mes données » pour une copie complète, ou « Supprimer mon compte » pour tout effacer définitivement.']
 ];
 ACT.faq = () => openPanel(`<h2>Aide</h2><p class="small">Les réponses aux questions les plus fréquentes.</p><div class="faq">${FAQ.map(([q, r]) => `<details><summary>${esc(q)}</summary><p>${esc(r)}</p></details>`).join('')}</div>

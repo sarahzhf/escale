@@ -325,7 +325,6 @@ function openTrip(id, keep) {
   if (!keep) { go('carnet', 'flip'); sc.scrollTop = 0; } else sc.scrollTop = y;
   const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { root: sc, threshold: .2 });
   sc.querySelectorAll('.entry').forEach(el => io.observe(el));
-  if (dTab === 'journal' && jMode === 'pile') pileLayout();
 }
 
 
@@ -540,34 +539,25 @@ DD.vy = v => { vF.y = v || 'all'; renderCards(); };
 ACT.vf = d => { if (d.k === 'reset') vF = { s: 'all', y: 'all' }; else vF[d.k] = d.v; renderCards(); };
 
 /* ---------- journal d'un voyage : dossiers ou pile de photos ---------- */
-let jMode = (() => { try { return localStorage.getItem('escale:jmode') || 'dossiers'; } catch (_) { return 'dossiers'; } })(), pileIdx = 0, pileTrip = null, pileDay = null;
+let pileIdx = 0, pileTrip = null, pileDay = null;
 function journalTabHTML(t) {
-  const tog = `<div class="jtog" role="tablist"><button class="${jMode === 'dossiers' ? 'on' : ''}" data-act="jMode" data-v="dossiers" role="tab">${SV.page}Dossiers</button><button class="${jMode === 'pile' ? 'on' : ''}" data-act="jMode" data-v="pile" role="tab">${SV.img}Pile de photos</button></div>`;
-  if (!t.entrees.length) return `${tog}<div class="emptyj">Aucune page pour l'instant. Ajoute ta première journée : elle deviendra un dossier de souvenirs.</div>`;
-  return tog + (jMode === 'pile' ? pileHTML(t) : foldersHTML(t));
+  if (!t.entrees.length) return `<div class="emptyj">Aucune page pour l'instant. Ajoute ta première journée : ses photos formeront une petite pile.</div>`;
+  return `<div class="dpiles">${t.entrees.map(e => {
+    const ph = e.photos.filter(Boolean), txt = (e.n ? 1 : 0) + (e.st || []).filter(x => x.k === 'x').length;
+    return `<div class="dpile"><div class="dp-stack n${Math.min(3, ph.length)}" data-act="dayPile" data-trip="${t.id}" data-entry="${e.id}" role="button" tabindex="0" aria-label="Jour ${e.j}, ${esc(e.t)} : ${ph.length} photo${ph.length > 1 ? 's' : ''}">
+        ${ph.length ? ph.slice(0, 3).reverse().map(p => `<span>${IMG(p)}</span>`).join('') : `<span class="none">${SV.img}<em>Ajouter des photos</em></span>`}
+        ${ph.length > 3 ? `<i class="dp-more num">+${ph.length - 3}</i>` : ''}
+        <button class="fold-add" data-act="foldAdd" data-trip="${t.id}" data-entry="${e.id}" aria-label="Ajouter une photo au jour ${e.j}">${SV.plus}</button></div>
+      <div class="fold-meta"><div><b>Jour ${e.j} · ${esc(e.t)}</b><span>${ph.length} photo${ph.length > 1 ? 's' : ''}${txt ? `, ${txt} texte${txt > 1 ? 's' : ''}` : ''}</span></div><button class="menu" data-act="pageMenu" data-trip="${t.id}" data-entry="${e.id}" aria-label="Options de la page">${SV.dots}</button></div></div>`; }).join('')}
+    <div class="dpile"><button class="dp-stack new" data-act="addPage" data-trip="${t.id}" aria-label="Nouvelle page">${SV.plus}<b>Nouvelle page</b></button></div></div>`;
 }
-function foldersHTML(t) {
-  const col = typeof BOOKS !== 'undefined' && typeof bookColor === 'function' ? BOOKS[bookColor(t.bk, t.id)] : null;
-  return `<div class="folds"${col ? ` style="--fc:${col.c};--fd:${col.d}"` : ''}>${t.entrees.map(e => {
-    const ph = e.photos.filter(Boolean), txt = (e.n ? 1 : 0) + (e.st || []).filter(x => x.k === 'x').length, date = addDays(t.du, e.j - 1);
-    return `<div class="fold"><div class="fold-box" data-act="foldOpen" data-trip="${t.id}" data-entry="${e.id}" role="button" tabindex="0" aria-label="Voir les photos du jour ${e.j}, ${esc(e.t)}">
-        <span class="fold-back"></span>
-        <span class="fold-ph n${Math.min(3, ph.length)}">${ph.slice(0, 3).map(p => `<span>${IMG(p)}</span>`).join('') || `<span class="none">${SV.img}</span>`}</span>
-        <span class="fold-front"><b>Jour ${e.j}</b><em>${esc(fd(date))}</em></span>
-        <button class="fold-add" data-act="foldAdd" data-trip="${t.id}" data-entry="${e.id}" aria-label="Ajouter une photo à ${esc(e.t)}">${SV.plus}</button></div>
-      <div class="fold-meta"><div><b>${esc(e.t)}</b><span>${ph.length} photo${ph.length > 1 ? 's' : ''}${txt ? `, ${txt} texte${txt > 1 ? 's' : ''}` : ''}${(e.st || []).length - (e.st || []).filter(x => x.k === 'x').length ? `, ${(e.st || []).length - (e.st || []).filter(x => x.k === 'x').length} sticker${(e.st || []).length > 1 ? 's' : ''}` : ''}</span></div><button class="menu" data-act="pageMenu" data-trip="${t.id}" data-entry="${e.id}" aria-label="Options de la page">${SV.dots}</button></div></div>`; }).join('')}
-    <div class="fold"><button class="fold-box new" data-act="addPage" data-trip="${t.id}" aria-label="Nouvelle page"><span class="fold-back"></span><span class="fold-front">${SV.plus}<b>Nouvelle page</b></span></button></div></div>`;
-}
+/** Toucher une pile : ses photos s'ouvrent en grand, à faire défiler du doigt. */
+ACT.dayPile = d => { const t = trip(d.trip), e = t && t.entrees.find(x => x.id === d.entry); if (!e) return;
+  if (!e.photos.some(Boolean)) { ACT.openBook({ trip: t.id, entry: e.id }); return; }
+  pileTrip = t.id; pileDay = e.id; pileIdx = 0;
+  openPanel(`<div class="pile-head"><b>Jour ${e.j} · ${esc(e.t)}</b><button class="more" data-act="pileOpenPage" data-trip="${t.id}" data-entry="${e.id}">Ouvrir la page</button></div>${pileCards(t, pileList(t))}${CLOSE('Fermer')}`, () => pileLayout(), { nofocus: true }); };
+ACT.pileOpenPage = d => { closePanel(); setTimeout(() => ACT.openBook({ trip: d.trip, entry: d.entry }), 250); };
 const pileList = t => t.entrees.filter(e => !pileDay || e.id === pileDay).flatMap(e => e.photos.filter(Boolean).map(p => ({ p, e })));
-function pileHTML(t) {
-  if (pileTrip !== t.id) { pileTrip = t.id; pileIdx = 0; pileDay = null; }
-  if (pileDay && !t.entrees.some(e => e.id === pileDay)) pileDay = null;
-  const days = t.entrees.filter(e => e.photos.some(Boolean)), L = pileList(t);
-  const chips = days.length > 1 ? `<div class="pile-days">${[[null, 'Tous les jours'], ...days.map(e => [e.id, `Jour ${e.j}`])].map(([id, l]) => `<button class="${pileDay === id ? 'on' : ''}" data-act="pileDay" data-v="${id || ''}">${l}</button>`).join('')}</div>` : '';
-  if (!L.length) return `${chips}<div class="emptyj">Ajoute des photos à tes pages : elles formeront une pile à faire défiler du doigt.</div>`;
-  const cur = pileDay && t.entrees.find(e => e.id === pileDay);
-  return chips + (cur ? `<div class="pile-head"><b>Jour ${cur.j} · ${esc(cur.t)}</b><button class="more" data-act="openBook" data-trip="${t.id}" data-entry="${cur.id}">Ouvrir la page</button></div>` : '') + pileCards(t, L);
-}
 function pileCards(t, L) {
   pileIdx = ((pileIdx % L.length) + L.length) % L.length;
   return `<div class="pile" id="pile" data-trip="${t.id}">${L.map((o, i) => `<div class="pcard" data-i="${i}" data-entry="${o.e.id}">${IMG(o.p)}<span class="pcap"><b>${esc(o.e.t)}</b><i>Jour ${o.e.j}</i></span></div>`).join('')}</div>
@@ -585,11 +575,6 @@ function pileLayout() {
 }
 function pileStep(d) { const el = $('pile'); if (!el) return; const n = el.querySelectorAll('.pcard').length; pileIdx = (pileIdx + d + n) % n; pileLayout(); }
 ACT.pileGo = d => pileStep(+d.d);
-ACT.pileDay = d => { pileDay = d.v || null; pileIdx = 0; refresh(); };
-ACT.foldOpen = d => { const t = trip(d.trip), e = t && t.entrees.find(x => x.id === d.entry); if (!e) return;
-  if (!e.photos.some(Boolean)) { ACT.openBook({ trip: t.id, entry: e.id }); return; }
-  jMode = 'pile'; pileTrip = t.id; pileDay = e.id; pileIdx = 0; refresh(); const tg = document.querySelector('.jtog'); if (tg) tg.scrollIntoView({ block: 'start', behavior: 'smooth' }); };
-ACT.jMode = d => { pileDay = null; jMode = d.v; try { localStorage.setItem('escale:jmode', jMode); } catch (_) { } refresh(); };
 ACT.foldAdd = d => { const t = trip(d.trip), e = t && t.entrees.find(x => x.id === d.entry); if (!e) return; let i = e.photos.findIndex(x => !x); if (i < 0) { if (e.photos.length >= 6) { toast('6 photos maximum par page'); return; } e.photos.push(null); i = e.photos.length - 1; save(); } pickPhoto(`${t.id}|e|${e.id}|${i}`); };
 // glisser les cartes du doigt, façon Tinder
 (() => { let g = null;
@@ -597,7 +582,7 @@ ACT.foldAdd = d => { const t = trip(d.trip), e = t && t.entrees.find(x => x.id =
   document.addEventListener('pointermove', ev => { if (!g || ev.pointerId !== g.id) return; g.dx = ev.clientX - g.x; if (Math.abs(g.dx) > 6) g.moved = true; g.c.style.transform = `translateX(${g.dx}px) rotate(${g.dx / 14}deg)`; });
   const end = ev => { if (!g || ev.pointerId !== g.id) return; const { c, dx, moved } = g; g = null; c.style.transition = '';
     if (Math.abs(dx) > 70) { c.style.transform = `translateX(${dx > 0 ? 140 : -140}%) rotate(${dx > 0 ? 24 : -24}deg)`; c.style.opacity = 0; setTimeout(() => pileStep(dx < 0 ? 1 : -1), 230); }
-    else if (!moved && ev.type === 'pointerup') { const p = $('pile'); ACT.openBook({ trip: p.dataset.trip, entry: c.dataset.entry }); }
+    else if (!moved && ev.type === 'pointerup') { const p = $('pile'); ACT.pileOpenPage({ trip: p.dataset.trip, entry: c.dataset.entry }); }
     else pileLayout(); };
   document.addEventListener('pointerup', end); document.addEventListener('pointercancel', end);
 })();

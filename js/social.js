@@ -336,18 +336,65 @@ function chalCard(c) { const inc = c.to_id === ME.id, o = c.other || {}, n = fir
   if (expired) acts = `<div class="acts"><button class="btn2" data-act="chalExtend" data-c="${c.id}" ${c.extensions_used >= 3 ? 'disabled' : ''}>${inc ? 'Prolonger de 3 jours' : 'Prolonger de 3 jours'}</button>${inc ? '' : `<button class="btn2" data-act="chalCancel" data-c="${c.id}">Retirer</button>`}</div>`;
   const proof = c.status === 'done' ? `<div class="proof">${c.photo ? IMG(c.photo) : ''}<div><b>${inc ? 'Tu as relevé ce défi' : `${n} a relevé ton défi`}</b>${ago(c.completed_at || c.created_at)}</div>${c.post_id ? `<button class="btn2" data-act="openPost" data-p="${c.post_id}">Voir</button>` : ''}</div>` : '';
   return `<div class="chal ${c.status}" data-chal="${c.id}"><div class="h">${avatar(o)}<button class="m" data-act="openUser" data-u="${o.id}"><b>${inc ? `${n} te défie` : `Défi envoyé à ${n}`}</b><span>${ago(c.created_at)}</span></button>${dueTag(c)}</div>
-   <h3>${SV.target}${esc(c.place)}</h3>${c.note ? `<p class="note">${esc(c.note)}</p>` : ''}${c.country_code ? `<p class="ctx">${flag(c.country_code)} ${esc((COUNTRIES[c.country_code] || {}).n || '')}</p>` : ''}${acts}${proof}</div>`; }
+   <h3>${SV.target}${esc(c.place)}</h3>${c.note ? `<p class="note">${esc(c.note)}</p>` : ''}${c.country_code ? `<p class="ctx">${flag(c.country_code)} ${esc((COUNTRIES[c.country_code] || {}).n || '')}</p>` : ''}${acts}${c.group ? groupHTML(c) : proof}</div>`; }
+/** Défi de groupe : qui l'a relevé, les photos et le vote pour la plus belle. */
+function groupHTML(c) {
+  const g = c.group, M = g.members || [], done = M.filter(m => m.status === 'done'), member = c.to_id === ME.id || c.from_id === ME.id;
+  const who = m => m.who ? (m.who.id === ME.id ? 'Toi' : first(m.who.display_name)) : 'Un membre';
+  return `<div class="grp"><p class="grp-h">${SV.users}Défi de groupe · ${done.length}/${M.length} relevé${done.length > 1 ? 's' : ''}${g.closed ? ' · vote terminé' : done.length > 1 ? ' · votez pour la plus belle photo' : ''}</p>
+    <div class="grp-m">${M.map(m => `<span class="${m.status}" title="${who(m)}">${avatar(m.who || {})}<i>${m.status === 'done' ? '✓' : m.status === 'declined' ? '×' : ''}</i></span>`).join('')}</div>
+    ${done.length ? `<div class="grp-ph">${done.map(m => `<div class="gp ${m.won ? 'won' : ''} ${m.mine ? 'mine' : ''}">
+        ${m.photo ? `<button class="gp-img" data-act="openPost" data-p="${m.post_id || ''}" ${m.post_id ? '' : 'disabled'} aria-label="Voir la photo de ${who(m)}">${IMG(m.photo)}</button>` : `<span class="gp-img lock">${SV.lock}<em>Photo réservée à ses amis</em></span>`}
+        ${m.won ? '<span class="crown" aria-label="Photo élue">👑</span>' : ''}
+        <div class="gp-f"><b>${who(m)}</b>${member && m.photo && m.who && m.who.id !== ME.id && !g.closed ? `<button class="vote ${m.mine ? 'on' : ''}" data-act="chalVote" data-c="${m.id}" aria-pressed="${m.mine}">♥ <span class="num">${m.votes}</span></button>` : `<span class="vcount">♥ <span class="num">${m.votes}</span></span>`}</div></div>`).join('')}</div>` : ''}</div>`;
+}
+ACT.chalVote = async d => { try { await rpc('challenge_vote', { p_challenge: d.c }); toast('Vote enregistré'); } catch (e) { toast(errMsg(e)); } renderDefis(); };
 async function loadChals() { CHALS = await rpc('my_challenges'); return CHALS; }
+const BADGES = [
+  ['premier', '🎯', 'Premier défi', 'Relever ton premier défi', s => [s.done, 1]],
+  ['eclair', '⚡', 'Éclair', 'Relever un défi en moins de 24 h', s => [s.fast, 1]],
+  ['serie', '🔥', 'En série', 'Relever 3 défis d\u2019affilée', s => [s.streak, 3]],
+  ['explorateur', '🧭', 'Explorateur', 'Relever des défis dans 5 pays', s => [s.countries, 5]],
+  ['globe', '🌍', 'Globe-trotteur', 'Relever 10 défis', s => [s.done, 10]],
+  ['jury', '👑', 'Coup de cœur', 'Avoir la photo élue d\u2019un défi de groupe', s => [s.wins, 1]],
+  ['lanceur', '🚀', 'Lanceur', '5 de tes défis relevés par tes amis', s => [s.sent_done, 5]]
+];
+let BOARD = [], TRAVEL = [];
+const myStats = () => BOARD.find(b => b.me) || { done: 0, fast: 0, streak: 0, countries: 0, wins: 0, sent_done: 0, points: 0 };
+function scoreHTML() {
+  const m = myStats(), got = BADGES.filter(b => { const [v, n] = b[4](m); return v >= n; }), rank = BOARD.findIndex(b => b.me) + 1;
+  return `<div class="score"><div class="sc-top"><div><b class="num">${m.points}</b><span>points</span></div><div><b class="num">${m.streak}${m.streak ? ' 🔥' : ''}</b><span>série</span></div><div><b class="num">${BOARD.length > 1 ? `${rank}<sup>${rank === 1 ? 're' : 'e'}</sup>` : '–'}</b><span>entre amis</span></div></div>
+    <button class="sc-badges" data-act="badges" aria-label="Voir tous les badges">${BADGES.map(b => `<i class="${got.includes(b) ? 'on' : ''}" title="${b[2]}">${b[1]}</i>`).join('')}<span>${got.length}/${BADGES.length} badges</span></button></div>`;
+}
+function travelHTML() {
+  const L = TRAVEL.filter(x => !x.challenged); if (!L.length) return '';
+  return `<div class="sec"><h2>Tes amis en voyage</h2></div>${L.map(x => `<div class="trav">${avatar(x.user)}<div><b>${first(x.user.display_name)} est à ${esc(x.city)} ${flag(x.country_code)}</b><span>jusqu'au ${fd(x.end_date)} · un défi sur place ?</span></div><button class="btn2 g" data-act="newChal" data-u="${x.user.id}" data-pays="${x.country_code}" data-place="${esc(x.city)}">${SV.target}Défier</button></div>`).join('')}`;
+}
+function boardHTML() {
+  if (BOARD.length < 2) return '';
+  return `<div class="sec"><h2>Classement entre amis</h2></div><div class="board">${BOARD.slice(0, 10).map((b, i) => `<div class="br ${b.me ? 'me' : ''}"><span class="pos num">${i + 1}</span>${avatar(b)}<b>${b.me ? 'Toi' : first(b.display_name)}</b><span class="st">${b.streak ? `${b.streak} 🔥` : ''}</span><span class="pts num">${b.points} pts</span></div>`).join('')}</div>`;
+}
+ACT.badges = () => { const m = myStats();
+  openPanel(`<h2>Badges et points</h2><p class="small" style="line-height:1.5">10 points par défi relevé, 5 de plus s'il est relevé en moins de 24 h, 15 pour la photo élue d'un défi de groupe, et 2 quand un ami relève un défi que tu lui as lancé.</p>
+    <div class="badgelist">${BADGES.map(b => { const [v, n] = b[4](m), ok = v >= n; return `<div class="bd ${ok ? 'on' : ''}"><i>${b[1]}</i><div><b>${b[2]}</b><span>${b[3]}</span>${ok ? '<em>Obtenu</em>' : `<span class="bar"><span style="width:${Math.min(100, v / n * 100)}%"></span></span><em class="num">${Math.min(v, n)} / ${n}</em>`}</div></div>`; }).join('')}</div>${CLOSE('Fermer')}`, null, { nofocus: true }); };
 async function renderDefis() {
-  try { await loadChals(); } catch (e) { $('feedbox').innerHTML = '<div class="emptyfeed">Les défis ne peuvent pas être chargés pour le moment.</div>'; return; }
+  try { await Promise.all([loadChals(), rpc('challenge_board').then(b => { BOARD = b || []; }).catch(() => { BOARD = []; }), rpc('friends_traveling').then(t => { TRAVEL = t || []; }).catch(() => { TRAVEL = []; })]); }
+  catch (e) { $('feedbox').innerHTML = '<div class="emptyfeed">Les défis ne peuvent pas être chargés pour le moment.</div>'; return; }
   if (current !== 'fil' || fView !== 'defis') return;
-  const inc = CHALS.filter(c => c.to_id === ME.id), out = CHALS.filter(c => c.from_id === ME.id), open = inc.filter(c => c.status === 'open');
-  $('feedbox').innerHTML = `<div class="chstats num"><div><b>${open.length}</b><span>à relever</span></div><div><b>${inc.filter(c => c.status === 'done').length}</b><span>relevés</span></div><div><b>${out.length}</b><span>envoyés</span></div></div>
-   <button class="btn2 g newchal" data-act="newChal">${SV.target}Défier un ami</button>
+  const inc = CHALS.filter(c => c.to_id === ME.id), open = inc.filter(c => c.status === 'open');
+  const seen = new Set(), out = CHALS.filter(c => c.from_id === ME.id && (!c.group_id || (!seen.has(c.group_id) && seen.add(c.group_id))));
+  $('feedbox').innerHTML = `${scoreHTML()}
+   <button class="btn2 g newchal" data-act="newChal">${SV.target}Défier un ou plusieurs amis</button>
+   ${travelHTML()}
    <div class="sec"><h2>À relever</h2></div>${open.map(chalCard).join('') || `<div class="emptyfeed">Aucun défi en cours. Tes amis peuvent t'en lancer depuis ton profil.</div>`}
-   <div class="sec"><h2>Envoyés</h2></div>${out.map(chalCard).join('') || `<div class="emptyfeed">Lance un défi à un ami : un lieu, une photo, un délai.</div>`}
+   <div class="sec"><h2>Envoyés</h2></div>${out.map(c => c.group_id ? sentGroupCard(c) : chalCard(c)).join('') || `<div class="emptyfeed">Lance un défi à un ami : un lieu, une photo, un délai.</div>`}
+   ${boardHTML()}
    ${inc.filter(c => c.status !== 'open').length ? `<div class="sec"><h2>Historique</h2></div>${inc.filter(c => c.status !== 'open').map(chalCard).join('')}` : ''}`;
 }
+/** Défi de groupe envoyé : un seul cadre pour tout le groupe. */
+function sentGroupCard(c) { const M = (c.group && c.group.members) || [], open = M.some(m => m.status === 'open');
+  return `<div class="chal ${open ? 'open' : 'done'}"><div class="h"><span class="av grp-av">${SV.users}</span><div class="m"><b>Défi envoyé à ${M.length} amis</b><span>${ago(c.created_at)}</span></div>${dueTag(c)}</div>
+   <h3>${SV.target}${esc(c.place)}</h3>${c.note ? `<p class="note">${esc(c.note)}</p>` : ''}${c.country_code ? `<p class="ctx">${flag(c.country_code)} ${esc((COUNTRIES[c.country_code] || {}).n || '')}</p>` : ''}${groupHTML(c)}</div>`; }
 ACT.chalDo = d => ACT.compose({ chal: d.c });
 ACT.chalDecline = d => inlineConfirm(d.c, 'Oui, refuser', () => rpc('challenge_action', { p_id: d.c, p_action: 'decline' }), 'Défi refusé');
 ACT.chalCancel = d => inlineConfirm(d.c, 'Oui, annuler le défi', () => rpc('challenge_action', { p_id: d.c, p_action: 'cancel' }), 'Défi annulé');
@@ -358,21 +405,26 @@ function inlineConfirm(id, label, fn, msg) { const card = document.querySelector
 ACT.newChal = fromPanel(async d => {
   const fr = (await rpc('my_friends')).filter(f => f.relation === 'friend');
   if (!fr.length) { toast("Ajoute d'abord des amis pour les défier"); return; }
-  let to = d.u && fr.some(f => f.id === d.u) ? d.u : fr[0].id, dl = 7;
-  openPanel(`<h2>Lancer un défi</h2><p class="small">Ton ami devra prendre une photo à cet endroit avant la fin du délai.</p>
-   <div class="fld"><span>Qui défier ?</span><div class="frchips" id="nc-to">${fr.map(f => `<button type="button" data-u="${f.id}" class="${f.id === to ? 'on' : ''}">${avatar(f)}${first(f.display_name)}</button>`).join('')}</div></div>
-   <label class="fld"><span>Le lieu à photographier</span><input id="nc-place" maxlength="120" placeholder="Ex. le pont de Galata à Istanbul" autocomplete="off"></label>
-   <label class="fld"><span>Pays (facultatif)</span><input id="nc-pays" list="pays-list" maxlength="40" autocomplete="off" placeholder="Tape un pays">${paysList()}</label>
+  const to = new Set([d.u && fr.some(f => f.id === d.u) ? d.u : fr[0].id]); let dl = 7;
+  const head = () => to.size > 1 ? `Défi de groupe à ${to.size} amis` : 'Lancer un défi';
+  openPanel(`<h2 id="nc-h">${head()}</h2><p class="small">Choisis un ou plusieurs amis. À plusieurs, chacun prend sa photo puis le groupe vote pour la plus belle.</p>
+   <div class="fld"><span>Qui défier ?</span><div class="frchips" id="nc-to">${fr.map(f => `<button type="button" data-u="${f.id}" class="${to.has(f.id) ? 'on' : ''}" aria-pressed="${to.has(f.id)}">${avatar(f)}${first(f.display_name)}</button>`).join('')}</div></div>
+   <label class="fld"><span>Le lieu à photographier</span><input id="nc-place" maxlength="120" placeholder="Ex. le pont de Galata à Istanbul" autocomplete="off" value="${esc(d.place || '')}"></label>
+   <label class="fld"><span>Pays (facultatif)</span><input id="nc-pays" list="pays-list" maxlength="40" autocomplete="off" placeholder="Tape un pays" value="${esc(d.pays && COUNTRIES[d.pays] ? COUNTRIES[d.pays].n : '')}">${paysList()}</label>
    <label class="fld"><span>La consigne</span><textarea id="nc-note" maxlength="300" placeholder="Ex. au lever du soleil, sans personne dans le cadre"></textarea></label>
    <div class="fld"><span>Délai</span><div class="dlseg" id="nc-dl">${[[3, '3 jours'], [7, '1 semaine'], [30, '1 mois']].map(([v, l]) => `<button type="button" data-v="${v}" class="${v === dl ? 'on' : ''}">${l}</button>`).join('')}</div></div>
    <button class="btn full" id="nc-ok">Envoyer le défi<i>${SV.right}</i></button>${CLOSE()}`, p => {
-    p.querySelectorAll('#nc-to button').forEach(b => b.onclick = () => { to = b.dataset.u; p.querySelectorAll('#nc-to button').forEach(x => x.classList.toggle('on', x === b)); });
+    p.querySelectorAll('#nc-to button').forEach(b => b.onclick = () => { const u = b.dataset.u;
+      if (to.has(u)) { if (to.size > 1) to.delete(u); } else { if (to.size >= 8) { toast('8 amis au maximum'); return; } to.add(u); }
+      b.classList.toggle('on', to.has(u)); b.setAttribute('aria-pressed', to.has(u)); p.querySelector('#nc-h').textContent = head(); });
     p.querySelectorAll('#nc-dl button').forEach(b => b.onclick = () => { dl = +b.dataset.v; p.querySelectorAll('#nc-dl button').forEach(x => x.classList.toggle('on', x === b)); });
     p.querySelector('#nc-ok').onclick = async () => { const place = p.querySelector('#nc-place').value.trim(); if (!place) { toast('Indique le lieu à photographier'); return; }
       const pv = p.querySelector('#nc-pays').value.trim(), pays = pv ? paysCode(pv) : null; if (pv && !pays) { toast('Pays non reconnu, choisis-le dans les suggestions'); return; }
-      const { error } = await sb.from('challenges').insert({ to_id: to, place: place.slice(0, 120), country_code: pays, note: p.querySelector('#nc-note').value.trim().slice(0, 300), due_at: new Date(Date.now() + dl * 864e5).toISOString() });
+      const ids = [...to], gid = ids.length > 1 ? (crypto.randomUUID ? crypto.randomUUID() : null) : null; if (ids.length > 1 && !gid) { toast('Défi de groupe impossible sur cet appareil'); return; }
+      const base = { place: place.slice(0, 120), country_code: pays, note: p.querySelector('#nc-note').value.trim().slice(0, 300), due_at: new Date(Date.now() + dl * 864e5).toISOString() };
+      const { error } = await sb.from('challenges').insert(ids.map(u => ({ ...base, to_id: u, ...(gid ? { group_id: gid } : {}) })));
       if (error) { toast(error.code === 'P0429' ? error.message : 'Défi impossible : ' + errMsg(error)); return; }
-      closePanel(); fView = 'defis'; if (current === 'fil') renderFil(); else go('fil'); toast(`Défi envoyé à ${fr.find(f => f.id === to).display_name.split(' ')[0]}`); };
+      closePanel(); fView = 'defis'; if (current === 'fil') renderFil(); else go('fil'); toast(ids.length > 1 ? `Défi de groupe envoyé à ${ids.length} amis` : `Défi envoyé à ${fr.find(f => f.id === ids[0]).display_name.split(' ')[0]}`); };
   });
 });
 

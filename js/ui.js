@@ -486,7 +486,7 @@ function renderHome() {
      <div class="sec"><h2>Mes voyages</h2><button class="more" data-act="go" data-to="carnets">Tout voir</button></div>
      <div class="dest" id="picks"></div>
      ${first ? '' : (() => { const vis = new Set(S.trips.filter(x => !info(x).futur).map(x => x.pays)).size, pc = Math.round(vis / 195 * 1000) / 10;
-       return `<div class="hfeat"><button class="hf map" data-act="go" data-to="carte"><span class="ic">${SV.globe}</span><b>Ma carte du monde</b><span><strong class="num">${vis}</strong> pays visité${vis > 1 ? 's' : ''}${vis ? `, ${String(pc).replace('.', ',')} % du monde` : ''}, ${S.envies.length} envie${S.envies.length > 1 ? 's' : ''}</span><em>Voir le globe${SV.right}</em></button>
+       return `${typeof shelfBanner === 'function' ? shelfBanner() : ''}<div class="hfeat"><button class="hf map" data-act="go" data-to="carte"><span class="ic">${SV.globe}</span><b>Ma carte du monde</b><span><strong class="num">${vis}</strong> pays visité${vis > 1 ? 's' : ''}${vis ? `, ${String(pc).replace('.', ',')} % du monde` : ''}, ${S.envies.length} envie${S.envies.length > 1 ? 's' : ''}</span><em>Voir le globe${SV.right}</em></button>
          <button class="hf ai" data-act="go" data-to="ia"><span class="ic">${SV.spark}</span><b>Assistant de voyage</b><span>${cur ? 'Combien il me reste par jour ?' : 'Quel voyage m\'a coûté le plus ?'}</span><em>Poser une question${SV.right}</em></button></div>`; })()}
      ${t ? `<div class="sec"><h2>${cur ? 'En ce moment' : next ? 'Prochain départ' : 'Dernier voyage'}</h2><button class="more" data-open="${t.id}">Ouvrir</button></div>
      <div class="rec" data-open="${t.id}">${phHTML(t.cover, `${t.id}|cover`, 'Ajouter une photo')}<span class="sh"></span>
@@ -527,6 +527,7 @@ function renderCards() {
   $('s-carnets').innerHTML = `
    <div class="vtop"><button class="iconbtn" data-act="back" aria-label="Retour">${SV.back}</button><h1>Mes voyages</h1><div class="r"><button class="iconbtn" data-act="go" data-to="journal" aria-label="Journal">${SV.book}</button><button class="iconbtn" data-act="go" data-to="carte" aria-label="Carte">${SV.globe}</button><button class="iconbtn" data-act="newTrip" aria-label="Nouveau voyage">${SV.plus}</button></div></div>
    <div class="vsearch">${SV.globe}<div><b>${S.trips.length} carnet${S.trips.length > 1 ? 's' : ''}, ${new Set(S.trips.map(x => x.pays)).size} pays</b><span>${days} jours de voyage, ${fmt(S.trips.reduce((a, x) => a + spentOf(x), 0))} dépensés</span></div></div>
+   ${typeof shelfBanner === 'function' ? shelfBanner() : ''}
    ${S.trips.length ? `<div class="vchips">${years.length ? ddHTML('vy', 'Année', years.map(y => [y, String(y)]), vF.y === 'all' ? '' : vF.y) : ''}${V_STATUS.map(([k, l, fn]) => { const n = S.trips.filter(t => inYear(t) && fn(t)).length; return `<button data-act="vf" data-k="s" data-v="${k}" class="${vF.s === k ? 'on' : ''}" ${n || k === 'all' ? '' : 'disabled'}>${l}<i class="num">${n}</i></button>`; }).join('')}</div>
 ` : ''}
    ${S.trips.length && !list.length ? `<div class="emptyj">Aucun voyage avec ces filtres. <button class="link" data-act="vf" data-k="reset">Tout afficher</button></div>` : ''}

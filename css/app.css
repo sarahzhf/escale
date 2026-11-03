@@ -1708,3 +1708,37 @@ nav button{padding:3px 0 1px;gap:3px}
 .askbar{bottom:var(--navh)}
 .mapcard{bottom:calc(var(--navh) + 10px)}
 .screen{padding-bottom:calc(var(--navh) + 36px)}
+
+/* v1.5.1 : pages qui pivotent sur la reliure (façon Paper / Livres) */
+@keyframes perspectiveLeft{from{transform-origin:0 50%;transform:perspective(2600px) rotateY(0deg)}to{transform-origin:0 50%;transform:perspective(2600px) rotateY(-180deg)}}
+@keyframes perspectiveLeftReturn{from{transform-origin:0 50%;transform:perspective(2600px) rotateY(-180deg)}to{transform-origin:0 50%;transform:perspective(2600px) rotateY(0deg)}}
+@keyframes perspectiveRight{from{transform-origin:100% 50%;transform:perspective(2600px) rotateY(0deg)}to{transform-origin:100% 50%;transform:perspective(2600px) rotateY(180deg)}}
+@keyframes perspectiveRightReturn{from{transform-origin:100% 50%;transform:perspective(2600px) rotateY(180deg)}to{transform-origin:100% 50%;transform:perspective(2600px) rotateY(0deg)}}
+@keyframes leafShadeOut{0%{opacity:0}50%{opacity:.4}100%{opacity:.4}}
+@keyframes leafShadeIn{0%{opacity:.3}50%{opacity:.3}100%{opacity:0}}
+@keyframes groundShade{0%{opacity:0}45%{opacity:.75}100%{opacity:0}}
+.bk-leaf{will-change:transform}
+.bk-leaf.l{left:0}.bk-leaf.r{left:50%}
+.bk-leaf .lf{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform-style:preserve-3d}
+.bk-leaf .lf.b{transform:rotateY(180deg)}
+.bk-leaf .lf>.bk-pg{left:0;right:0;width:auto}
+.bk-leaf .lf .sh{position:absolute;inset:0;pointer-events:none;opacity:0;background:linear-gradient(90deg,rgba(40,30,20,.55),rgba(40,30,20,.12) 60%,rgba(40,30,20,.25))}
+.bk-leaf.l .lf.f .sh,.bk-leaf.r .lf.b .sh{background:linear-gradient(270deg,rgba(40,30,20,.55),rgba(40,30,20,.12) 60%,rgba(40,30,20,.25))}
+.bk-leaf.on{filter:drop-shadow(0 6px 14px rgba(40,30,20,.18))}
+.bk-shade.l{left:0;right:auto;background:linear-gradient(270deg,rgba(40,30,20,.45),rgba(40,30,20,0) 60%)}
+.bk-shade.r{left:50%;right:auto;background:linear-gradient(90deg,rgba(40,30,20,.45),rgba(40,30,20,0) 60%)}
+.bk-book.snap{transition:none!important}
+.pg.back{box-shadow:inset 0 0 40px rgba(0,0,0,.04)}
+/* page d'ouverture : titre, pays et grande photo */
+.pg-ph.n1.intro{padding:14px 8% 0;margin-top:18px}
+/* entrée vers la bibliothèque */
+.shelfcard{display:flex;align-items:center;gap:14px;width:100%;border:0;border-radius:22px;padding:12px 16px 12px 12px;margin-top:18px;text-align:left;color:#fff;cursor:pointer;background:linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,.05)),var(--wood),#A9743F;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 12px 24px -16px rgba(60,35,10,.7)}
+.shelfcard .ms{position:relative;flex:none;display:flex;align-items:flex-end;gap:2px;height:66px;padding:0 6px 8px;border-radius:10px;background:rgba(0,0,0,.18);box-shadow:inset 0 4px 8px rgba(0,0,0,.25)}
+.shelfcard .ms i{display:block;width:var(--w);height:var(--h);border-radius:2px 2px 1px 1px;background:linear-gradient(90deg,rgba(0,0,0,.28),rgba(255,255,255,.18) 30%,rgba(0,0,0,.22)),var(--grain),var(--lc);background-blend-mode:normal,multiply,normal;box-shadow:1px 0 2px rgba(0,0,0,.3)}
+.shelfcard .ms i:nth-child(3n){transform:rotate(-4deg);transform-origin:bottom left;margin-left:3px}
+.shelfcard .pl{position:absolute;left:0;right:0;bottom:0;height:8px;border-radius:0 0 10px 10px;background:linear-gradient(180deg,#E2B47C,#B98650)}
+.shelfcard .tx{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
+.shelfcard b{font-family:var(--serif);font-weight:500;font-size:1.08rem}
+.shelfcard em{font-style:normal;font-size:.74rem;opacity:.85;line-height:1.35}
+.shelfcard>svg{width:18px;height:18px;flex:none;opacity:.85}
+.vsearch+.shelfcard{margin-top:12px}

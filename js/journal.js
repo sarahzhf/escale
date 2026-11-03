@@ -70,10 +70,9 @@ function pageHTML(b, s, side) {
   const edit = BK && BK.edit && b.own, idx = b.spreads.indexOf(s), num = idx * 2 + (side === 'l' ? 1 : 2);
   const foot = `<span class="pg-num num">${num}</span>`;
   if (s.kind === 'intro') {
-    const days = b.spreads.filter(x => x.kind === 'day'), photos = days.reduce((a, x) => a + x.e.photos.filter(Boolean).length, 0);
-    if (side === 'l') return `<div class="pg"><p class="pg-kicker">Carnet de voyage</p><h2 class="pg-h">${esc(b.title)}</h2><p class="pg-sub">${flag(b.pays)} ${esc(b.country)}</p><p class="pg-sub">du ${fd(b.du)} au ${fd(b.au)} ${D(b.du).getFullYear()}</p>
-      <div class="pg-ph n1">${b.cover ? pola(b.cover, 0) : `<figure class="pola" style="--rot:-3deg"><span class="ph-empty">${SV.img}</span><i class="tape t0"></i></figure>`}</div>
-      <p class="pg-stats num"><b>${nDays(b)}</b> jours · <b>${days.length}</b> page${days.length > 1 ? 's' : ''} · <b>${photos}</b> photo${photos > 1 ? 's' : ''}</p>${foot}</div>`;
+    const days = b.spreads.filter(x => x.kind === 'day');
+    if (side === 'l') return `<div class="pg"><p class="pg-kicker">Carnet de voyage</p><h2 class="pg-h">${esc(b.title)}</h2><p class="pg-sub">${flag(b.pays)} ${esc(b.country)}</p>
+      <div class="pg-ph n1 intro">${b.cover ? pola(b.cover, 0) : `<figure class="pola" style="--rot:-3deg"><span class="ph-empty">${SV.img}</span><i class="tape t0"></i></figure>`}</div>${foot}</div>`;
     return `<div class="pg"><p class="pg-kicker">Sommaire</p>${days.length ? `<ol class="pg-toc">${days.map(x => `<li><button data-act="bkGo" data-i="${b.spreads.indexOf(x)}"><span class="num">Jour ${x.e.j}</span><b>${esc(x.e.t)}</b></button></li>`).join('')}</ol>` : `<p class="pg-hand" style="margin-top:14px">Ton carnet est encore vide. Tourne la page pour écrire ton premier jour.</p>`}${foot}</div>`;
   }
   if (s.kind === 'add') return side === 'l' ? `<div class="pg"><p class="pg-hand" style="margin-top:40px">Une nouvelle journée à raconter ?</p>${foot}</div>`
@@ -94,7 +93,7 @@ function openBook(book, start = 0) {
   BK = { book, i: Math.min(start, book.spreads.length - 1), edit: false, sel: null, busy: true, zoom: null, wide };
   let el = $('book'); if (!el) { el = document.createElement('div'); el.id = 'book'; $('phone').appendChild(el); }
   el.className = `book-ov m${col.m}`; el.hidden = false; el.setAttribute('style', leather(col));
-  el.innerHTML = `<div class="bk-top"><button class="bk-ic" data-act="bkClose" aria-label="Fermer le carnet">${SV.x}</button><div class="bk-tt"><b>${esc(book.title)}</b><span>${fd(book.du)} au ${fd(book.au)}</span></div>${book.own ? `<button class="bk-ic" data-act="bkColor" aria-label="Couleur du carnet"><i class="swatch"></i></button><button class="bk-ic" data-act="bkEdit" aria-label="Modifier la page">${SV.edit || SV.plus}</button>` : '<span class="bk-ic ghost"></span>'}</div>
+  el.innerHTML = `<div class="bk-top"><button class="bk-ic" data-act="bkClose" aria-label="Fermer le carnet">${SV.x}</button><div class="bk-tt"><b>${esc(book.title)}</b></div>${book.own ? `<button class="bk-ic" data-act="bkColor" aria-label="Couleur du carnet"><i class="swatch"></i></button><button class="bk-ic" data-act="bkEdit" aria-label="Modifier la page">${SV.edit || SV.plus}</button>` : '<span class="bk-ic ghost"></span>'}</div>
     <div class="bk-stage" id="bkStage"><div class="bk-book closed" id="bkBook">
       <div class="bk-case"></div>
       <div class="bk-spread"><div class="bk-pg l" id="bkL"></div><div class="bk-pg r" id="bkR"></div><div class="bk-gutter"></div>
@@ -140,50 +139,61 @@ function bkBar() {
 }
 function closeBook() { const el = $('book'); if (el) { el.classList.add('closing'); setTimeout(() => { el.hidden = true; el.innerHTML = ''; el.classList.remove('closing'); }, reduced() ? 0 : 280); } BK = null; }
 
-/** Tourne la feuille de droite par-dessus la reliure (ou la ramène pour revenir en arrière). */
+/* ---------- tourner les pages ----------
+ * Une feuille rigide pivote sur sa reliure, comme dans Paper ou Livres :
+ *  - perspectiveLeft : la page pivote sur son bord gauche et part vers la gauche (page suivante) ;
+ *  - perspectiveLeftReturn : la page revient de la gauche (page précédente, vue page par page) ;
+ *  - perspectiveRight : la page de gauche pivote sur la reliure et part vers la droite (double page précédente) ;
+ *  - perspectiveRightReturn : la page revient de la droite (double page suivante, sens inverse). */
+const TURN_MS = 720;
+const blankBack = () => `<div class="pg back"></div>`;
+/** Anime la feuille #bkLeaf posée sur une moitié du carnet ('l' ou 'r'). */
+function turnLeaf(side, anim, front, back, done) {
+  const leaf = $('bkLeaf'), shade = $('bkShade'); if (!leaf) { done(); return; }
+  leaf.className = `bk-leaf on ${side}`;
+  leaf.innerHTML = `<div class="lf f"><div class="bk-pg ${side}">${front}</div><i class="sh"></i></div><div class="lf b"><div class="bk-pg ${side === 'l' ? 'r' : 'l'}">${back}</div><i class="sh"></i></div>`;
+  if (shade) { shade.className = `bk-shade ${side} run`; }
+  leaf.style.animation = `${anim} ${TURN_MS}ms cubic-bezier(.45,.05,.3,1) both`;
+  leaf.querySelector('.f .sh').style.animation = `${/Return/.test(anim) ? 'leafShadeIn' : 'leafShadeOut'} ${TURN_MS}ms ease-in-out both`;
+  leaf.querySelector('.b .sh').style.animation = `${/Return/.test(anim) ? 'leafShadeOut' : 'leafShadeIn'} ${TURN_MS}ms ease-in-out both`;
+  if (shade) shade.style.animation = `groundShade ${TURN_MS}ms ease-in-out both`;
+  let fin = false; const end = () => { if (fin) return; fin = true; leaf.className = 'bk-leaf'; leaf.style.animation = ''; leaf.innerHTML = ''; if (shade) { shade.className = 'bk-shade'; shade.style.animation = ''; } done(); };
+  leaf.addEventListener('animationend', e => { if (e.target === leaf) end(); }, { once: false });
+  setTimeout(end, TURN_MS + 200);
+}
+/** Recadre sans glissement (on change de moitié de page pendant qu'une feuille la cache). */
+function snapZoom(side) { const bk = $('bkBook'); bk.classList.add('snap'); BK.zoom = side; bkApplyZoom(); void bk.offsetWidth; requestAnimationFrame(() => bk.classList.remove('snap')); }
+
+/** Double page entière (grand écran ou vue double page) : tourne vers la double page k. */
 function flipTo(k) {
   if (!BK || BK.busy || k < 0 || k >= BK.book.spreads.length || k === BK.i) return;
-  const next = k > BK.i, cur = BK.book.spreads[BK.i], to = BK.book.spreads[k], leaf = $('bkLeaf'), L = $('bkL'), R = $('bkR'), stk = $('bkStk');
+  const next = k > BK.i, to = BK.book.spreads[k], L = $('bkL'), R = $('bkR'), stk = $('bkStk');
   BK.sel = null;
-  if (reduced() || !leaf.animate) { BK.i = k; bkRender(); return; }
+  // sur téléphone en vue page par page, un saut direct (sommaire, souvenir) change simplement de page
+  if (reduced() || (!BK.wide && BK.zoom)) { BK.i = k; bkRender(); if (!BK.wide && BK.zoom) snapZoom('l'); return; }
   BK.busy = true; stk.style.opacity = 0;
-  // sur téléphone : on recule pour voir la double page, la feuille tourne, puis on revient sur une page
-  if (!BK.wide && BK.zoom) { BK.zoom = null; bkApplyZoom(); setTimeout(turn, 480); } else turn();
-  function turn() {
-  if (next) { const front = R.innerHTML, back = pageHTML(BK.book, to, 'l'); R.innerHTML = pageHTML(BK.book, to, 'r'); curl(leaf, front, back, true, () => { L.innerHTML = back; end(); }); }
-  else { const front = pageHTML(BK.book, to, 'r'), back = L.innerHTML; L.innerHTML = pageHTML(BK.book, to, 'l'); curl(leaf, front, back, false, () => { R.innerHTML = front; end(); }); }
-  }
-  function end() { BK.i = k; BK.busy = false; stk.innerHTML = stkLayerHTML(); stk.style.opacity = ''; if (!BK.wide) BK.zoom = next ? 'l' : 'r'; bkApplyZoom(); bkBar(); }
+  const fin = () => { BK.i = k; BK.busy = false; stk.innerHTML = stkLayerHTML(); stk.style.opacity = ''; bkBar(); };
+  if (next) { const front = R.innerHTML, back = pageHTML(BK.book, to, 'l'); R.innerHTML = pageHTML(BK.book, to, 'r'); turnLeaf('r', 'perspectiveLeft', front, back, () => { L.innerHTML = back; fin(); }); }
+  else { const front = L.innerHTML, back = pageHTML(BK.book, to, 'r'); L.innerHTML = pageHTML(BK.book, to, 'l'); turnLeaf('l', 'perspectiveRight', front, back, () => { R.innerHTML = back; fin(); }); }
 }
-/** Feuille souple : la page est découpée en bandes verticales qui tournent chacune un peu plus
- *  que la précédente. Le bord libre part en premier et la feuille se courbe comme un magazine. */
-function curl(leaf, front, back, next, done) {
-  const N = 14; leaf.innerHTML = ''; let parent = leaf; const parts = [];
-  for (let i = 0; i < N; i++) {
-    const s = document.createElement('div'); s.className = 'cs'; s.style.cssText = i ? 'left:100%;width:100%' : `left:0;width:${100 / N}%`;
-    // chaque face déborde d'1 px sur la bande suivante pour qu'aucune couture ne se voie
-    const cin = j => `width:calc((100% - 1.5px) * ${N});left:calc((100% - 1.5px) * ${-j})`;
-    s.innerHTML = `<div class="cf"><div class="cin" style="${cin(i)}">${front}</div><i class="sh"></i></div><div class="cb"><div class="cin" style="${cin(N - 1 - i)}">${back}</div><i class="sh"></i></div>`;
-    parent.appendChild(s); parts.push({ s, f: s.querySelector('.cf .sh'), b: s.querySelector('.cb .sh') }); parent = s;
+/** Téléphone, page par page : chaque geste tourne une page entière. */
+function pageTurn(dir) {
+  if (!BK || BK.busy) return;
+  const n = BK.book.spreads.length, z = BK.zoom, L = $('bkL'), R = $('bkR'), stk = $('bkStk');
+  const pos = BK.i * 2 + (z === 'r' ? 1 : 0), to = pos + dir; if (to < 0 || to > n * 2 - 1) return;
+  const ti = to >> 1, tz = to % 2 ? 'r' : 'l', ts = BK.book.spreads[ti], target = pageHTML(BK.book, ts, tz);
+  BK.sel = null;
+  if (reduced()) { BK.i = ti; bkRender(); snapZoom(tz); bkBar(); return; }
+  BK.busy = true; stk.style.opacity = 0;
+  const here = z === 'r' ? R : L;
+  const fin = () => { BK.i = ti; bkRender(); snapZoom(tz); BK.busy = false; stk.style.opacity = ''; bkBar(); };
+  if (dir > 0) { // la page visible pivote sur son bord gauche et s'en va : la suivante est dessous
+    const front = here.innerHTML; here.innerHTML = target; turnLeaf(z, 'perspectiveLeft', front, blankBack(), fin);
+  } else { // la page précédente revient par la gauche et se pose sur la page visible
+    turnLeaf(z, 'perspectiveLeftReturn', target, blankBack(), fin);
   }
-  const shade = $('bkShade'); leaf.classList.add('on');
-  const dur = 950, t0 = performance.now();
-  const frame = now => {
-    const p = Math.min(1, (now - t0) / dur), e = p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
-    const base = next ? 180 * e : 180 * (1 - e), bend = 85 * Math.sin(Math.PI * e); let prev = 0;
-    parts.forEach((o, i) => { const f = Math.pow(i / (N - 1), 1.4), a = next ? Math.min(180, base + bend * f) : Math.max(0, base - bend * f);
-      o.s.style.transform = `rotateY(${-(a - prev)}deg)`;
-      // ombre continue d'une bande à l'autre : dégradé entre l'angle du bord gauche et celui du bord droit
-      const l0 = Math.sin(prev * Math.PI / 180), l1 = Math.sin(a * Math.PI / 180); prev = a;
-      o.f.style.background = `linear-gradient(90deg,rgba(40,30,20,${(l0 * .3).toFixed(3)}),rgba(40,30,20,${(l1 * .3).toFixed(3)}))`;
-      o.b.style.background = `linear-gradient(270deg,rgba(40,30,20,${(l0 * .22).toFixed(3)}),rgba(40,30,20,${(l1 * .22).toFixed(3)}))`; });
-    if (shade) shade.style.opacity = Math.sin(Math.PI * e) * .5;
-    if (p < 1) requestAnimationFrame(frame); else { leaf.classList.remove('on'); leaf.innerHTML = ''; if (shade) shade.style.opacity = 0; done(); }
-  };
-  requestAnimationFrame(frame);
 }
-/* sur téléphone : page de gauche, page de droite, puis double page suivante */
-function step(dir) { if (!BK) return; if (!BK.wide && BK.zoom) { if (dir > 0 && BK.zoom === 'l') return bkZoom('r'); if (dir < 0 && BK.zoom === 'r') return bkZoom('l'); } flipTo(BK.i + dir); }
+function step(dir) { if (!BK || BK.busy) return; if (!BK.wide && BK.zoom) return pageTurn(dir); flipTo(BK.i + dir); }
 
 /* ---------- gestes : balayer, toucher une page, glisser et pincer les stickers ---------- */
 function bindBookGestures() {
@@ -326,6 +336,12 @@ function renderJournalShelf() {
   select(shelfSel, false); requestAnimationFrame(() => spines[shelfSel] && spines[shelfSel].scrollIntoView({ inline: 'center', block: 'nearest' }));
 }
 SCREENS.journal = renderJournalShelf;
+/** Entrée vers la bibliothèque (accueil et Mes voyages) : une petite étagère avec les carnets de l'utilisatrice. */
+function shelfBanner() {
+  const list = sorted(); if (!list.length) return '';
+  const sp = list.slice(0, 9).map((t, i) => { const c = BOOKS[bookColor(t.bk, t.id)]; return `<i style="${leather(c)};--h:${44 + (i * 7) % 16}px;--w:${12 + (i * 3) % 6}px"></i>`; }).join('');
+  return `<button class="shelfcard" data-act="go" data-to="journal"><span class="ms">${sp}<span class="pl"></span></span><span class="tx"><b>Ma bibliothèque</b><em>${list.length} carnet${list.length > 1 ? 's' : ''} à feuilleter comme des livres</em></span>${SV.right}</button>`;
+}
 
 /* albums des amis : même carnet, en lecture seule */
 ACT.openAlbum = async d => { const a = await rpc('get_album', { p_trip: d.trip }); if (!a) { toast('Album indisponible'); return; } openBook(bookOfAlbum(a)); bindBookGestures(); };

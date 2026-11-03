@@ -486,9 +486,10 @@ function renderHome() {
      <div class="sec"><h2>Mes voyages</h2><button class="more" data-act="go" data-to="carnets">Tout voir</button></div>
      <div class="dest" id="picks"></div>
      ${first ? '' : (() => { const vis = new Set(S.trips.filter(x => !info(x).futur).map(x => x.pays)).size, pc = Math.round(vis / 195 * 1000) / 10;
-       return `${typeof shelfBanner === 'function' ? shelfBanner() : ''}<div class="hfeat"><button class="hf map" data-act="go" data-to="carte"><span class="ic">${SV.globe}</span><b>Ma carte du monde</b><span><strong class="num">${vis}</strong> pays visité${vis > 1 ? 's' : ''}${vis ? `, ${String(pc).replace('.', ',')} % du monde` : ''}, ${S.envies.length} envie${S.envies.length > 1 ? 's' : ''}</span><em>Voir le globe${SV.right}</em></button>
+       return `<div class="hfeat"><button class="hf map" data-act="go" data-to="carte"><span class="ic">${SV.globe}</span><b>Ma carte du monde</b><span><strong class="num">${vis}</strong> pays visité${vis > 1 ? 's' : ''}${vis ? `, ${String(pc).replace('.', ',')} % du monde` : ''}, ${S.envies.length} envie${S.envies.length > 1 ? 's' : ''}</span><em>Voir le globe${SV.right}</em></button>
          <button class="hf ai" data-act="go" data-to="ia"><span class="ic">${SV.spark}</span><b>Assistant de voyage</b><span>${cur ? 'Combien il me reste par jour ?' : 'Quel voyage m\'a coûté le plus ?'}</span><em>Poser une question${SV.right}</em></button></div>`; })()}
-     ${t ? `<div class="sec"><h2>${cur ? 'En ce moment' : next ? 'Prochain départ' : 'Dernier voyage'}</h2><button class="more" data-open="${t.id}">Ouvrir</button></div>
+     ${S.trips.length ? `<div class="sec"><h2>${next && !cur ? 'Prochain départ' : 'Calendrier des voyages'}</h2>${next && !cur ? `<span class="small">${esc(place(next))}, dans ${diffDays(TODAY, next.du)} jour${diffDays(TODAY, next.du) > 1 ? 's' : ''}</span>` : ''}</div>${calHTML()}` : ''}
+     ${t && cur ? `<div class="sec"><h2>En ce moment</h2><button class="more" data-open="${t.id}">Ouvrir</button></div>
      <div class="rec" data-open="${t.id}">${phHTML(t.cover, `${t.id}|cover`, 'Ajouter une photo')}<span class="sh"></span>
        <button class="heart ${t.fav ? 'on' : ''}" data-act="fav" data-trip="${t.id}" aria-label="Favori">${t.fav ? SV.heartF : SV.heart}</button>
        <div class="tx"><span class="badge">${SV.leaf}${cur ? `En cours, jour ${info(t).jour} sur ${info(t).jours}` : next ? `Départ dans ${diffDays(TODAY, t.du)} jours` : 'Terminé'}</span>
@@ -539,6 +540,28 @@ function renderCards() {
 }
 DD.vy = v => { vF.y = v || 'all'; renderCards(); };
 ACT.vf = d => { if (d.k === 'reset') vF = { s: 'all', y: 'all' }; else vF[d.k] = d.v; renderCards(); };
+
+/* ---------- calendrier des voyages (accueil) ---------- */
+let calM = null; // 'AAAA-MM' affiché
+function calHTML() {
+  const nx = sorted().filter(t => t.du >= TODAY).sort((a, b) => a.du < b.du ? -1 : 1)[0];
+  if (!calM) calM = (nx ? nx.du : TODAY).slice(0, 7);
+  const [y, m] = calM.split('-').map(Number), first = new Date(y, m - 1, 1), days = new Date(y, m, 0).getDate(), lead = first.getDay();
+  const ds = d => `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  const cells = [];
+  for (let i = 0; i < lead; i++) cells.push('<span class="cd empty"></span>');
+  for (let d = 1; d <= days; d++) {
+    const day = ds(d), start = S.trips.filter(t => t.du === day), inT = S.trips.find(t => t.du <= day && t.au >= day), t = start[0];
+    const dep = t && t.du > TODAY && nx && t.id === nx.id, wk = (lead + d - 1) % 7;
+    cells.push(`<${t ? `button data-open="${t.id}" aria-label="${esc(place(t))}, départ le ${d}"` : 'span'} class="cd${inT ? ' in' : ''}${day === TODAY ? ' today' : ''}${wk === 0 ? ' sun' : ''}${dep ? ' dep' : ''}${inT && inT.du === day ? ' s' : ''}${inT && inT.au === day ? ' e' : ''}"><b>${d}</b>${t ? `<span class="cv">${t.cover ? IMG(t.cover) : `<i>${flag(t.pays)}</i>`}</span><em>${esc(short(t))}</em>` : ''}</${t ? 'button' : 'span'}>`);
+  }
+  const nDep = nx && nx.du.slice(0, 7) === calM ? diffDays(TODAY, nx.du) : null;
+  return `<div class="cal" id="homeCal"><div class="cal-h"><b class="num">${m}/${y}</b><span class="sp"></span><button class="cal-nav" data-act="calMove" data-d="-1" aria-label="Mois précédent">${SV.back}</button><button class="cal-nav" data-act="calMove" data-d="1" aria-label="Mois suivant">${SV.right}</button></div>
+    <div class="cal-w">${['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'].map((w, i) => `<span class="${i ? '' : 'sun'}">${w}</span>`).join('')}</div>
+    <div class="cal-g">${cells.join('')}</div>
+    ${nDep != null ? `<p class="cal-f"><i></i>Départ pour ${esc(place(nx))} dans <b>${nDep} jour${nDep > 1 ? 's' : ''}</b></p>` : ''}</div>`;
+}
+ACT.calMove = d => { const [y, m] = calM.split('-').map(Number), n = new Date(y, m - 1 + (+d.d), 1); calM = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}`; const el = $('homeCal'); if (el) el.outerHTML = calHTML(); };
 
 /* ---------- journal ---------- */
 let jId = null, jView = 'pages';

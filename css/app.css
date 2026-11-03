@@ -1925,3 +1925,11 @@ nav button{padding:3px 0 1px;gap:3px}
   .screen{position:static!important;overflow:visible!important;padding-bottom:0!important}
   nav,.fab,.dock,.askbar,.toast,.scrim,.panel,.to-top,.ptr,.edge-back,.upbar,.offline-bar,.skip,.dtb,.htop{display:none!important}
 }
+
+.pile-days{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:14px -2px 0;padding:0 2px}
+.pile-days::-webkit-scrollbar{display:none}
+.pile-days button{flex:none;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;font:600 .76rem var(--ui);color:#5f5b54}
+.pile-days button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.pile-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
+.pile-head b{font-family:var(--serif);font-weight:500;font-size:1.02rem;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pile-head .more{flex:none;border:0;background:#EAF1EC;color:var(--green);border-radius:999px;padding:7px 12px;font:600 .76rem var(--ui)}

@@ -1742,3 +1742,18 @@ nav button{padding:3px 0 1px;gap:3px}
 .shelfcard em{font-style:normal;font-size:.74rem;opacity:.85;line-height:1.35}
 .shelfcard>svg{width:18px;height:18px;flex:none;opacity:.85}
 .vsearch+.shelfcard{margin-top:12px}
+
+/* v1.5.1 : relief 3D */
+@keyframes perspectiveLeft{from{transform-origin:0 50%;transform:perspective(var(--persp,700px)) rotateY(0deg)}to{transform-origin:0 50%;transform:perspective(var(--persp,700px)) rotateY(-180deg)}}
+@keyframes perspectiveLeftReturn{from{transform-origin:0 50%;transform:perspective(var(--persp,700px)) rotateY(-180deg)}to{transform-origin:0 50%;transform:perspective(var(--persp,700px)) rotateY(0deg)}}
+@keyframes perspectiveRight{from{transform-origin:100% 50%;transform:perspective(var(--persp,700px)) rotateY(0deg)}to{transform-origin:100% 50%;transform:perspective(var(--persp,700px)) rotateY(180deg)}}
+@keyframes perspectiveRightReturn{from{transform-origin:100% 50%;transform:perspective(var(--persp,700px)) rotateY(180deg)}to{transform-origin:100% 50%;transform:perspective(var(--persp,700px)) rotateY(0deg)}}
+.bk-book{transform:translateX(calc(var(--zx,0%) * var(--z,1))) scale(var(--z,1)) rotateX(var(--tilt,0deg));transition:transform .55s cubic-bezier(.3,.7,.2,1)}
+.bk-book.tilt{--tilt:14deg}
+.bk-book.tilt .bk-case{box-shadow:0 34px 36px -22px rgba(40,30,20,.6),0 10px 14px -8px rgba(40,30,20,.3),inset 0 0 0 1px rgba(0,0,0,.08)}
+.bk-shade.hl{background:linear-gradient(90deg,rgba(40,30,20,.5),rgba(40,30,20,0) 60%)}
+.bk-shade.hr{background:linear-gradient(270deg,rgba(40,30,20,.5),rgba(40,30,20,0) 60%)}
+/* tranche de la feuille qui tourne : un léger liseré donne l'épaisseur du papier */
+.bk-leaf .lf.f::after{content:"";position:absolute;top:0;bottom:0;width:2px;background:linear-gradient(90deg,rgba(0,0,0,.12),rgba(255,255,255,.6))}
+.bk-leaf.r .lf.f::after{right:0}.bk-leaf.l .lf.f::after{left:0}
+.bk-stage{perspective:1400px;perspective-origin:50% 40%}

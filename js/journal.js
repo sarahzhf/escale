@@ -9,7 +9,7 @@
  * stickers découpés dans ses photos). Les albums des amis s'ouvrent dans le même carnet.
  */
 'use strict';
-/* deux modèles : A = pages crème lignées et signet en satin, B = pages blanches et pinces dorées */
+/* deux modèles : A = pages crème lignées, B = pages blanches et pinces dorées */
 const BOOKS = {
   rose: { n: 'Rose poudré', c: '#E9BCC3', d: '#D9A3AC', m: 'A', rib: '#F4D9D6', ink: '#7a4a52' },
   bordeaux: { n: 'Bordeaux', c: '#6E1F2A', d: '#561520', m: 'B', rib: '#C9A15A', ink: '#f6e9e2' },
@@ -98,7 +98,7 @@ function openBook(book, start = 0) {
       <div class="bk-case"></div>
       <div class="bk-spread"><div class="bk-pg l" id="bkL"></div><div class="bk-pg r" id="bkR"></div><div class="bk-gutter"></div>
         <div class="bk-shade" id="bkShade"></div><div class="bk-stk" id="bkStk"></div><div class="bk-leaf" id="bkLeaf"></div></div>
-      ${col.m === 'B' ? `<span class="bk-clip cl">${clipSVG}</span><span class="bk-clip cr">${clipSVG}</span>` : '<span class="bk-ribbon"><i></i></span>'}
+      ${col.m === 'B' ? `<span class="bk-clip cl">${clipSVG}</span><span class="bk-clip cr">${clipSVG}</span>` : ''}
       <div class="bk-cover" id="bkCover"><div class="front"><span class="hinge"></span><span class="emboss">${esc(book.title)}</span></div><div class="back"></div></div>
     </div></div>
     <div class="bk-bot" id="bkBot"></div>`;
@@ -112,12 +112,12 @@ function openBook(book, start = 0) {
 function bkSize() {
   const st = $('bkStage'), bk = $('bkBook'); if (!st || !bk) return;
   const clips = $('book').classList.contains('mB'), w = (st.clientWidth - 28) * (clips ? .8 : .9), h = (st.clientHeight - 28) * .9, sw = Math.min(w, h * (2 * PG_W / PG_H), 820), k = sw / (2 * PG_W);
-  bk.style.width = sw + 'px'; bk.style.height = PG_H * k + 'px'; bk.style.setProperty('--k', k);
+  bk.style.width = sw + 'px'; bk.style.height = PG_H * k + 'px'; bk.style.setProperty('--k', k); bk.style.setProperty('--persp', Math.round(PG_W * k * 3) + 'px');
   BK.k = k; BK.zk = Math.min((st.clientWidth - 16) / (PG_W * k), (st.clientHeight - 16) / (PG_H * k));
   bkApplyZoom();
 }
 function bkApplyZoom() { const bk = $('bkBook'); if (!bk || !BK) return; const z = BK.zoom ? BK.zk : 1, dx = BK.zoom === 'l' ? 25 : BK.zoom === 'r' ? -25 : 0;
-  bk.style.setProperty('--zx', dx + '%'); bk.style.setProperty('--z', z); bk.classList.toggle('zoomed', !!BK.zoom); }
+  bk.style.setProperty('--zx', dx + '%'); bk.style.setProperty('--z', z); bk.classList.toggle('zoomed', !!BK.zoom); bk.classList.toggle('tilt', !BK.zoom && !BK.edit && !BK.wide); }
 function bkZoom(side) { if (!BK) return; BK.zoom = side; bkApplyZoom(); bkBar(); }
 addEventListener('resize', () => { if (BK) bkSize(); });
 
@@ -128,7 +128,7 @@ function bkRender() {
   const s = BK.book.spreads[BK.i];
   $('bkL').innerHTML = pageHTML(BK.book, s, 'l'); $('bkR').innerHTML = pageHTML(BK.book, s, 'r'); $('bkStk').innerHTML = stkLayerHTML();
   $('book').classList.toggle('editing', !!BK.edit);
-  bkBar();
+  bkApplyZoom(); bkBar();
 }
 function bkBar() {
   const n = BK.book.spreads.length, e = curEntry(), s = e && BK.sel != null ? (e.st || [])[BK.sel] : null;
@@ -137,7 +137,7 @@ function bkBar() {
       : `<div class="bk-tools wide"><button data-act="bkText">${SV.edit || ''}<span>Texte</span></button><button data-act="bkStyle"><b class="aa">Aa</b><span>Style</span></button><button data-act="bkPhoto">${SV.cam}<span>Photo</span></button><button data-act="bkStickers">${SV.smile || '☺'}<span>Sticker</span></button><button data-act="bkEdit" class="ok"><span>Terminé</span></button></div><p class="bk-hint">Glisse un sticker pour le placer, touche-le pour le régler.</p>`)
     : `<div class="bk-nav"><button class="bk-ic" data-act="bkPrev" aria-label="Page précédente" ${BK.i || BK.zoom === 'r' ? '' : 'disabled'}>${SV.back}</button><div class="bk-dots">${BK.book.spreads.map((_, k) => `<i class="${k === BK.i ? 'on' : ''}"></i>`).join('')}</div>${zoomBtn}<button class="bk-ic" data-act="bkNext" aria-label="Page suivante" ${BK.i < n - 1 || BK.zoom === 'l' ? '' : 'disabled'}>${SV.right}</button></div>${BK.zoom || BK.wide ? '' : `<p class="bk-hint">${BK.book.own ? 'Touche une page pour l\'ouvrir et la remplir, en dehors pour refermer le carnet.' : 'Touche une page pour la lire, en dehors pour refermer le carnet.'}</p>`}`;
 }
-function closeBook() { const el = $('book'); if (el) { el.classList.add('closing'); setTimeout(() => { el.hidden = true; el.innerHTML = ''; el.classList.remove('closing'); }, reduced() ? 0 : 280); } BK = null; }
+function closeBook() { const el = $('book'); if (el) { el.classList.add('closing'); setTimeout(() => { el.classList.remove('closing'); if (BK) return; /* un autre carnet a été ouvert entre-temps */ el.hidden = true; el.innerHTML = ''; }, reduced() ? 0 : 280); } BK = null; }
 
 /* ---------- tourner les pages ----------
  * Une feuille rigide pivote sur sa reliure, comme dans Paper ou Livres :
@@ -152,7 +152,7 @@ function turnLeaf(side, anim, front, back, done) {
   const leaf = $('bkLeaf'), shade = $('bkShade'); if (!leaf) { done(); return; }
   leaf.className = `bk-leaf on ${side}`;
   leaf.innerHTML = `<div class="lf f"><div class="bk-pg ${side}">${front}</div><i class="sh"></i></div><div class="lf b"><div class="bk-pg ${side === 'l' ? 'r' : 'l'}">${back}</div><i class="sh"></i></div>`;
-  if (shade) { shade.className = `bk-shade ${side} run`; }
+  if (shade) { shade.className = `bk-shade ${side} ${/Right/.test(anim) ? 'hr' : 'hl'} run`; }
   leaf.style.animation = `${anim} ${TURN_MS}ms cubic-bezier(.45,.05,.3,1) both`;
   leaf.querySelector('.f .sh').style.animation = `${/Return/.test(anim) ? 'leafShadeIn' : 'leafShadeOut'} ${TURN_MS}ms ease-in-out both`;
   leaf.querySelector('.b .sh').style.animation = `${/Return/.test(anim) ? 'leafShadeOut' : 'leafShadeIn'} ${TURN_MS}ms ease-in-out both`;
@@ -256,7 +256,7 @@ ACT.bkNewPage = () => { const t = bookTrip(); if (t) pageSheet(t.id); };
 ACT.bkText = () => { const t = bookTrip(), e = curEntry(); if (t && e) pageSheet(t.id, e.id); };
 ACT.bkPhoto = () => { const t = bookTrip(), e = curEntry(); if (!t || !e) return; let i = e.photos.findIndex(x => !x); if (i < 0) { if (e.photos.length >= 6) { toast('6 photos maximum par page'); return; } e.photos.push(null); i = e.photos.length - 1; save(); } pickPhoto(`${t.id}|e|${e.id}|${i}`); };
 ACT.bkColor = () => { const t = bookTrip(); if (!t) return;
-  openPanel(`<h2>Couleur du carnet</h2><p class="small">Le carnet garde cette couleur sur l'étagère et pour tes amis.</p><div class="bk-colors">${BOOK_KEYS.map(k => `<button data-act="bkSetColor" data-k="${k}" class="${BK.book.color === k ? 'on' : ''}" style="${leather(BOOKS[k])}"><span class="mini-cover"></span><b>${BOOKS[k].n}</b><i>${BOOKS[k].m === 'B' ? 'pages blanches, pinces dorées' : 'pages lignées, signet'}</i></button>`).join('')}</div>${CLOSE('Fermer')}`, null, { nofocus: true }); };
+  openPanel(`<h2>Couleur du carnet</h2><p class="small">Le carnet garde cette couleur sur l'étagère et pour tes amis.</p><div class="bk-colors">${BOOK_KEYS.map(k => `<button data-act="bkSetColor" data-k="${k}" class="${BK.book.color === k ? 'on' : ''}" style="${leather(BOOKS[k])}"><span class="mini-cover"></span><b>${BOOKS[k].n}</b><i>${BOOKS[k].m === 'B' ? 'pages blanches, pinces dorées' : 'pages crème lignées'}</i></button>`).join('')}</div>${CLOSE('Fermer')}`, null, { nofocus: true }); };
 ACT.bkSetColor = d => { const t = bookTrip(); if (!t) return; t.bk = d.k; save(); closePanel(); const i = BK.i; setTimeout(() => { openBook(bookOfTrip(t), i); bindBookGestures(); }, 380); toast(`Carnet ${BOOKS[d.k].n.toLowerCase()}`); };
 ACT.bkStk = d => { const e = curEntry(); if (!e || BK.sel == null) return; const s = e.st[BK.sel]; if (!s) return;
   if (d.op === 'small') s.s = r1(Math.max(0.3, (s.s || 1) / 1.2)); else if (d.op === 'big') s.s = r1(Math.min(4, (s.s || 1) * 1.2));

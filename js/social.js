@@ -383,7 +383,7 @@ async function renderDefis() {
   if (current !== 'fil' || fView !== 'defis') return;
   const inc = CHALS.filter(c => c.to_id === ME.id), open = inc.filter(c => c.status === 'open');
   const seen = new Set(), out = CHALS.filter(c => c.from_id === ME.id && (!c.group_id || (!seen.has(c.group_id) && seen.add(c.group_id))));
-  $('feedbox').innerHTML = `${scoreHTML()}
+  $('feedbox').innerHTML = `${typeof notifCardHTML === 'function' ? notifCardHTML() : ''}${scoreHTML()}
    <button class="btn2 g newchal" data-act="newChal">${SV.target}Défier un ou plusieurs amis</button>
    ${travelHTML()}
    <div class="sec"><h2>À relever</h2></div>${open.map(chalCard).join('') || `<div class="emptyfeed">Aucun défi en cours. Tes amis peuvent t'en lancer depuis ton profil.</div>`}

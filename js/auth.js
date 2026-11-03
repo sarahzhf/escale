@@ -24,8 +24,21 @@ const googleBtn = () => CFG.googleEnabled ? `<button class="gbtn google" data-au
 
 /* ---------- écrans d'accès ---------- */
 function welcome() {
-  showGate(`<div class="ghero"><h1>Tes voyages,<br>ton histoire.</h1><p>Carnets, photos et dépenses de chacune de tes escales, à garder pour toi ou à partager avec tes amis.</p></div>
-    <button class="gbtn primary" data-auth="signup">Créer un compte</button><button class="gbtn" data-auth="login">J'ai déjà un compte</button>${CFG.googleEnabled ? '<div class="gor"><span>ou</span></div>' + googleBtn().replace('<div class="gor"><span>ou</span></div>', '') : ''}`, bindAuth);
+  const shot = (n, alt) => `<figure class="lp-ph"><img src="icons/landing/${n}.webp" alt="${alt}" loading="lazy" decoding="async" width="270" height="585"></figure>`;
+  const cta = `<div class="lp-cta"><button class="gbtn primary" data-auth="signup">Commencer gratuitement</button><button class="gbtn" data-auth="login">J'ai déjà un compte</button>${CFG.googleEnabled ? googleBtn().replace('<div class="gor"><span>ou</span></div>', '') : ''}</div>`;
+  const feat = (n, k, t, d, alt) => `<section class="lp-f ${k}"><div class="lp-tx"><h2>${t}</h2><p>${d}</p></div>${shot(n, alt)}</section>`;
+  showGate(`<div class="lp">
+    <section class="lp-hero"><h1>Tes voyages,<br>ton histoire.</h1><p>Le carnet de voyage qui garde tes souvenirs, tes photos et ton budget au même endroit. Privé par défaut, à partager avec tes amis si tu veux.</p>${cta}${shot('home', "L'accueil d'Escale avec tes voyages")}</section>
+    ${feat('carnet', '', 'Un carnet qui se feuillette', 'Chaque voyage devient un carnet en cuir. Écris ta journée où tu veux sur la page, colle tes photos, choisis typographies, cadres, stickers et décos, puis tourne les pages comme du papier.', 'Un carnet de voyage ouvert dans Escale')}
+    ${feat('budget', 'r', 'Ton budget, sans prise de tête', 'Note une dépense en deux secondes, en euros ou en monnaie locale. Escale convertit, répartit les nuits d’hôtel et te dit combien il te reste par jour, avec des statistiques claires.', 'Le suivi du budget de voyage')}
+    ${feat('carte', '', 'Ta carte du monde', 'Tous tes voyages sur un globe en 3D ou une carte à plat : les pays visités, ceux qui te font envie, et ce que chaque voyage t’a coûté.', 'La carte du monde des voyages')}
+    ${feat('defis', 'r', 'Entre amis, et un peu de défi', 'Partage tes albums, réagis aux souvenirs de tes amis et lance-leur des défis photo : à plusieurs, on vote pour la plus belle. Points, badges et classement entre amis.', 'Les défis photo entre amis')}
+    <section class="lp-priv"><h2>Tes données restent à toi</h2><ul>
+      <li>${SV.lock}<span><b>Privé par défaut</b>Pour chaque album ou publication, tu choisis : toi seule, tes amis ou tout le monde.</span></li>
+      <li>${SV.wallet}<span><b>Tes dépenses ne sont jamais montrées</b>Sauf si tu joins toi-même un bilan à une publication.</span></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span><b>Tout récupérer, tout effacer</b>Télécharge toutes tes données ou supprime ton compte quand tu veux. Ni publicité, ni traceur.</span></li></ul></section>
+    <section class="lp-inst"><h2>Comme une appli, sans store</h2><p>Sur iPhone, ouvre Escale dans Safari, touche le bouton Partager puis « Sur l’écran d’accueil ». Sur Android, choisis « Installer l’application » dans le menu de Chrome.</p></section>
+    <section class="lp-end"><h2>Prête pour ta prochaine escale ?</h2>${cta}</section></div>`, bindAuth);
 }
 function signupForm(prefill = {}) {
   showGate(`<button class="gback" data-auth="welcome" aria-label="Retour">${SV.back}</button><h2>Créer un compte</h2>${googleBtn()}
@@ -185,6 +198,8 @@ ACT.profile = () => { let ko = 0; try { ko = Math.round((localStorage.getItem(ca
   openPanel(`<h2>Réglages</h2><p class="small">${esc(PROFILE.display_name)}, @${esc(PROFILE.handle)} · ${esc(ME.email || '')}</p>
    <p class="setsec">Profil et confidentialité</p><div class="menulist">
     <button data-act="editProfile">${SV.edit}Modifier mon profil</button>
+    <button data-act="setNotifs">${SV.bell}Notifications</button>
+    <button data-act="setTheme">${SV.spark}Apparence<span class="small" style="margin-left:auto">${{ auto: 'automatique', light: 'clair', dark: 'sombre' }[themePref()]}</span></button>
     <button data-act="setPrivacy">${SV.lock}Confidentialité</button>
     <button data-act="setAI">${SV.spark}Assistant IA<span class="small" style="margin-left:auto">${SETTINGS.ai_enabled ? 'activé' : 'désactivé'}</span></button></div>
    <p class="setsec">Sécurité</p><div class="menulist">
@@ -199,10 +214,15 @@ ACT.profile = () => { let ko = 0; try { ko = Math.round((localStorage.getItem(ca
     <a href="legal/cgu.html" target="_blank" rel="noopener">${SV.page}Conditions d'utilisation</a>
     <a href="legal/mentions-legales.html" target="_blank" rel="noopener">${SV.page}Mentions légales</a>
     <button data-act="faq">${SV.spark}Aide et questions fréquentes</button>
+    <button data-act="guide">${SV.book}Revoir le guide de découverte</button>
     <a href="mailto:${esc(CFG.contactEmail || '')}">${SV.send}Nous contacter</a></div>
    <p class="setmeta">Une copie de tes carnets (${ko} Ko) est gardée sur cet appareil pour fonctionner hors connexion. Elle est effacée quand tu te déconnectes.</p>
    <button class="danger" data-act="logout">Se déconnecter</button>${CLOSE('Fermer')}`, null, { nofocus: true }); };
 ACT.logout = () => logout();
+ACT.setTheme = () => { const cur = themePref();
+  openPanel(`<h2>Apparence</h2><p class="small">« Automatique » suit le réglage de ton téléphone. Ton carnet garde toujours son papier.</p>
+    <div class="theme-opts">${[['auto', 'a', 'Automatique'], ['light', 'l', 'Clair'], ['dark', 'd', 'Sombre']].map(([k, c, n]) => `<button class="${c} ${cur === k ? 'on' : ''}" data-act="pickTheme" data-v="${k}"><span class="sw2"></span>${n}</button>`).join('')}</div>${CLOSE('Fermer')}`, null, { nofocus: true }); };
+ACT.pickTheme = d => { setTheme(d.v); document.querySelectorAll('.theme-opts button').forEach(b => b.classList.toggle('on', b.dataset.v === d.v)); };
 const FAQ = [
   ['Comment créer un voyage ?', 'Touche le bouton + vert, puis « Un nouveau voyage ». Choisis le pays, les dates et ton budget : un carnet est créé avec son journal, ses photos et ses dépenses.'],
   ['Comment noter une dépense dans une autre monnaie ?', 'Dans « Ajouter une dépense », choisis la monnaie du pays : Escale convertit en euros avec le taux du jour. Tu peux aussi répartir un hôtel sur plusieurs nuits ou sur tout le séjour.'],

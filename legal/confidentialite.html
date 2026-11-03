@@ -21,6 +21,7 @@
 <tr><td>Compte</td><td>adresse e-mail, mot de passe (stocké uniquement sous forme chiffrée et irréversible), date d'inscription, date de dernière connexion, facteur de double authentification si tu l'actives</td><td>toi, ou Google si tu choisis « Continuer avec Google » (nom, e-mail, photo de profil Google)</td></tr>
 <tr><td>Profil</td><td>nom affiché, identifiant, bio, photo de profil et de couverture</td><td>toi</td></tr>
 <tr><td>Carnets</td><td>voyages (pays, ville facultative, dates, budget), dépenses (montant, devise, catégorie, qui a payé et pour qui), pages de journal, lieux, envies, photos, prénoms des personnes avec qui tu partages un voyage et remboursements entre vous</td><td>toi</td></tr>
+<tr><td>Notifications</td><td>si tu les actives : l’adresse technique d’envoi de ton appareil et tes choix par type (défis, réactions et commentaires, amis)</td><td>ton appareil</td></tr>
 <tr><td>Contenu social</td><td>publications, légendes, commentaires, réactions, enregistrements, défis, demandes d'amis, blocages, signalements</td><td>toi et les autres membres</td></tr>
 <tr><td>Preuves de consentement</td><td>version des conditions acceptées, confirmation d'avoir 15 ans ou plus, choix de visibilité dans la recherche, activation de l'assistant IA, avec la date</td><td>toi</td></tr>
 <tr><td>Données techniques</td><td>adresse IP et informations du navigateur dans les journaux de sécurité de nos hébergeurs, compteur quotidien d'utilisation de l'assistant</td><td>automatique</td></tr>
@@ -56,10 +57,11 @@
 <table>
 <tr><th>Prestataire</th><th>Rôle</th><th>Localisation des données</th></tr>
 <tr><td>Supabase Inc.</td><td>base de données, comptes, stockage des photos, fonctions serveur</td><td>projet hébergé dans l'Union européenne région Stockholm, Suède (eu-north-1)</td></tr>
-<tr><td>Cloudflare, Inc.</td><td>hébergement et diffusion du site de l'appli</td><td>réseau mondial, journaux techniques</td></tr>
+<tr><td>Netlify, Inc.</td><td>hébergement et diffusion du site de l'appli</td><td>réseau mondial, journaux techniques</td></tr>
 <tr><td>Anthropic PBC</td><td>génération des réponses de l'assistant IA, uniquement si tu l'actives</td><td>États-Unis</td></tr>
 <tr><td>ExchangeRate-API (open.er-api.com)</td><td>taux de change publics, consultés au plus deux fois par jour depuis ton téléphone. Aucune donnée personnelle n'est envoyée : seule ton adresse IP est visible techniquement, comme pour tout site</td><td>réseau mondial</td></tr>
 <tr><td>Google LLC</td><td>connexion « Continuer avec Google », uniquement si tu l'utilises</td><td>États-Unis</td></tr>
+<tr><td>Apple, Google ou Mozilla, selon ton téléphone et ton navigateur</td><td>acheminement des notifications sur ton téléphone, uniquement si tu les actives. Le contenu est chiffré de bout en bout : ces services ne peuvent pas le lire</td><td>réseaux mondiaux</td></tr>
 <tr><td><span class="todo">[prestataire d'e-mails transactionnels, par exemple Brevo ou Resend]</span></td><td>envoi des e-mails de confirmation et de mot de passe</td><td><span class="todo">[à compléter]</span></td></tr>
 </table>
 <p>Chaque prestataire est lié par un contrat de sous-traitance conforme à l'article 28 du RGPD. Les transferts hors de l'Union européenne sont encadrés par le cadre de protection des données UE et États-Unis lorsque le prestataire y adhère, ou par les clauses contractuelles types de la Commission européenne.</p>

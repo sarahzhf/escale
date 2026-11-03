@@ -1,0 +1,52 @@
+/* Mode sombre : réglages faits à la main, en plus de dark.css (généré). */
+html[data-theme="dark"]{color-scheme:dark;--line:rgba(255,255,255,.09);--muted:#A3A69F;--gray:#161816;--pale:#121413;--sky:#1A1D1B;--lilac:#1A1C1B;--lav:#262927;--aqua:#1E2A22;--green-2:#1E2A22}
+html[data-theme="dark"] body{background:#0E0F0E}
+html[data-theme="dark"] .screen,html[data-theme="dark"] #s-home{background:#121413}
+html[data-theme="dark"] nav{background:rgba(22,24,23,.94);box-shadow:0 -1px 0 rgba(255,255,255,.07)}
+html[data-theme="dark"] nav button{color:#8E918B}
+html[data-theme="dark"] nav button.on,html[data-theme="dark"] nav button.on i{color:#93C9A3}
+html[data-theme="dark"] nav button.on i{background:#1E2A22}
+html[data-theme="dark"] .panel{background:#1A1C1B}
+html[data-theme="dark"] .scrim{background:rgba(0,0,0,.55)}
+html[data-theme="dark"] input,html[data-theme="dark"] textarea,html[data-theme="dark"] select{color:#ECEBE6}
+html[data-theme="dark"] input::placeholder,html[data-theme="dark"] textarea::placeholder{color:#7D817A}
+html[data-theme="dark"] .toast{background:#ECEBE6;color:#151714}
+html[data-theme="dark"] .fab{box-shadow:0 12px 24px -10px rgba(0,0,0,.8)}
+/* le carnet et la bibliothèque gardent leurs matières, sur un fond plus sombre */
+html[data-theme="dark"] .book-ov{background:radial-gradient(120% 75% at 50% 35%,#2A2723 0%,#151413 75%);color:#ECEBE6}
+html[data-theme="dark"] .book-ov .bk-ic{background:rgba(255,255,255,.1);color:#ECEBE6}
+html[data-theme="dark"] .bk-hint,html[data-theme="dark"] .bk-tt b{color:#ECEBE6}
+html[data-theme="dark"] .bk-tools button{background:#262927;color:#ECEBE6}
+html[data-theme="dark"] .bk-tools .ok{background:#ECEBE6;color:#151714}
+html[data-theme="dark"] .bookcase{filter:brightness(.82)}
+html[data-theme="dark"] .score{background:linear-gradient(140deg,#1F3F2A,#2E5E3E)}
+html[data-theme="dark"] .cal{background:#1A1C1B}
+html[data-theme="dark"] .cd{color:#ECEBE6;border-bottom-color:rgba(255,255,255,.06)}
+html[data-theme="dark"] .cd.in{background:rgba(147,201,163,.1)}
+html[data-theme="dark"] .cal-w{border-bottom-color:rgba(255,255,255,.08)}
+html[data-theme="dark"] .cal-h b{color:#C9C7C1}
+html[data-theme="dark"] .cal-nav{background:#262927;color:#ECEBE6}
+html[data-theme="dark"] .dp-stack .none,html[data-theme="dark"] .dp-stack.new{background:#1A1C1B;border-color:rgba(255,255,255,.12);color:#A3A69F}
+html[data-theme="dark"] .dp-stack.new{color:#ECEBE6}
+html[data-theme="dark"] .togrow .sw{background:#3A3D3B}
+html[data-theme="dark"] .togrow.on .sw{background:#4C8A66}
+html[data-theme="dark"] .faq details{background:#232624}
+html[data-theme="dark"] .faq details p{color:#C9C7C1}
+html[data-theme="dark"] .skc{background:#1A1C1B}
+html[data-theme="dark"] .skc i{background:linear-gradient(90deg,#232624 0,#2C2F2D 40%,#232624 80%);background-size:300% 100%}
+html[data-theme="dark"] .to-top,html[data-theme="dark"] .edge-back,html[data-theme="dark"] .ptr{background:#262927;color:#ECEBE6}
+html[data-theme="dark"] .bd{background:#232624}
+html[data-theme="dark"] .trav,html[data-theme="dark"] .board,html[data-theme="dark"] .chal{background:#1A1C1B}
+html[data-theme="dark"] .br.me{background:#1E2A22}
+html[data-theme="dark"] .vote{background:#232624}
+html[data-theme="dark"] .gp{background:#232624}
+html[data-theme="dark"] .jtog{background:#232624}
+html[data-theme="dark"] .jtog button.on{background:#1A1C1B;color:#ECEBE6}
+html[data-theme="dark"] .pile-head .more{background:#1E2A22;color:#93C9A3}
+html[data-theme="dark"] .theme-opts button{background:#232624;color:#ECEBE6}
+/* réglage d'apparence */
+.theme-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.theme-opts button{display:flex;flex-direction:column;align-items:center;gap:8px;border:1.5px solid var(--line);background:#fff;border-radius:16px;padding:14px 6px;font:600 .8rem var(--ui);color:var(--ink)}
+.theme-opts button.on{border-color:var(--green);box-shadow:0 0 0 2px var(--green)}
+.theme-opts .sw2{width:44px;height:30px;border-radius:9px;border:1px solid rgba(0,0,0,.12)}
+.theme-opts .l .sw2{background:linear-gradient(#F4F3EF 50%,#fff 50%)}.theme-opts .d .sw2{background:linear-gradient(#121413 50%,#1C1F1D 50%)}.theme-opts .a .sw2{background:linear-gradient(90deg,#F4F3EF 50%,#121413 50%)}

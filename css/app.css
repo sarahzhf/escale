@@ -1433,3 +1433,12 @@ nav button.on .lb{font-weight:700}
 .cadd svg{width:15px;height:15px}
 .frow.cmt .cheart{margin-top:2px}
 .ctray button.on{background:#E7F0E9;border-radius:50%}
+
+/* v1.4 : sous-catégories et séjours */
+.picker.sub .pill{font-family:var(--ui);font-size:.78rem;padding:6px 12px}
+.seg.wide{display:flex;width:100%}
+.seg.wide button{flex:1}
+#e-pernight{margin-top:6px;color:var(--green)}
+.st-detail .subs{display:grid;gap:6px;margin:10px 0 4px}
+.st-detail .subs div{display:grid;grid-template-columns:110px 1fr auto;gap:8px;align-items:center;font-size:.78rem}
+.st-detail .subs i{height:8px;border-radius:5px;min-width:4px;opacity:.85}

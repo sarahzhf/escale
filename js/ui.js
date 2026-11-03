@@ -31,6 +31,21 @@ const short = t => place(t).split(' et ')[0];
 const myPart = d => !d.split || !d.split.length ? (d.by && d.by !== 'me' ? 0 : d.eur) : d.split.includes('me') ? d.eur / d.split.length : 0;
 /** Montant en devise affiché pour une dépense (devise du pays ou autre devise choisie). */
 const fmtD = (d, t) => d.cur ? (Math.round(d.v * 100) / 100).toLocaleString('fr-FR') + ' ' + d.cur : fmtL(d.v, t);
+/* sous-catégories (facultatives) et séjours sur plusieurs nuits */
+const SUBS = {
+  logement: { hotel: 'Hôtel', location: 'Location', auberge: 'Auberge', camping: 'Camping', habitant: "Chez l'habitant" },
+  repas: { restaurant: 'Restaurant', cafe: 'Café, snack', courses: 'Courses', bar: 'Bar' },
+  transport: { avion: 'Avion', train: 'Train', bus: 'Bus, car', local: 'Métro, tram', taxi: 'Taxi, VTC', voiture: 'Location de voiture', carburant: 'Carburant, péage', bateau: 'Bateau' },
+  activites: { visite: 'Visite, musée', excursion: 'Excursion', spectacle: 'Spectacle', sport: 'Sport, loisirs' },
+  shopping: { souvenirs: 'Souvenirs', vetements: 'Vêtements', cadeaux: 'Cadeaux' },
+};
+const subName = d => (d.s && SUBS[d.c] && SUBS[d.c][d.s]) || '';
+const nightsOf = d => d.j2 && d.j2 > d.j ? d.j2 - d.j + 1 : 1;
+/** Part d'une dépense attribuée au jour j : un séjour est réparti à parts égales sur ses nuits. */
+const dayShare = (d, j) => d.j2 && d.j2 > d.j ? (j >= d.j && j <= d.j2 ? myPart(d) / nightsOf(d) : 0) : (d.j === j ? myPart(d) : 0);
+const coversAny = (d, ok) => { for (let j = d.j; j <= (d.j2 && d.j2 > d.j ? d.j2 : d.j); j++) if (ok(j)) return true; return false; };
+const stayTxt = (d, t) => d.j2 && d.j2 > d.j ? `${nightsOf(d)} nuits, du ${fd(addDays(t.du, d.j - 1))} au ${fd(addDays(t.du, d.j2 - 1))}, ${fmt(d.eur / nightsOf(d))} par nuit` : '';
+const expMeta = (d, t) => [subName(d) || CATS[d.c].n, stayTxt(d, t)].filter(Boolean).join(', ');
 const pct = (a, b) => b ? Math.min(100, a / b * 100) : 0;
 
 /* ---------- photos ---------- */
@@ -130,6 +145,7 @@ function expSheet(tid, eid, lock) {
   // E = euros, L = devise du pays, X = autre devise (ex. dollars au Cambodge, roadtrip sur plusieurs pays)
   let cur = d ? (d.v == null ? 'E' : d.cur ? 'X' : 'L') : (C(t).rate !== 1 ? 'L' : 'E'), xcur = d && d.cur ? d.cur : 'USD', cat = d ? d.c : 'repas';
   let by = d ? d.by || 'me' : 'me', split = d && d.split ? d.split.slice() : null;
+  let sub = d ? d.s || null : null, stay = d && d.j2 && d.j2 > d.j ? (d.j === 1 && d.j2 === info(t).jours ? 'all' : 'n') : '1';
   openPanel(`<h2>${d ? 'Modifier la dépense' : 'Nouvelle dépense'}</h2>${d || lock ? `<p class="small">${esc(place(t))}</p>` : ''}
    ${d || lock ? '' : `<label class="fld"><span>Voyage</span><select id="e-trip">${sorted().map(x => `<option value="${x.id}" ${x.id === tid ? 'selected' : ''}>${esc(place(x))}</option>`).join('')}</select></label>`}
    <div style="display:flex;justify-content:center;margin-top:12px"><div class="seg" id="e-cur"></div></div>
@@ -137,7 +153,11 @@ function expSheet(tid, eid, lock) {
    <div class="amount"><input id="e-amt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="Montant" value="${d ? (d.v != null ? d.v : Math.round(d.eur * 100) / 100) : ''}"></div>
    <p class="conv num" id="e-conv"></p>
    <div class="fld"><span>Catégorie</span><div class="picker" id="e-cat">${Object.keys(CATS).map(k => `<button class="pill ${k === cat ? 'on' : ''}" data-c="${k}" type="button">${CATS[k].n}</button>`).join('')}</div></div>
-   <div class="two"><label class="fld"><span>Description</span><input id="e-lbl" maxlength="80" value="${d ? esc(d.l) : ''}" placeholder="Ex. Dîner à Gion"></label><label class="fld"><span>Jour</span><select id="e-day"></select></label></div>
+   <div class="fld"><span>Précision <i class="opt">facultatif</i></span><div class="picker sub" id="e-sub"></div></div>
+   <label class="fld"><span>Description</span><input id="e-lbl" maxlength="80" value="${d ? esc(d.l) : ''}" placeholder="Ex. Dîner à Gion"></label>
+   <div id="e-stay" hidden><div class="fld"><span>Durée du séjour</span><div class="seg wide" id="e-stayk"><button type="button" data-v="1">Une nuit</button><button type="button" data-v="n">Plusieurs nuits</button><button type="button" data-v="all">Tout le voyage</button></div></div></div>
+   <div class="two"><label class="fld"><span id="e-dayl">Jour</span><select id="e-day"></select></label><label class="fld" id="e-day2w" hidden><span>Dernière nuit</span><select id="e-day2"></select></label></div>
+   <p class="small num" id="e-pernight"></p>
    <div id="e-grp"></div>
    ${!navigator.onLine ? `<p class="offnote">${SV.cloudOff}Hors connexion : la dépense est gardée sur ton téléphone et partira toute seule au retour du réseau.</p>` : ''}
    <button class="btn full" id="e-ok">${d ? 'Enregistrer' : 'Ajouter au carnet'}<i>${SV.arrow}</i></button>
@@ -149,7 +169,20 @@ function expSheet(tid, eid, lock) {
       p.querySelector('#e-cur').innerHTML = `<button type="button" data-v="E" class="${cur === 'E' ? 'on' : ''}">Euros</button>` + (l ? `<button type="button" data-v="L" class="${cur === 'L' ? 'on' : ''}">${esc(C(t).cur)}</button>` : '') + `<button type="button" data-v="X" class="${cur === 'X' ? 'on' : ''}">Autre</button>`;
       p.querySelector('#e-xwrap').hidden = cur !== 'X';
       p.querySelectorAll('#e-cur button').forEach(b => b.onclick = () => { cur = b.dataset.v; segs(); conv(); }); };
-    const days = () => { const n = info(t).jours, cd = info(t).enCours ? info(t).jour : 1; p.querySelector('#e-day').innerHTML = Array.from({ length: n }, (_, i) => `<option value="${i + 1}" ${(d ? d.j : cd) === i + 1 ? 'selected' : ''}>Jour ${i + 1}, ${fd(addDays(t.du, i))}</option>`).join(''); };
+    const days = () => { const n = info(t).jours, cd = info(t).enCours ? info(t).jour : 1, opt = sel => Array.from({ length: n }, (_, i) => `<option value="${i + 1}" ${sel === i + 1 ? 'selected' : ''}>Jour ${i + 1}, ${fd(addDays(t.du, i))}</option>`).join('');
+      p.querySelector('#e-day').innerHTML = opt(d ? d.j : cd); p.querySelector('#e-day2').innerHTML = opt(d && d.j2 ? d.j2 : Math.min(n, (d ? d.j : cd) + 1)); };
+    const subs = () => { const L = SUBS[cat] || {}; if (sub && !L[sub]) sub = null;
+      p.querySelector('#e-sub').innerHTML = Object.entries(L).map(([k, n]) => `<button type="button" class="pill ${sub === k ? 'on' : ''}" data-s="${k}">${n}</button>`).join('');
+      p.querySelectorAll('#e-sub .pill').forEach(b => b.onclick = () => { sub = sub === b.dataset.s ? null : b.dataset.s; subs(); }); };
+    const stayUI = () => { const lg = cat === 'logement', n = info(t).jours; p.querySelector('#e-stay').hidden = !lg; if (!lg) stay = '1';
+      p.querySelectorAll('#e-stayk button').forEach(b => b.classList.toggle('on', b.dataset.v === stay));
+      if (stay === 'all') { p.querySelector('#e-day').value = '1'; p.querySelector('#e-day2').value = String(n); }
+      p.querySelector('#e-day2w').hidden = !(lg && stay !== '1'); p.querySelector('#e-dayl').textContent = lg ? (stay === '1' ? 'Nuit du' : 'Première nuit') : 'Jour';
+      p.querySelector('#e-day').disabled = p.querySelector('#e-day2').disabled = stay === 'all';
+      p.querySelector('.amount input').setAttribute('aria-label', lg && stay !== '1' ? 'Prix total du séjour' : 'Montant'); perNight(); };
+    const nights = () => { if (cat !== 'logement' || stay === '1') return 1; const a = +p.querySelector('#e-day').value, b = +p.querySelector('#e-day2').value; return b > a ? b - a + 1 : 1; };
+    const perNight = () => { const el = p.querySelector('#e-pernight'), v = +p.querySelector('#e-amt').value / rate(), n = nights();
+      el.textContent = cat === 'logement' && stay !== '1' ? (n > 1 ? (v ? `Prix total du séjour : ${n} nuits, soit ${fmt(v / n)} par nuit, réparti automatiquement jour par jour.` : `Indique le prix total pour les ${n} nuits : Escale le répartit par nuit.`) : 'Choisis une dernière nuit après la première.') : ''; };
     const conv = () => { const v = +p.querySelector('#e-amt').value, r = rate(); const out = p.querySelector('#e-conv');
       if (!v) { out.textContent = cur === 'E' ? '' : `1 € = ${fmtRate(r)} ${curName()}, ${rateNote()}`; return; }
       out.textContent = cur === 'E' ? (C(t).rate !== 1 ? `soit ${fmtL(v * C(t).rate, t)}, ${rateNote()}` : '') : `soit ${(v / r).toFixed(2).replace('.', ',')} €, 1 € = ${fmtRate(r)} ${curName()} (${rateNote()})`; };
@@ -161,16 +194,20 @@ function expSheet(tid, eid, lock) {
       box.querySelectorAll('#e-sp .pill').forEach(b => b.onclick = () => { const id = b.dataset.id; split = split.includes(id) ? split.filter(x => x !== id) : [...split, id]; if (!split.length) { split = [id]; toast('Au moins une personne'); } grp(); });
       each(); };
     const each = () => { const e = p.querySelector('#e-each'); if (!e || !split) return; const v = +p.querySelector('#e-amt').value / rate(); e.textContent = v ? `${fmt(v / split.length)} par personne (${split.length})` : ''; };
-    segs(); days(); conv(); grp();
-    p.querySelector('#e-amt').oninput = () => { conv(); each(); };
+    segs(); days(); conv(); grp(); subs(); stayUI();
+    p.querySelectorAll('#e-stayk button').forEach(b => b.onclick = () => { stay = b.dataset.v; stayUI(); });
+    p.querySelector('#e-day').onchange = p.querySelector('#e-day2').onchange = () => { const a = p.querySelector('#e-day'), b = p.querySelector('#e-day2'); if (+b.value < +a.value) b.value = a.value; perNight(); };
+    p.querySelector('#e-amt').oninput = () => { conv(); each(); perNight(); };
     p.querySelector('#e-x').onchange = e => { xcur = e.target.value; conv(); each(); };
-    const ts = p.querySelector('#e-trip'); if (ts) ts.onchange = () => { t = trip(ts.value); cur = C(t).rate !== 1 ? 'L' : 'E'; by = 'me'; split = null; segs(); days(); conv(); grp(); };
-    p.querySelectorAll('#e-cat .pill').forEach(b => b.onclick = () => { cat = b.dataset.c; p.querySelectorAll('#e-cat .pill').forEach(x => x.classList.toggle('on', x === b)); });
+    const ts = p.querySelector('#e-trip'); if (ts) ts.onchange = () => { t = trip(ts.value); cur = C(t).rate !== 1 ? 'L' : 'E'; by = 'me'; split = null; segs(); days(); conv(); grp(); stayUI(); };
+    p.querySelectorAll('#e-cat .pill').forEach(b => b.onclick = () => { cat = b.dataset.c; p.querySelectorAll('#e-cat .pill').forEach(x => x.classList.toggle('on', x === b)); subs(); stayUI(); });
     p.querySelector('#e-ok').onclick = () => {
       const v = +p.querySelector('#e-amt').value; if (!(v > 0) || v > 1e9) { toast('Indique un montant'); p.querySelector('#e-amt').focus(); return; }
       const eur = v / rate(); if (eur > 1e7) { toast('Montant trop élevé'); return; }
       const M = t.membres || [], shared = M.length && split && !(split.length === 1 && split[0] === 'me' && by === 'me');
-      const rec = { j: +p.querySelector('#e-day').value, l: p.querySelector('#e-lbl').value.trim().slice(0, 80) || CATS[cat].n, c: cat, v: cur === 'E' ? null : v, cur: cur === 'X' ? xcur : null, eur, by: M.length ? by : 'me', split: shared ? split : null };
+      const j1 = +p.querySelector('#e-day').value, j2 = cat === 'logement' && stay !== '1' && +p.querySelector('#e-day2').value > j1 ? +p.querySelector('#e-day2').value : null;
+      if (cat === 'logement' && stay === 'n' && !j2) { toast('Choisis une dernière nuit après la première'); return; }
+      const rec = { j: j1, j2, s: sub, l: p.querySelector('#e-lbl').value.trim().slice(0, 80) || (sub ? SUBS[cat][sub] : CATS[cat].n), c: cat, v: cur === 'E' ? null : v, cur: cur === 'X' ? xcur : null, eur, by: M.length ? by : 'me', split: shared ? split : null };
       if (d) { Object.assign(d, rec); save(); closePanel(); refresh(); toast(navigator.onLine ? 'Dépense mise à jour' : 'Dépense mise à jour sur ton téléphone'); return; }
       t.depenses.push({ id: uid(), ...rec, at: new Date().toISOString() }); save(); flyAndDone(rec, t);
     };
@@ -310,14 +347,16 @@ function expListHTML(t) {
   const okDay = j => (!expF.y || monthKey(t, j).startsWith(expF.y)) && (!expF.m || monthKey(t, j) === expF.m);
   const days = allDays.filter(okDay);
   if (expF.j && !days.includes(expF.j)) expF.j = null;
-  const list = t.depenses.filter(d => okDay(d.j) && (!expF.j || d.j === expF.j) && (!expF.c || d.c === expF.c));
-  const byDay = {}; list.forEach(d => (byDay[d.j] = byDay[d.j] || []).push(d));
-  const tot = list.reduce((a, d) => a + myPart(d), 0), any = expF.y || expF.m || expF.j || expF.c;
+  const dayOk = j => okDay(j) && (!expF.j || j === expF.j);
+  const list = t.depenses.filter(d => coversAny(d, dayOk) && (!expF.c || d.c === expF.c));
+  const share = d => { let v = 0; for (let j = d.j; j <= (d.j2 && d.j2 > d.j ? d.j2 : d.j); j++) if (dayOk(j)) v += dayShare(d, j); return v; };
+  const byDay = {}; list.forEach(d => { let k = d.j; while (!dayOk(k) && k < (d.j2 || d.j)) k++; (byDay[k] = byDay[k] || []).push(d); });
+  const tot = list.reduce((a, d) => a + share(d), 0), any = expF.y || expF.m || expF.j || expF.c;
   return `<div class="sec"><h2>${list.length} dépense${list.length > 1 ? 's' : ''}</h2><button class="pill dark" data-act="addExp" data-trip="${t.id}">${SV.plus}Dépense</button></div>
     <div class="ddrow">${years.length ? ddHTML('exp-y', 'Année', years.map(y => [y, y]), expF.y) : ''}${months.length > 1 ? ddHTML('exp-m', 'Mois', months.map(m => [m, monthName(m)]), expF.m) : ''}${ddHTML('exp-j', 'Jour', days.map(j => [j, `Jour ${j}, ${fd(addDays(t.du, j - 1))}`]), expF.j)}${ddHTML('exp-c', 'Catégorie', Object.keys(CATS).map(k => [k, CATS[k].n]), expF.c)}</div>
     <div class="exptot num"><span>${any ? 'Total filtré, ta part' : 'Total, ta part'}</span><b>${fmt(tot)}</b>${any ? `<button class="link" data-act="expClear">Effacer les filtres</button>` : ''}</div>
-    ${Object.keys(byDay).length ? Object.keys(byDay).sort((a, b2) => b2 - a).map(j => { const L = byDay[j], dt = L.reduce((a, d) => a + myPart(d), 0);
-      return `<div class="dayh"><span>Jour ${j}, ${fd(addDays(t.du, j - 1))}</span><span class="num">${fmt(dt)}</span></div><div class="group">` + L.slice().reverse().map(d => `<button class="exp" data-act="editExp" data-trip="${t.id}" data-id="${d.id}"><span class="ic">${ico(d.c)}</span><span class="m"><b>${esc(d.l)}</b><span>${CATS[d.c].n}${d.split || (d.by && d.by !== 'me') ? `, payé par ${esc(memberName(t, d.by || 'me'))}${d.split ? `, ta part ${fmt(myPart(d))}` : ''}` : ''}</span></span><span class="p num">${fmt(d.eur)}${d.v != null ? `<span>${fmtD(d, t)}</span>` : ''}</span>${PENDING.has(d.id) ? `<em class="pend" title="En attente d'envoi">${SV.cloudOff}</em>` : ''}</button>`).join('') + '</div>'; }).join('')
+    ${Object.keys(byDay).length ? Object.keys(byDay).sort((a, b2) => b2 - a).map(j => { const L = byDay[j], dt = L.reduce((a, d) => a + share(d), 0);
+      return `<div class="dayh"><span>Jour ${j}, ${fd(addDays(t.du, j - 1))}</span><span class="num">${fmt(dt)}</span></div><div class="group">` + L.slice().reverse().map(d => `<button class="exp" data-act="editExp" data-trip="${t.id}" data-id="${d.id}"><span class="ic">${ico(d.c)}</span><span class="m"><b>${esc(d.l)}</b><span>${esc(expMeta(d, t))}${d.split || (d.by && d.by !== 'me') ? `, payé par ${esc(memberName(t, d.by || 'me'))}${d.split ? `, ta part ${fmt(myPart(d))}` : ''}` : ''}</span></span><span class="p num">${fmt(d.eur)}${d.v != null ? `<span>${fmtD(d, t)}</span>` : ''}</span>${PENDING.has(d.id) ? `<em class="pend" title="En attente d'envoi">${SV.cloudOff}</em>` : ''}</button>`).join('') + '</div>'; }).join('')
       : `<div class="emptyj">${t.depenses.length ? 'Aucune dépense avec ces filtres.' : 'Aucune dépense pour ce voyage.'}<br><button class="pill dark" style="margin-top:12px" data-act="addExp" data-trip="${t.id}">${SV.plus}Ajouter une dépense</button></div>`}
     <button class="link small" style="margin-top:16px" data-act="depTrip" data-trip="${t.id}">${SV.chart || ''}Voir l'analyse du budget</button>`;
 }
@@ -360,7 +399,7 @@ function renderDepenses(keep) {
    </div></div>
    ${statsHTML(t)}
 <div class="sec"><h2>Dernières dépenses</h2>${t.depenses.length > 5 ? `<button class="link" data-act="catFilter" data-k="">Tout voir (${t.depenses.length})</button>` : ''}</div>
-   ${t.depenses.length ? '<div class="group">' + t.depenses.slice().sort((a, b2) => b2.j - a.j || String(b2.at || '').localeCompare(String(a.at || ''))).slice(0, 5).map(d => `<button class="exp" data-act="editExp" data-trip="${t.id}" data-id="${d.id}"><span class="ic">${ico(d.c)}</span><span class="m"><b>${esc(d.l)}</b><span>Jour ${d.j}, ${CATS[d.c].n}</span></span><span class="p num">${fmt(d.eur)}${d.v != null ? `<span>${fmtD(d, t)}</span>` : ''}</span>${PENDING.has(d.id) ? `<em class="pend" title="En attente d'envoi">${SV.cloudOff}</em>` : ''}</button>`).join('') + '</div>'
+   ${t.depenses.length ? '<div class="group">' + t.depenses.slice().sort((a, b2) => b2.j - a.j || String(b2.at || '').localeCompare(String(a.at || ''))).slice(0, 5).map(d => `<button class="exp" data-act="editExp" data-trip="${t.id}" data-id="${d.id}"><span class="ic">${ico(d.c)}</span><span class="m"><b>${esc(d.l)}</b><span>Jour ${d.j}, ${esc(expMeta(d, t))}</span></span><span class="p num">${fmt(d.eur)}${d.v != null ? `<span>${fmtD(d, t)}</span>` : ''}</span>${PENDING.has(d.id) ? `<em class="pend" title="En attente d'envoi">${SV.cloudOff}</em>` : ''}</button>`).join('') + '</div>'
      : `<div class="emptyj">Aucune dépense pour ce voyage.<br><button class="pill dark" style="margin-top:12px" data-act="addExp" data-trip="${t.id}">${SV.plus}Ajouter une dépense</button></div>`}
    ${t.depenses.length ? `<button class="btn2 wide" style="margin-top:14px" data-act="catFilter" data-k="">Toutes les dépenses, par mois et par jour</button>` : ''}`;
   sc.querySelectorAll('[data-dep]').forEach(bn => bn.onclick = () => { depId = bn.dataset.dep; catF = null; renderDepenses(); });
@@ -382,18 +421,31 @@ let turns = [], asking = false;
 function bubble(cls, text) { const d = document.createElement('div'); d.className = 'msg ' + cls; d.textContent = text; $('chat').appendChild(d); $('s-ia').scrollTop = 1e6; return d; }
 function greet() { $('chat').innerHTML = ''; bubble('ai', S.trips.length ? `Bonjour ${S.user}. Demande-moi où part ton argent, compare deux voyages ou prépare le prochain.` : `Bonjour ${S.user}. Crée ton premier voyage et ajoute quelques dépenses : je pourrai ensuite te dire où part ton argent.`); }
 $('clearChat').onclick = () => { turns = []; greet(); toast('Conversation effacée'); };
+/* Mode simple (sans IA) : réponses calculées sur le téléphone, avec une compréhension souple de la question. */
 function local(q) {
   if (!S.trips.length) return "Tu n'as encore aucun voyage. Crée ton premier carnet avec le bouton +, ajoute quelques dépenses, et je pourrai te dire où part ton argent.";
   try {
-    q = q.toLowerCase(); const past = S.trips.filter(t => !info(t).futur && !info(t).enCours && spentOf(t) > 0);
-    const perDay = past.map(t => [t, spentOf(t) / info(t).jours]).sort((a, b) => b[1] - a[1]);
-    const named = S.trips.filter(t => q.includes(short(t).toLowerCase()));
-    if (q.includes('plus cher') && perDay.length) return `Par jour, c'est ${place(perDay[0][0])} qui a coûté le plus : ${fmt(perDay[0][1])} en moyenne. Le moins cher est ${perDay[perDay.length - 1][0].ville}, avec ${fmt(perDay[perDay.length - 1][1])} par jour.`;
-    if (q.includes('compare') && named.length >= 2) { const [a, b] = named; return `${place(a)} : ${fmt(spentOf(a))} en ${info(a).jours} jours, soit ${fmt(spentOf(a) / info(a).jours)} par jour. ${place(b)} : ${fmt(spentOf(b))} en ${info(b).jours} jours, soit ${fmt(spentOf(b) / info(b).jours)} par jour.`; }
-    if (q.includes('budget')) { const t = named[0] || currentTrip() || sorted()[0]; const s = spentOf(t), f = info(t); return `Tu as dépensé ${fmt(s)} sur ${fmt(t.budget)} pour ${place(t)}.${f.enCours ? ` Il te reste ${fmt((t.budget - s) / (f.jours - f.jour + 1))} par jour jusqu'au retour.` : ''}`; }
-    if (q.includes('prévoir') && perDay.length) { const avg = perDay.reduce((a, [, v]) => a + v, 0) / perDay.length; return `D'après tes carnets, tu dépenses en moyenne ${fmt(avg)} par jour. Pour une semaine, prévois autour de ${fmt(avg * 7)}, à ajuster selon le coût de la vie sur place.`; }
-    if (q.includes('plus')) { const tot = {}; S.trips.forEach(t => Object.entries(catsOf(t)).forEach(([k, v]) => tot[k] = (tot[k] || 0) + v)); const top = Object.entries(tot).filter(([k]) => k !== 'logement').sort((a, b) => b[1] - a[1])[0]; if (top && top[1] > 0) return `Hors logement, ton plus gros poste sur tous tes voyages est ${CATS[top[0]].n.toLowerCase()}, avec ${fmt(top[1])} au total.`; }
-    return 'Je peux répondre sur tes carnets, tes dépenses et tes budgets. Essaie une des suggestions juste au-dessus.';
+    const n = String(q || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(), has = (...w) => w.some(x => n.includes(x));
+    const named = S.trips.filter(t => { const a = [short(t), place(t), C(t).n].map(x => String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()); return a.some(x => x.length > 2 && n.includes(x)); });
+    const t = named[0] || currentTrip() || sorted().find(x => x.depenses.length) || sorted()[0], f = info(t), s = spentOf(t), c = catsOf(t);
+    const days = Math.max(1, f.enCours ? f.jour : f.futur ? 0 : f.jours) || 1, where = `pour ${place(t)}`;
+    const topCats = Object.entries(c).filter(([, v]) => v > 0).sort((x, y) => y[1] - x[1]);
+    const catWord = { logement: ['logement', 'hotel', 'hebergement', 'airbnb', 'nuit'], repas: ['repas', 'restau', 'manger', 'nourriture', 'bouffe', 'diner', 'dejeuner', 'cafe'], transport: ['transport', 'avion', 'train', 'taxi', 'bus', 'metro', 'uber', 'voiture'], activites: ['activit', 'visite', 'musee', 'excursion', 'sortie'], shopping: ['shopping', 'achat', 'souvenir', 'vetement', 'cadeau'] };
+    const askedCat = Object.keys(catWord).find(k => has(...catWord[k]));
+    const past = S.trips.filter(x => !info(x).futur && spentOf(x) > 0), perDay = past.map(x => [x, spentOf(x) / Math.max(1, info(x).enCours ? info(x).jour : info(x).jours)]).sort((x, y) => y[1] - x[1]);
+    if (has('compar') && (named.length >= 2 || past.length >= 2)) { const [x, y] = named.length >= 2 ? named : [perDay[0][0], perDay[perDay.length - 1][0]]; const px = spentOf(x) / Math.max(1, info(x).jours), py = spentOf(y) / Math.max(1, info(y).jours);
+      return `${place(x)} : ${fmt(spentOf(x))} en ${info(x).jours} jours, soit ${fmt(px)} par jour. ${place(y)} : ${fmt(spentOf(y))} en ${info(y).jours} jours, soit ${fmt(py)} par jour. ${px > py ? place(x) : place(y)} t'a coûté ${fmt(Math.abs(px - py))} de plus par jour.`; }
+    if (has('plus cher', 'moins cher', 'quel voyage') && perDay.length) return `Par jour, c'est ${place(perDay[0][0])} qui t'a coûté le plus : ${fmt(perDay[0][1])} en moyenne.${perDay.length > 1 ? ` Le moins cher est ${place(perDay[perDay.length - 1][0])}, avec ${fmt(perDay[perDay.length - 1][1])} par jour.` : ''}`;
+    if (askedCat) { const L = t.depenses.filter(d => d.c === askedCat), b = budgetsOf(t)[askedCat], subs = {}; L.forEach(d => { const k = subName(d); if (k) subs[k] = (subs[k] || 0) + myPart(d); });
+      const sub = Object.entries(subs).sort((x, y) => y[1] - x[1]).slice(0, 3).map(([k, v]) => `${k.toLowerCase()} ${fmt(v)}`).join(', ');
+      return L.length ? `${CATS[askedCat].n} ${where} : ${fmt(c[askedCat])} en ${L.length} dépense${L.length > 1 ? 's' : ''}${sub ? ` (${sub})` : ''}. ${b ? (c[askedCat] > b ? `C'est ${fmt(c[askedCat] - b)} de plus que les ${fmt(b)} prévus.` : `Il te reste ${fmt(b - c[askedCat])} sur les ${fmt(b)} prévus.`) : ''}${has('pu', 'peux', 'possible', 'assez') ? ` Ton budget total ${t.budget - s >= 0 ? `laisse encore ${fmt(t.budget - s)}` : `est dépassé de ${fmt(s - t.budget)}`}.` : ''}` : `Tu n'as noté aucune dépense de ${CATS[askedCat].n.toLowerCase()} ${where}.`; }
+    if (has('plus', 'principal', 'gros poste', 'ou part')) { if (!topCats.length) return `Tu n'as pas encore de dépense ${where}.`; const [k, v] = topCats[0];
+      return `${where[0].toUpperCase() + where.slice(1)}, ton plus gros poste est ${CATS[k].n.toLowerCase()} : ${fmt(v)}, soit ${Math.round(v / s * 100)} % de tes dépenses.${topCats[1] ? ` Viennent ensuite ${CATS[topCats[1][0]].n.toLowerCase()} (${fmt(topCats[1][1])})${topCats[2] ? ` et ${CATS[topCats[2][0]].n.toLowerCase()} (${fmt(topCats[2][1])})` : ''}.` : ''}`; }
+    if (has('par jour', 'moyenne', 'quotidien')) return `${where[0].toUpperCase() + where.slice(1)}, tu dépenses en moyenne ${fmt(s / days)} par jour.${f.enCours ? ` Pour finir dans ton budget, il te reste ${fmt((t.budget - s) / (f.jours - f.jour + 1))} par jour jusqu'au retour.` : ''}`;
+    if (has('budget', 'reste', 'tiens', 'depasse', 'combien il')) return `Tu as dépensé ${fmt(s)} sur ${fmt(t.budget)} ${where}. ${s > t.budget ? `Ton budget est dépassé de ${fmt(s - t.budget)}.` : `Il te reste ${fmt(t.budget - s)}${f.enCours ? `, soit ${fmt((t.budget - s) / (f.jours - f.jour + 1))} par jour jusqu'au retour` : ''}.`}`;
+    if (has('prevoir', 'combien pour', 'estimer')) { const avg = perDay.length ? perDay.reduce((a, [, v]) => a + v, 0) / perDay.length : 0; return avg ? `D'après tes carnets, tu dépenses en moyenne ${fmt(avg)} par jour. Pour une semaine, prévois autour de ${fmt(avg * 7)}, à ajuster selon le coût de la vie sur place.` : "Note quelques dépenses dans un voyage et je pourrai t'aider à prévoir les suivants."; }
+    if (has('total', 'combien', 'depense')) return `Tu as dépensé ${fmt(s)} ${where}${topCats[0] ? `, surtout en ${CATS[topCats[0][0]].n.toLowerCase()} (${fmt(topCats[0][1])})` : ''}.`;
+    return `${place(t)} : ${fmt(s)} dépensés sur ${fmt(t.budget)}${topCats[0] ? `, surtout en ${CATS[topCats[0][0]].n.toLowerCase()}` : ''}. Demande-moi par exemple ce qu'il te reste, ta moyenne par jour, une catégorie comme les repas ou le transport, ou de comparer deux voyages.`;
   } catch (e) { return "Je n'ai pas assez de données pour répondre à ça. Ajoute des dépenses à tes voyages, ou essaie une des suggestions."; }
 }
 async function ask(q) {
@@ -405,6 +457,7 @@ async function ask(q) {
   try {
     const { data, error } = await sb.functions.invoke('assistant', { body: { question: q, history: turns.slice(-12) } });
     if (error) { let msg = 'L’assistant est indisponible, voici une réponse simple : ' + local(q); try { const j = await error.context.json(); if (j && j.error && error.context.status !== 502) msg = j.error; } catch (_) { } out.textContent = msg; }
+    else if (!data || !data.answer || !String(data.answer).trim()) out.textContent = local(q);
     else { out.textContent = data.answer; turns.push({ role: 'user', content: q }, { role: 'assistant', content: data.answer }); }
   } catch (e) { out.textContent = local(q); }
   finally { asking = false; $('s-ia').scrollTop = 1e6; }
@@ -535,9 +588,18 @@ function renderCarte() {
   const wrap = $('mapwrap');
   if (!mapBuilt) { mapBuilt = true; const t = trip(mapSel); centerOn(t ? C(t).ll : [10, 40], t ? 2.2 : .62, false); }
   applyMap();
-  let p0 = null, start = null, moved = false;
-  wrap.addEventListener('pointerdown', e => { p0 = { x: e.clientX, y: e.clientY }; start = { ...mapT }; moved = false; });
-  wrap.addEventListener('pointermove', e => { if (!p0) return; const dx = e.clientX - p0.x, dy = e.clientY - p0.y; if (Math.abs(dx) + Math.abs(dy) > 4) { if (!moved) { moved = true; try { wrap.setPointerCapture(e.pointerId); } catch (_) { } } mapT.x = start.x + dx; mapT.y = start.y + dy; applyMap(); } });
+  let p0 = null, start = null, moved = false, pinch = null; const pts = new Map();
+  // pincer à deux doigts pour zoomer ou dézoomer, autour du point entre les doigts
+  const pinchInfo = () => { const [a, b] = [...pts.values()]; return { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; };
+  wrap.addEventListener('pointerdown', e => { pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 2) { pinch = { ...pinchInfo(), k: mapT.k }; moved = true; p0 = null; return; }
+    if (pts.size === 1) { p0 = { x: e.clientX, y: e.clientY }; start = { ...mapT }; moved = false; } });
+  wrap.addEventListener('pointermove', e => { if (!pts.has(e.pointerId)) return; pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinch && pts.size >= 2) { const n = pinchInfo(), r = wrap.getBoundingClientRect(), k = Math.max(.6, Math.min(8, pinch.k * n.d / pinch.d));
+      mapT.x += n.x - pinch.x; mapT.y += n.y - pinch.y; zoomAt(k / mapT.k, n.x, n.y); pinch.x = n.x; pinch.y = n.y; return; }
+    if (!p0) return; const dx = e.clientX - p0.x, dy = e.clientY - p0.y; if (Math.abs(dx) + Math.abs(dy) > 4) { if (!moved) { moved = true; try { wrap.setPointerCapture(e.pointerId); } catch (_) { } } mapT.x = start.x + dx; mapT.y = start.y + dy; applyMap(); } });
+  const lift = e => { pts.delete(e.pointerId); if (pts.size < 2 && pinch) { pinch = null; if (pts.size === 1) { const [q] = [...pts.values()]; p0 = { x: q.x, y: q.y }; start = { ...mapT }; } } };
+  wrap.addEventListener('pointerup', lift); wrap.addEventListener('pointercancel', lift);
   const end = e => { if (!p0) return; const was = moved; p0 = null; if (!was) { const pin = e.target.closest('.mpin'); if (pin) { if (pin.dataset.pin) { if (mapSel === pin.dataset.pin && pin.classList.contains('on')) { openTrip(mapSel); return; } mapSel = pin.dataset.pin; document.querySelectorAll('.mpin').forEach(x => x.classList.toggle('on', x === pin)); renderMapCard(); } else toast(pin.dataset.wish + ' est dans tes envies'); } } };
   wrap.addEventListener('pointerup', end); wrap.addEventListener('pointercancel', () => p0 = null);
   wrap.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.deltaY < 0 ? 1.15 : .87, e.clientX, e.clientY); }, { passive: false });

@@ -81,10 +81,11 @@ function statsHTML(t) {
   const months = [...new Set(Array.from({ length: f.jours }, (_, i) => addDays(t.du, i).slice(0, 7)))];
   const popts = [...(f.enCours ? [['today', "Aujourd'hui"], ['last7', '7 derniers jours']] : []), ...(months.length > 1 ? months.map(m => ['m:' + m, monthName(m)]) : [])];
   if (ST.p && !popts.some(o => o[0] === ST.p)) ST.p = '';
-  const days = stDays(t), inP = new Set(days), list = t.depenses.filter(d => inP.has(d.j));
-  const c = {}; Object.keys(CATS).forEach(k => c[k] = 0); list.forEach(d => c[d.c] += myPart(d));
+  const days = stDays(t), inP = new Set(days), list = t.depenses.filter(d => coversAny(d, j => inP.has(j)));
+  const shareP = d => { let v = 0; days.forEach(j => v += dayShare(d, j)); return v; };
+  const c = {}; Object.keys(CATS).forEach(k => c[k] = 0); list.forEach(d => c[d.c] += shareP(d));
   const total = Object.values(c).reduce((a, v) => a + v, 0), spentAll = spentOf(t), elapsed = days.filter(j => !f.futur && j <= (f.enCours ? f.jour : f.jours)).length || 1;
-  const per = {}; days.forEach(j => per[j] = 0); list.forEach(d => { if (d.c !== 'logement') per[d.j] += myPart(d); });
+  const per = {}; days.forEach(j => per[j] = 0); list.forEach(d => days.forEach(j => per[j] += dayShare(d, j)));
   const head = `<div class="sec st-head"><h2>Statistiques</h2>${popts.length ? ddHTML('st-p', 'Tout le voyage', popts, ST.p) : ''}</div>`;
   const kpi = `<div class="kpis num">
      <div><span>Dépensé${ST.p ? ' sur la période' : ''}</span><b>${fmt(total)}</b></div>
@@ -105,14 +106,16 @@ function statsHTML(t) {
   const donut = `<div class="st-box"><div class="st-row"><svg class="st-donut2" viewBox="0 0 180 180" role="img" aria-label="Répartition par catégorie, touche une part pour le détail">${segs}${center}</svg>
      <ul class="st-leg2">${parts.map(x => `<li><button class="${ST.k === x.k ? 'on' : ''}" data-act="stCat" data-k="${x.k}"><i style="background:${x.col}"></i><span>${x.n}</span><b class="num">${Math.round(x.v / total * 100)} %</b></button></li>`).join('')}</ul></div>
      ${sel ? (() => { const L = list.filter(d => d.c === sel.k), top = L.slice().sort((x, y) => myPart(y) - myPart(x))[0], bud = b[sel.k] || 0, all = catsOf(t)[sel.k];
+       const bySub = {}; L.forEach(d => { const n = subName(d) || 'Sans précision'; bySub[n] = (bySub[n] || 0) + shareP(d); }); const subE = Object.entries(bySub).sort((x, y) => y[1] - x[1]), smax = Math.max(...subE.map(e => e[1]), 1);
        return `<div class="st-detail"><p><b>${esc(sel.n)}</b> : ${fmt(sel.v)} en ${L.length} dépense${L.length > 1 ? 's' : ''}${top ? `, la plus grosse : ${esc(top.l)} (${fmt(myPart(top))})` : ''}.</p>
+         ${subE.length > 1 || (subE[0] && subE[0][0] !== 'Sans précision') ? `<div class="subs">${subE.map(([n, v]) => `<div><span>${esc(n)}</span><i style="width:${v / smax * 100}%;background:${sel.col}"></i><b class="num">${fmt(v)}</b></div>`).join('')}</div>` : ''}
          ${bud ? `<div class="mb2"><i class="${all > bud ? 'over' : ''}" style="width:${pct(all, bud)}%"></i></div><p class="small num">${fmt(all)} sur ${fmt(bud)} prévus pour tout le voyage${all > bud ? `, dépassé de ${fmt(all - bud)}` : `, reste ${fmt(bud - all)}`}</p>` : ''}
          <button class="link" data-act="catFilter" data-k="${sel.k}">Voir ces dépenses${SV.right}</button></div>`; })() : `<p class="small st-hint">Touche une couleur pour voir le détail d'une catégorie.</p>`}</div>`;
   // sections repliables
   const pv = days.map(j => per[j] || 0), max = Math.max(...pv, 1), avgD = pv.reduce((a, v) => a + v, 0) / elapsed;
   if (ST.d && !inP.has(ST.d)) ST.d = null;
-  const dsel = ST.d ? (() => { const L = list.filter(d => d.j === ST.d && d.c !== 'logement'); return `<p class="st-tip num"><b>Jour ${ST.d}, ${fd(addDays(t.du, ST.d - 1))}</b> : ${fmt(per[ST.d] || 0)}${L.length ? `, ${L.length} dépense${L.length > 1 ? 's' : ''}` : ''}</p>`; })() : `<p class="small st-hint">Touche une barre pour voir le jour.</p>`;
-  const daysAcc = days.length > 1 ? `<details class="acc" data-acc="days" ${open.days ? 'open' : ''}><summary><span><b>Par jour</b><em class="num">moyenne ${fmt(avgD)}, hors logement</em></span>${SV.down || ''}</summary>
+  const dsel = ST.d ? (() => { const L = list.filter(d => dayShare(d, ST.d) > 0); return `<p class="st-tip num"><b>Jour ${ST.d}, ${fd(addDays(t.du, ST.d - 1))}</b> : ${fmt(per[ST.d] || 0)}${L.length ? `, ${L.length} dépense${L.length > 1 ? 's' : ''}` : ''}</p>`; })() : `<p class="small st-hint">Touche une barre pour voir le jour.</p>`;
+  const daysAcc = days.length > 1 ? `<details class="acc" data-acc="days" ${open.days ? 'open' : ''}><summary><span><b>Par jour</b><em class="num">moyenne ${fmt(avgD)}, logement réparti par nuit</em></span>${SV.down || ''}</summary>
      <div class="st-bars2" style="--n:${days.length}">${days.map((j, i) => `<button class="${ST.d === j ? 'on' : ''} ${pv[i] > avgD * 1.4 ? 'hi' : ''}" data-act="stDay" data-d="${j}" aria-label="Jour ${j} : ${fmt(pv[i])}"><i style="height:${Math.max(3, pv[i] / max * 100)}%"></i><span>${days.length <= 14 || i % Math.ceil(days.length / 10) === 0 ? j : ''}</span></button>`).join('')}</div>${dsel}</details>` : '';
   const ca = catsOf(t);
   const budAcc = `<details class="acc" data-acc="bud" ${open.bud ? 'open' : ''}><summary><span><b>Budget par catégorie</b><em class="num">${Object.keys(CATS).filter(k => ca[k] > b[k]).length ? Object.keys(CATS).filter(k => ca[k] > b[k]).length + ' dépassé' + (Object.keys(CATS).filter(k => ca[k] > b[k]).length > 1 ? 's' : '') : 'tout est dans les clous'}</em></span>${SV.down || ''}</summary>

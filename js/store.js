@@ -31,7 +31,7 @@ const ROW = {
     members: t.membres || [], settlements: t.reglements || [] }),
   expenses: ([t, d]) => ({ id: d.id, trip_id: t.id, day: d.j, label: d.l, category: d.c,
     amount_local: d.v == null ? null : Number(d.v), currency: d.v == null ? null : (d.cur || C(t).code || null), amount_eur: Math.round(Number(d.eur) * 100) / 100,
-    paid_by: d.by || 'me', split: d.split || null }),
+    paid_by: d.by || 'me', split: d.split || null, sub: d.s || null, end_day: d.j2 || null }),
   journal_entries: ([t, e]) => ({ id: e.id, trip_id: t.id, day: e.j, title: e.t, note: e.n || '', photo_paths: e.photos }),
   wishes: w => ({ id: w.id, country_code: w.pays, note: w.note || '' }),
 };
@@ -44,7 +44,7 @@ const LIST = {
 // colonnes modifiables (les autres sont figées par la base)
 const UPDATABLE = {
   trips: ['country_code', 'city', 'start_date', 'end_date', 'budget', 'category_budgets', 'places', 'is_favorite', 'album_visibility', 'cover_path', 'members', 'settlements'],
-  expenses: ['day', 'label', 'category', 'amount_local', 'currency', 'amount_eur', 'paid_by', 'split'],
+  expenses: ['day', 'label', 'category', 'amount_local', 'currency', 'amount_eur', 'paid_by', 'split', 'sub', 'end_day'],
   journal_entries: ['day', 'title', 'note', 'photo_paths'],
   wishes: ['note'],
 };
@@ -56,7 +56,7 @@ function fromDb(trips, exps, entries, wishes) {
     budgets: r.category_budgets || null, lieux: r.places || [], fav: r.is_favorite, vis: VIS_FROM_DB[r.album_visibility] || 'prive',
     cover: r.cover_path, entrees: [], depenses: [] }));
   const byId = Object.fromEntries(T.map(t => [t.id, t]));
-  exps.forEach(r => { const t = byId[r.trip_id]; if (t) t.depenses.push({ id: r.id, j: r.day, l: r.label, c: r.category, v: r.amount_local == null ? null : Number(r.amount_local), cur: r.amount_local == null || r.currency === C(t).code ? null : r.currency, eur: Number(r.amount_eur), by: r.paid_by || 'me', split: r.split || null, at: r.created_at }); });
+  exps.forEach(r => { const t = byId[r.trip_id]; if (t) t.depenses.push({ id: r.id, j: r.day, l: r.label, c: r.category, v: r.amount_local == null ? null : Number(r.amount_local), cur: r.amount_local == null || r.currency === C(t).code ? null : r.currency, eur: Number(r.amount_eur), by: r.paid_by || 'me', split: r.split || null, s: r.sub || null, j2: r.end_day || null, at: r.created_at }); });
   entries.forEach(r => { const t = byId[r.trip_id]; if (t) t.entrees.push({ id: r.id, j: r.day, t: r.title, n: r.note, photos: r.photo_paths || [] }); });
   T.forEach(t => { t.entrees.sort((a, b) => a.j - b.j); t.depenses.sort((a, b) => (a.at || '').localeCompare(b.at || '')); });
   return { trips: T, envies: wishes.map(r => ({ id: r.id, pays: r.country_code, note: r.note })) };

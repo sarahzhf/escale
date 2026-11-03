@@ -1,11 +1,9 @@
 /* Escale : gestes du téléphone.
- *  - glisser depuis le bord gauche vers la droite = retour (ferme aussi un carnet ou une feuille ouverte) ;
- *  - tirer vers le bas tout en haut d'un écran = recharger ses données ;
+ *  - glisser depuis le bord gauche vers la droite = retour (ferme aussi un carnet ou une feuille ouverte), sans aucun signe à l'écran ;
+ *  - tirer vers le bas tout en haut d'un écran = recharger ses données, sans aucun signe à l'écran ;
  *  - bouton « retour en haut » sur les écrans longs. */
 (() => {
   const phone = document.getElementById('phone') || document.body;
-  const edge = document.createElement('div'); edge.className = 'edge-back'; edge.setAttribute('aria-hidden', 'true'); edge.innerHTML = SV.back; phone.appendChild(edge);
-  const ptr = document.createElement('div'); ptr.className = 'ptr'; ptr.setAttribute('aria-hidden', 'true'); ptr.innerHTML = '<i></i>'; phone.appendChild(ptr);
   const top = document.createElement('button'); top.className = 'to-top'; top.type = 'button'; top.hidden = true; top.setAttribute('aria-label', 'Revenir en haut'); top.innerHTML = SV.back; phone.appendChild(top);
 
   const panelOpen = () => document.getElementById('panel').classList.contains('open');
@@ -22,11 +20,10 @@
   }, { passive: true });
   document.addEventListener('touchmove', e => {
     if (!eg) return; const t = e.touches[0]; eg.dx = t.clientX - eg.x; const dy = Math.abs(t.clientY - eg.y);
-    if (dy > 40 && dy > eg.dx) { eg = null; edge.style.cssText = ''; return; }
-    const d = Math.max(0, Math.min(90, eg.dx * .6)); edge.style.transform = `translate(${d - 44}px,-50%) scale(${.7 + d / 300})`; edge.style.opacity = Math.min(1, d / 40); edge.classList.toggle('ready', eg.dx > 80);
+    if (dy > 40 && dy > eg.dx) eg = null;
   }, { passive: true });
   document.addEventListener('touchend', () => {
-    if (!eg) return; const go = eg.dx > 80; eg = null; edge.style.cssText = ''; edge.classList.remove('ready');
+    if (!eg) return; const go = eg.dx > 80; eg = null;
     if (!go) return;
     if (panelOpen()) closePanel();
     else if (bookOpen()) { if (BK.zoom && !BK.wide) { if (BK.edit) ACT.bkEdit(); bkZoom(null); } else closeBook(); }
@@ -43,17 +40,16 @@
   }, { passive: true });
   document.addEventListener('touchmove', e => {
     if (!pg) return; const t = e.touches[0], dy = t.clientY - pg.y, dx = Math.abs(t.clientX - pg.x);
-    if (pg.sc.scrollTop > 0 || dy <= 0 || (dx > dy && pg.d < 10)) { if (dy <= 0 || dx > dy) { pg = null; ptr.style.cssText = ''; } return; }
+    if (pg.sc.scrollTop > 0 || dy <= 0 || (dx > dy && pg.d < 10)) { if (dy <= 0 || dx > dy) pg = null; return; }
     e.preventDefault(); pg.d = Math.min(110, dy * .5);
-    ptr.style.transform = `translate(-50%,${pg.d - 50}px) rotate(${pg.d * 4}deg)`; ptr.style.opacity = Math.min(1, pg.d / 50); ptr.classList.toggle('ready', pg.d > 64);
   }, { passive: false });
   document.addEventListener('touchend', async () => {
-    if (!pg) return; const ok = pg.d > 64; pg = null; ptr.classList.remove('ready');
-    if (!ok) { ptr.style.cssText = ''; return; }
-    busy = true; ptr.classList.add('spin'); ptr.style.transform = 'translate(-50%,18px)'; ptr.style.opacity = 1;
-    try { if (typeof hasPending === 'function' && hasPending()) await sync(); await loadData(); refresh(); toast('À jour'); }
+    if (!pg) return; const ok = pg.d > 64; pg = null;
+    if (!ok) return;
+    busy = true;
+    try { if (typeof hasPending === 'function' && hasPending()) await sync(); await loadData(); refresh(); }
     catch (_) { toast('Pas de connexion pour le moment'); }
-    finally { busy = false; ptr.classList.remove('spin'); ptr.style.cssText = ''; }
+    finally { busy = false; }
   });
 
   /* retour en haut */

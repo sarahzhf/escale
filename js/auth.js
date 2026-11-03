@@ -220,8 +220,8 @@ ACT.profile = () => { let ko = 0; try { ko = Math.round((localStorage.getItem(ca
    <button class="danger" data-act="logout">Se déconnecter</button>${CLOSE('Fermer')}`, null, { nofocus: true }); };
 ACT.logout = () => logout();
 ACT.setTheme = () => { const cur = themePref();
-  openPanel(`<h2>Apparence</h2><p class="small">« Automatique » suit le réglage de ton téléphone. Ton carnet garde toujours son papier.</p>
-    <div class="theme-opts">${[['auto', 'a', 'Automatique'], ['light', 'l', 'Clair'], ['dark', 'd', 'Sombre']].map(([k, c, n]) => `<button class="${c} ${cur === k ? 'on' : ''}" data-act="pickTheme" data-v="${k}"><span class="sw2"></span>${n}</button>`).join('')}</div>${CLOSE('Fermer')}`, null, { nofocus: true }); };
+  openPanel(`<h2>Apparence</h2><p class="small">Escale est en clair par défaut. « Automatique » suit le réglage de ton téléphone. Ton carnet garde toujours son papier.</p>
+    <div class="theme-opts">${[['light', 'l', 'Clair'], ['dark', 'd', 'Sombre'], ['auto', 'a', 'Automatique']].map(([k, c, n]) => `<button class="${c} ${cur === k ? 'on' : ''}" data-act="pickTheme" data-v="${k}"><span class="sw2"></span>${n}</button>`).join('')}</div>${CLOSE('Fermer')}`, null, { nofocus: true }); };
 ACT.pickTheme = d => { setTheme(d.v); document.querySelectorAll('.theme-opts button').forEach(b => b.classList.toggle('on', b.dataset.v === d.v)); };
 const FAQ = [
   ['Comment créer un voyage ?', 'Touche le bouton + vert, puis « Un nouveau voyage ». Choisis le pays, les dates et ton budget : un carnet est créé avec son journal, ses photos et ses dépenses.'],

@@ -1,7 +1,7 @@
-/* Escale : apparence (automatique, clair ou sombre). Chargé dans <head> pour éviter un flash au démarrage. */
+/* Escale : apparence (clair par défaut, sombre ou automatique). Chargé dans <head> pour éviter un flash au démarrage. */
 (() => {
   const mq = matchMedia('(prefers-color-scheme: dark)');
-  const pref = () => { try { return localStorage.getItem('escale-theme') || 'auto'; } catch (_) { return 'auto'; } };
+  const pref = () => { try { return localStorage.getItem('escale-theme') || 'light'; } catch (_) { return 'light'; } };
   const apply = () => {
     const p = pref(), dark = p === 'dark' || (p === 'auto' && mq.matches);
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';

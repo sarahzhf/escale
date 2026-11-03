@@ -104,14 +104,14 @@ function openBook(book, start = 0) {
     <div class="bk-bot" id="bkBot"></div>`;
   bkSize(); bkRender();
   const bookEl = $('bkBook');
-  const done = () => { bookEl.classList.remove('closed', 'opening'); const c = $('bkCover'); if (c) c.remove(); BK.busy = false; if (!BK.wide) bkZoom('l'); bkBar(); };
+  const done = () => { bookEl.classList.remove('closed', 'opening'); const c = $('bkCover'); if (c) c.remove(); BK.busy = false; bkBar(); };
   if (start > 0 || reduced()) { done(); return; }
   setTimeout(() => { bookEl.classList.add('opening'); setTimeout(done, 1250); }, 650);
 }
 /** Taille du carnet selon l'écran : double page entière, mise à l'échelle. */
 function bkSize() {
   const st = $('bkStage'), bk = $('bkBook'); if (!st || !bk) return;
-  const clips = $('book').classList.contains('mB'), w = (st.clientWidth - 28) * (clips ? .8 : 1), h = st.clientHeight - 28, sw = Math.min(w, h * (2 * PG_W / PG_H), 820), k = sw / (2 * PG_W);
+  const clips = $('book').classList.contains('mB'), w = (st.clientWidth - 28) * (clips ? .8 : .9), h = (st.clientHeight - 28) * .9, sw = Math.min(w, h * (2 * PG_W / PG_H), 820), k = sw / (2 * PG_W);
   bk.style.width = sw + 'px'; bk.style.height = PG_H * k + 'px'; bk.style.setProperty('--k', k);
   BK.k = k; BK.zk = Math.min((st.clientWidth - 16) / (PG_W * k), (st.clientHeight - 16) / (PG_H * k));
   bkApplyZoom();
@@ -135,7 +135,7 @@ function bkBar() {
   const zoomBtn = !BK.wide ? `<button class="bk-ic" data-act="bkZoomToggle" aria-label="${BK.zoom ? 'Voir la double page' : 'Zoomer sur la page'}">${BK.zoom ? '⤢' : '⤡'}</button>` : '';
   $('bkBot').innerHTML = BK.edit && e ? (s ? `<div class="bk-tools"><button data-act="bkStk" data-op="small" aria-label="Plus petit">−</button><button data-act="bkStk" data-op="big" aria-label="Plus grand">+</button><button data-act="bkStk" data-op="left" aria-label="Tourner à gauche">↺</button><button data-act="bkStk" data-op="right" aria-label="Tourner à droite">↻</button><button data-act="bkStk" data-op="front" aria-label="Mettre devant">⧉</button><button data-act="bkStk" data-op="del" class="red" aria-label="Retirer le sticker">${SV.trash}</button><button data-act="bkStk" data-op="ok" class="ok">OK</button></div>`
       : `<div class="bk-tools wide"><button data-act="bkText">${SV.edit || ''}<span>Texte</span></button><button data-act="bkStyle"><b class="aa">Aa</b><span>Style</span></button><button data-act="bkPhoto">${SV.cam}<span>Photo</span></button><button data-act="bkStickers">${SV.smile || '☺'}<span>Sticker</span></button><button data-act="bkEdit" class="ok"><span>Terminé</span></button></div><p class="bk-hint">Glisse un sticker pour le placer, touche-le pour le régler.</p>`)
-    : `<div class="bk-nav"><button class="bk-ic" data-act="bkPrev" aria-label="Page précédente" ${BK.i || BK.zoom === 'r' ? '' : 'disabled'}>${SV.back}</button><div class="bk-dots">${BK.book.spreads.map((_, k) => `<i class="${k === BK.i ? 'on' : ''}"></i>`).join('')}</div>${zoomBtn}<button class="bk-ic" data-act="bkNext" aria-label="Page suivante" ${BK.i < n - 1 || BK.zoom === 'l' ? '' : 'disabled'}>${SV.right}</button></div>`;
+    : `<div class="bk-nav"><button class="bk-ic" data-act="bkPrev" aria-label="Page précédente" ${BK.i || BK.zoom === 'r' ? '' : 'disabled'}>${SV.back}</button><div class="bk-dots">${BK.book.spreads.map((_, k) => `<i class="${k === BK.i ? 'on' : ''}"></i>`).join('')}</div>${zoomBtn}<button class="bk-ic" data-act="bkNext" aria-label="Page suivante" ${BK.i < n - 1 || BK.zoom === 'l' ? '' : 'disabled'}>${SV.right}</button></div>${BK.zoom || BK.wide ? '' : `<p class="bk-hint">${BK.book.own ? 'Touche une page pour l\'ouvrir et la remplir, en dehors pour refermer le carnet.' : 'Touche une page pour la lire, en dehors pour refermer le carnet.'}</p>`}`;
 }
 function closeBook() { const el = $('book'); if (el) { el.classList.add('closing'); setTimeout(() => { el.hidden = true; el.innerHTML = ''; el.classList.remove('closing'); }, reduced() ? 0 : 280); } BK = null; }
 
@@ -207,7 +207,7 @@ function bindBookGestures() {
       if (pts.size === 1) drag = { i, x0: e.clientX, y0: e.clientY, sx: s.x, sy: s.y, moved: false };
       e.preventDefault(); try { stage.setPointerCapture(e.pointerId); } catch (_) { } }
     if (BK && BK.edit && pts.size === 2 && BK.sel != null) { const [a, b] = [...pts.values()], s = curEntry().st[BK.sel]; pin = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, ang: Math.atan2(b.y - a.y, b.x - a.x), s: s.s || 1, r: s.r || 0 }; drag = null; }
-    if (BK && !BK.edit && pts.size === 1) sw = { x: e.clientX, y: e.clientY, t: Date.now(), target: e.target };
+    if (BK && pts.size === 1 && !drag) sw = { x: e.clientX, y: e.clientY, t: Date.now(), target: e.target };
   });
   stage.addEventListener('pointermove', e => {
     if (!pts.has(e.pointerId)) return; pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -220,11 +220,27 @@ function bindBookGestures() {
     if (pin && pts.size < 2) { pin = null; save(); }
     if (drag && pts.size === 0) { if (drag.moved) save(); drag = null; }
     if (sw && pts.size === 0) { const dx = e.clientX - sw.x, dy = e.clientY - sw.y, tap = Math.abs(dx) < 8 && Math.abs(dy) < 8 && Date.now() - sw.t < 400, tgt = sw.target; sw = null;
-      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.3) step(dx < 0 ? 1 : -1);
-      else if (tap && !BK.wide && !BK.zoom && !tgt.closest('button,a')) { const r = $('bkBook').getBoundingClientRect(); bkZoom(e.clientX < r.left + r.width / 2 ? 'l' : 'r'); } }
+      if (!BK.edit && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.3) step(dx < 0 ? 1 : -1);
+      else if (tap && !BK.busy && !tgt.closest('button,a,.stk,input,textarea')) bookTap(e.clientX, e.clientY); }
   };
   stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
   stage.addEventListener('wheel', e => { if (!BK || BK.edit || Math.abs(e.deltaX) < 30) return; e.preventDefault(); step(e.deltaX > 0 ? 1 : -1); }, { passive: false });
+}
+/** Toucher le carnet : une page l'ouvre (zoom) pour la remplir, en dehors on recule puis on referme. */
+function bookTap(x, y) {
+  const inside = r => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+  if (!BK.wide && BK.zoom) { // page ouverte : toucher autour revient à la double page
+    if (inside($(BK.zoom === 'l' ? 'bkL' : 'bkR').getBoundingClientRect())) return;
+    if (BK.edit) { BK.edit = false; BK.sel = null; bkRender(); toast('Page enregistrée'); }
+    bkZoom(null); return;
+  }
+  const bk = $('bkBook'), cs = bk.querySelector('.bk-case') || bk;
+  if (!inside(cs.getBoundingClientRect())) { if (BK.edit) { BK.edit = false; BK.sel = null; bkRender(); toast('Page enregistrée'); return; } closeBook(); return; }
+  if (BK.edit) return;
+  const r = bk.getBoundingClientRect(), side = x < r.left + r.width / 2 ? 'l' : 'r', sp = BK.book.spreads[BK.i];
+  if (BK.book.own && sp.kind === 'add') { ACT.bkNewPage(); return; }
+  if (!BK.wide) bkZoom(side);
+  if (BK.book.own && sp.kind === 'day') { BK.edit = true; BK.sel = null; bkRender(); }
 }
 function styleSel() { const e = curEntry(), s = e && e.st[BK.sel], el = document.querySelector(`#bkStk .stk[data-si="${BK.sel}"]`); if (!s || !el) return; el.style.left = s.x + '%'; el.style.top = s.y + '%'; el.style.setProperty('--r', (s.r || 0) + 'deg'); el.style.setProperty('--s', s.s || 1); }
 
@@ -235,7 +251,7 @@ ACT.bkNext = () => step(1);
 ACT.bkPrev = () => step(-1);
 ACT.bkGo = d => flipTo(+d.i);
 ACT.bkZoomToggle = () => bkZoom(BK.zoom ? null : 'l');
-ACT.bkEdit = () => { if (!BK) return; if (!BK.edit && !curEntry()) { const k = BK.book.spreads.findIndex(x => x.kind === 'day'); if (k < 0) { ACT.bkNewPage(); return; } BK.i = k; } BK.edit = !BK.edit; BK.sel = null; bkRender(); if (!BK.edit) toast('Page enregistrée'); };
+ACT.bkEdit = () => { if (!BK) return; if (!BK.edit && !curEntry()) { const k = BK.book.spreads.findIndex(x => x.kind === 'day'); if (k < 0) { ACT.bkNewPage(); return; } BK.i = k; } BK.edit = !BK.edit; BK.sel = null; bkRender(); if (BK.edit && !BK.wide && !BK.zoom) bkZoom('l'); if (!BK.edit) toast('Page enregistrée'); };
 ACT.bkNewPage = () => { const t = bookTrip(); if (t) pageSheet(t.id); };
 ACT.bkText = () => { const t = bookTrip(), e = curEntry(); if (t && e) pageSheet(t.id, e.id); };
 ACT.bkPhoto = () => { const t = bookTrip(), e = curEntry(); if (!t || !e) return; let i = e.photos.findIndex(x => !x); if (i < 0) { if (e.photos.length >= 6) { toast('6 photos maximum par page'); return; } e.photos.push(null); i = e.photos.length - 1; save(); } pickPhoto(`${t.id}|e|${e.id}|${i}`); };

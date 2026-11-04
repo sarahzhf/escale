@@ -2178,3 +2178,41 @@ html[data-theme="dark"] .ntip{background:#232624}html[data-theme="dark"] .ntip p
 .pill.sm{padding:5px 10px;font-size:.74rem;flex:none}
 .pill.sm svg{width:13px;height:13px}
 @media (max-width:360px){.sx-split{grid-template-columns:1fr}.sx-donut{margin:0 auto}.sx-tile b{font-size:1.15rem}}
+
+/* ===== v1.9.1 jauge du budget (remplace la grande carte verte) ===== */
+:root{--g-from:#ECE8F6;--g-to:#F8E4D6;--g-tick:rgba(255,255,255,.78);--g-on:#2E5E3E;--g-over:#B8452C;--g-ink:#151714;--g-chip:rgba(255,255,255,.62)}
+.gauge{margin-top:12px;border-radius:28px;padding:16px 16px 18px;background:linear-gradient(180deg,var(--g-from),var(--g-to));color:var(--g-ink);display:flex;flex-direction:column;gap:12px;box-shadow:0 18px 32px -26px rgba(32,36,58,.45)}
+.g-top{display:flex;justify-content:space-between;font-size:.76rem;color:var(--g-ink);opacity:.62}
+.g-dial{position:relative;margin:0 auto;width:100%;max-width:330px}
+.g-dial svg{display:block;width:100%;height:auto;overflow:visible}
+.g-dial svg line{stroke:var(--g-tick);stroke-width:3;stroke-linecap:round;transition:stroke .35s ease calc(var(--i) * 14ms)}
+.g-dial svg line.on{stroke:var(--g-on)}
+.gauge.over .g-dial svg line.on{stroke:var(--g-over)}
+.g-mark{transform-origin:160px 160px;transition:transform 1s cubic-bezier(.2,.8,.2,1)}
+.g-dial svg .g-mark line{stroke:var(--g-ink);stroke-width:2.5;transition:none}
+.g-dial svg .g-mark circle{fill:var(--g-ink)}
+.g-bub{position:absolute;transform:translate(-50%,-50%) rotate(-8deg);background:var(--g-ink);color:#fff;font-weight:700;font-size:.8rem;padding:5px 9px;border-radius:9px;white-space:nowrap;box-shadow:0 6px 14px -6px rgba(0,0,0,.4);transition:opacity .4s ease .7s}
+.gauge.over .g-bub{background:var(--g-over)}
+.gauge.start .g-dial svg line.on{stroke:var(--g-tick);transition:none}
+.gauge.start .g-mark{transform:rotate(calc(-1 * var(--a)));transition:none}
+.gauge.start .g-bub{opacity:0;transition:none}
+.g-mid{position:absolute;left:0;right:0;top:38%;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center}
+.g-mid span{font-size:.78rem;opacity:.65}
+.g-mid b{font-size:2.5rem;font-weight:650;letter-spacing:-.03em;line-height:1.05}
+.g-mid em{font-style:normal;font-size:.8rem;font-weight:600;color:var(--g-on)}
+.g-mid em.ko{color:var(--g-over)}
+.g-seg{display:flex;justify-content:center;margin-top:-6px}
+.g-seg .seg{background:var(--g-chip)}
+.g-seg .seg button.on{background:#fff;color:var(--g-ink);border-color:transparent;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.g-pills{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.g-pills div{background:var(--g-chip);border-radius:16px;padding:10px 12px;display:flex;flex-direction:column;gap:1px}
+.g-pills b{font-size:1.02rem;font-weight:650}
+.g-pills span{font-size:.72rem;opacity:.65}
+.g-warn{display:flex;gap:8px;align-items:flex-start;background:var(--g-chip);border-radius:14px;padding:10px 12px;font-size:.8rem;line-height:1.4}
+.g-warn svg{width:16px;height:16px;flex:none;margin-top:1px;color:var(--g-over)}
+.g-rate{font-size:.72rem;opacity:.62;text-align:center}
+.g-act{display:flex;gap:8px;flex-wrap:wrap}
+.g-act .pill{background:var(--g-chip);border-color:transparent;color:var(--g-ink)}
+@media (prefers-reduced-motion:reduce){.g-mark,.g-dial svg line,.g-bub{transition:none!important}}
+/* icônes des catégories : une seule teinte, sobre (la couleur reste sur les graphiques) */
+.sx-list .ic.sm{background:var(--gray);color:var(--ink)}

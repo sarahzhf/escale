@@ -92,7 +92,7 @@ const ACT = {
   share: d => { const t = trip(d.trip), txt = `${place(t)}, ${fd(t.du)} au ${fd(t.au)} : ${fmt(spentOf(t))} pour ${info(t).jours} jours.`; copyText(txt, 'Résumé du carnet copié'); },
   depTrip: d => { depId = d.trip; go('depenses'); }, editExp: d => expSheet(d.trip, d.id),
   catFilter: d => { const t = trip(depId); openTrip(t.id); expF = { trip: t.id, y: null, m: null, j: null, c: d.k || null }; dTab = 'depenses'; openTrip(t.id, true); },
-  flip: () => $('flipcard').classList.toggle('on'), ask: d => { go('ia'); ask(d.q); },
+  gcur: d => { gCur = d.v === 'loc' ? 'loc' : 'eur'; const g = $('gauge'), t = trip(depId); if (g && t) g.outerHTML = gaugeHTML(t, true); }, ask: d => { go('ia'); ask(d.q); },
 };
 function copyText(txt, ok) { try { navigator.clipboard.writeText(txt).then(() => toast(ok), () => toast('Copie impossible sur cet appareil')); } catch (e) { toast('Copie impossible sur cet appareil'); } }
 const fromPanel = fn => (d = {}) => { if ($('panel').classList.contains('open') && !d.keep) { closePanel(); setTimeout(() => fn(d), 380); } else fn(d); };
@@ -388,27 +388,40 @@ function renderDepenses(keep) {
    <h1 class="bigtitle sans">Budget</h1>
    <div class="tripchips">${sorted().map(x => `<button class="${x.id === t.id ? 'on' : ''}" data-dep="${x.id}">${flag(x.pays)}${esc(short(x))}</button>`).join('')}</div>
    <div class="titlebar"><h1>${esc(place(t))}</h1><button class="pill dark" data-act="addExp" data-trip="${t.id}">${SV.plus}Dépense</button></div>
-   <div class="flipcard" id="flipcard"><div class="inner">
-     <div class="face a"><div class="top"><span>${f.futur ? 'Budget du voyage' : f.enCours ? `Il te reste, jour ${f.jour} sur ${f.jours}` : 'Bilan du voyage'}</span>${loc ? `<button class="swap" data-act="flip">Voir en ${esc(C(t).cur)}</button>` : ''}</div>
-       <p class="big num" data-count="${Math.round(f.enCours || f.futur ? left : s)}">${fmt(f.enCours || f.futur ? left : s)}</p>
-       <div class="track"><i style="width:${pct(s, t.budget)}%"></i>${f.enCours ? `<u style="left:${f.jour / f.jours * 100}%"></u>` : ''}</div>
-       <div class="row num"><span>${fmt(s)} dépensés</span><span>sur ${fmt(t.budget)}</span></div>
-       <div class="pills">${f.enCours || f.futur ? `<div class="s"><b class="num">${fmt(per)}</b><span>par jour ${f.futur ? 'sur place' : "jusqu'au retour"}</span></div><div><b class="num">${remDays} jours</b><span>${f.futur ? 'de voyage' : 'restants'}</span></div>` : `<div class="s"><b class="num">${fmt(s / f.jours)}</b><span>par jour en moyenne</span></div><div><b class="num">${s - t.budget > 0 ? '+ ' : '− '}${fmt(Math.abs(s - t.budget))}</b><span>par rapport au budget</span></div>`}</div>
-       ${p.worst ? `<div class="warn">${SV.warn || '!'}<span>Au rythme actuel, <b>${CATS[p.worst.k].n.toLowerCase()}</b> finira vers ${fmt(p.worst.proj)} pour ${fmt(b[p.worst.k])} prévus.</span></div>` : ''}
-       <div class="actions"><button class="pill" data-act="budget" data-trip="${t.id}">Modifier le budget</button><button class="pill" data-open="${t.id}">Ouvrir le carnet</button></div>
-     </div>
-     ${loc ? `<div class="face b"><div class="top"><span>En monnaie locale, 1 € = ${fmtRate(C(t).rate)} ${esc(C(t).cur)} (${rateNote()})</span><button class="swap" data-act="flip">Voir en euros</button></div>
-       <p class="big num">${fmtL((f.enCours || f.futur ? left : s) * C(t).rate, t)}</p>
-       <div class="pills"><div><b class="num">${fmtL(per * C(t).rate, t)}</b><span>par jour</span></div><div><b class="num">${fmtL(s * C(t).rate, t)}</b><span>déjà dépensés</span></div></div></div>` : ''}
-   </div></div>
+   ${gaugeHTML(t)}
    ${statsHTML(t)}
 <div class="sec"><h2>Dernières dépenses</h2>${t.depenses.length > 5 ? `<button class="link" data-act="catFilter" data-k="">Tout voir (${t.depenses.length})</button>` : ''}</div>
    ${t.depenses.length ? '<div class="group">' + t.depenses.slice().sort((a, b2) => b2.j - a.j || String(b2.at || '').localeCompare(String(a.at || ''))).slice(0, 5).map(d => `<button class="exp" data-act="editExp" data-trip="${t.id}" data-id="${d.id}"><span class="ic">${ico(d.c)}</span><span class="m"><b>${esc(d.l)}</b><span>Jour ${d.j}, ${esc(expMeta(d, t))}</span></span><span class="p num">${fmt(d.eur)}${d.v != null ? `<span>${fmtD(d, t)}</span>` : ''}</span>${PENDING.has(d.id) ? `<em class="pend" title="En attente d'envoi">${SV.cloudOff}</em>` : ''}</button>`).join('') + '</div>'
      : `<div class="emptyj">Aucune dépense pour ce voyage.<br><button class="pill dark" style="margin-top:12px" data-act="addExp" data-trip="${t.id}">${SV.plus}Ajouter une dépense</button></div>`}
    ${t.depenses.length ? `<button class="btn2 wide" style="margin-top:14px" data-act="catFilter" data-k="">Toutes les dépenses, par mois et par jour</button>` : ''}`;
   sc.querySelectorAll('[data-dep]').forEach(bn => bn.onclick = () => { depId = bn.dataset.dep; catF = null; renderDepenses(); });
-  if (keep) sc.scrollTop = y; else countUp(sc.querySelector('[data-count]'));
+  if (keep) sc.scrollTop = y; else { countUp(sc.querySelector('[data-count]')); const g = $('gauge'); if (g && !REDUCED) { g.classList.add('start'); requestAnimationFrame(() => requestAnimationFrame(() => g.classList.remove('start'))); } }
   const on = sc.querySelector('.tripchips .on'); on && on.scrollIntoView({ inline: 'center', block: 'nearest' });
+}
+/* Jauge du budget : un arc de graduations qui se remplissent avec la dépense, un repère et sa bulle. */
+let gCur = 'eur';
+function gaugeHTML(t, keepAnim) {
+  const f = info(t), s = spentOf(t), left = t.budget - s, over = left < 0, loc = C(t).rate !== 1, r = loc && gCur === 'loc' ? C(t).rate : 1;
+  const money = v => r === 1 ? fmt(v) : fmtL(v * r, t);
+  const remDays = f.enCours ? f.jours - f.jour + 1 : f.futur ? f.jours : 0, per = remDays ? left / remDays : 0, p = projection(t);
+  const N = 64, A0 = -205, A1 = 25, frac = t.budget ? Math.min(1, s / t.budget) : (s ? 1 : 0), cx = 160, cy = 160, R1 = 124, R2 = 150;
+  const pt = (a, R) => [cx + R * Math.cos(a * Math.PI / 180), cy + R * Math.sin(a * Math.PI / 180)];
+  const ticks = Array.from({ length: N }, (_, i) => { const a = A0 + (A1 - A0) * i / (N - 1), on = (i + .5) / N <= frac, [x1, y1] = pt(a, R1), [x2, y2] = pt(a, R2);
+    return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" class="${on ? 'on' : ''}" style="--i:${i}"/>`; }).join('');
+  const am = A0 + (A1 - A0) * frac, [ax, ay] = pt(am, R1 - 8), [mx, my] = pt(am, R2 + 12), [bx, by] = pt(am, R2 + 30), bl = Math.max(16, Math.min(84, (bx + 10) / 340 * 100));
+  const status = f.futur ? 'Avant le départ' : f.enCours ? `Jour ${f.jour} sur ${f.jours}` : 'Voyage terminé';
+  return `<section class="gauge ${over ? 'over' : ''}" id="gauge" aria-label="Budget : ${esc(money(s))} dépensés sur ${esc(money(t.budget))}">
+    <div class="g-top"><span>${status}</span><span class="num">${t.budget ? Math.round(s / t.budget * 100) + ' % utilisé' : ''}</span></div>
+    <div class="g-dial"><svg viewBox="-10 -10 340 230" aria-hidden="true">${ticks}
+      <g class="g-mark" style="--a:${(am - A0).toFixed(1)}deg"><line x1="${ax.toFixed(1)}" y1="${ay.toFixed(1)}" x2="${mx.toFixed(1)}" y2="${my.toFixed(1)}"/><circle cx="${ax.toFixed(1)}" cy="${ay.toFixed(1)}" r="3.5"/></g></svg>
+      <span class="g-bub num" style="left:${bl}%;top:${(by + 10) / 230 * 100}%"${r === 1 && !keepAnim ? ` data-count="${Math.round(s)}"` : ''}>${money(s)}</span>
+      <div class="g-mid"><span>Budget du voyage</span><b class="num">${money(t.budget)}</b><em class="num ${over ? 'ko' : ''}">${over ? `dépassé de ${money(-left)}` : f.enCours || f.futur ? `il reste ${money(left)}` : `${money(left)} sous le budget`}</em></div></div>
+    ${loc ? `<div class="g-seg"><div class="seg" role="group" aria-label="Devise"><button class="${gCur === 'eur' ? 'on' : ''}" data-act="gcur" data-v="eur">Euros</button><button class="${gCur === 'loc' ? 'on' : ''}" data-act="gcur" data-v="loc">${esc(C(t).cur)}</button></div></div>` : ''}
+    <div class="g-pills">${f.enCours || f.futur ? `<div><b class="num">${money(per)}</b><span>par jour ${f.futur ? 'sur place' : "jusqu'au retour"}</span></div><div><b class="num">${remDays} jour${remDays > 1 ? 's' : ''}</b><span>${f.futur ? 'de voyage' : 'restants'}</span></div>` : `<div><b class="num">${money(s / f.jours)}</b><span>par jour en moyenne</span></div><div><b class="num">${over ? '+ ' : '− '}${money(Math.abs(left))}</b><span>par rapport au budget</span></div>`}</div>
+    ${p.worst ? `<p class="g-warn">${SV.warn || ''}<span>Au rythme actuel, <b>${CATS[p.worst.k].n.toLowerCase()}</b> finira vers ${money(p.worst.proj)} pour ${money(budgetsOf(t)[p.worst.k])} prévus.</span></p>` : ''}
+    ${loc && gCur === 'loc' ? `<p class="g-rate">1 € = ${fmtRate(C(t).rate)} ${esc(C(t).cur)}, ${rateNote()}</p>` : ''}
+    <div class="g-act"><button class="pill" data-act="budget" data-trip="${t.id}">Modifier le budget</button><button class="pill" data-open="${t.id}">Ouvrir le carnet</button></div>
+  </section>`;
 }
 function countUp(el) { if (!el || REDUCED) return; const end = +el.dataset.count, t0 = performance.now(), dur = 900;
   const step = t => { const k = Math.min(1, (t - t0) / dur); el.textContent = fmt(end * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }

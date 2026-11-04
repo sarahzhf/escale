@@ -1,6 +1,6 @@
 /* Escale : fonctionnement hors connexion. Seuls les fichiers de l'appli sont mis en cache ;
  * les données personnelles et les photos ne passent jamais par ce cache. */
-const VERSION = 'escale-v1.9';
+const VERSION = 'escale-v1.9.1';
 const SHELL = ['./', 'index.html', 'css/app.css', 'css/fonts.css', 'css/dark.css', 'css/dark-extra.css', 'js/theme.js', 'js/config.js', 'js/world.js', 'js/ref.js', 'js/store.js', 'js/ui.js', 'js/comptes.js', 'js/stats.js', 'js/social.js', 'js/deco.js', 'js/journal.js', 'js/gestes.js', 'js/guide.js', 'js/push.js', 'js/auth.js',
   'vendor/supabase.js', 'vendor/gsap.min.js', 'vendor/d3.min.js', 'vendor/topojson-client.min.js', 'vendor/jszip.min.js', 'manifest.webmanifest', 'icons/icon-192.png',
   'fonts/inter-latin-400-normal.woff2', 'fonts/inter-latin-500-normal.woff2', 'fonts/inter-latin-600-normal.woff2', 'fonts/inter-latin-700-normal.woff2', 'fonts/playfair-display-latin-500-normal.woff2'];

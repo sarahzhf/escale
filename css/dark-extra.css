@@ -62,3 +62,9 @@ html[data-theme="dark"] .maphead .fs-btn{border-color:rgba(255,255,255,.18)}
 html[data-theme="dark"] .panel .sx-card,html[data-theme="dark"] .panel .sx-tile{background:#232624}
 html[data-theme="dark"] .panel .sx-rank .r.me{background:#2C302D}
 html[data-theme="dark"] .av.xs{color:#fff}
+/* v1.9.1 jauge du budget */
+html[data-theme="dark"]{--g-from:#25232F;--g-to:#2E2521;--g-tick:rgba(255,255,255,.16);--g-on:#93C9A3;--g-over:#F0977E;--g-ink:#ECEBE6;--g-chip:rgba(255,255,255,.07)}
+html[data-theme="dark"] .gauge{box-shadow:none}
+html[data-theme="dark"] .g-bub{color:#151714}
+html[data-theme="dark"] .g-seg .seg button.on{background:#ECEBE6;color:#151714}
+html[data-theme="dark"] .sx-list .ic.sm{background:#232624;color:#ECEBE6}

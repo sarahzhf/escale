@@ -15,7 +15,7 @@ PRE = 'html[data-theme="dark"]'
 EXCLUDE = re.compile(r'\.pg\b|\.pg-|\.bk-|\.book-ov|\.stk|\.spine|\.bookcase|\.bc-|\.decor|\.d-plant|\.pola|\.phf|\.fr-|\.sb\b|\.st i|\.s-script|'
                      r'\.s-serif|\.sd\b|\.stape|\.sx|\.tf-|\.ft-|\.pp-|\.demo|\.dp-stack>span|\.dp-more|\.pcard|\.pcap|\.fold-|\.mini-book|\.lf\b|\.orn|'
                      r'\.snapbox|\.cover|\.dhero|\.hhero|\.htext|\.hshade|\.rec\b|\.rec |\.glass|\.thumbs|\.mosaic|\.splash|\.crown|\.gp-img|\.edge-back|'
-                     r'\.ptr\b|\.ptr |\.bk\b|\.mapcard img|\.sc-|\.score|\.pin img|\.cv\b|\.cv |\.cd \.cv|\.tape|\.sw\b|\.mpin|\.zoom|\.legend|::selection')
+                     r'\.ptr\b|\.ptr |\.bk\b|\.mapcard img|\.sc-|\.score|\.pin img|\.cv\b|\.cv |\.cd \.cv|\.tape|\.sw\b|\.mpin|\.zoom|\.legend|\.gauge|\.g-|::selection')
 VARS_TEXT = {'--ink': '#ECEBE6', '--navy': '#ECEBE6', '--ink-2': '#DAD8D2', '--green': '#93C9A3', '--pink': '#93C9A3', '--aqua-ink': '#93C9A3',
              '--pink-ink': '#F0977E', '--muted': '#A3A69F'}
 

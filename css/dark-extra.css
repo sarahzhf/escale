@@ -50,3 +50,15 @@ html[data-theme="dark"] .theme-opts button{background:#232624;color:#ECEBE6}
 .theme-opts button.on{border-color:var(--green);box-shadow:0 0 0 2px var(--green)}
 .theme-opts .sw2{width:44px;height:30px;border-radius:9px;border:1px solid rgba(0,0,0,.12)}
 .theme-opts .l .sw2{background:linear-gradient(#F4F3EF 50%,#fff 50%)}.theme-opts .d .sw2{background:linear-gradient(#121413 50%,#1C1F1D 50%)}.theme-opts .a .sw2{background:linear-gradient(90deg,#F4F3EF 50%,#121413 50%)}
+
+/* v1.9 statistiques : mêmes catégories, teintes choisies et vérifiées pour le fond sombre */
+html[data-theme="dark"]{--c-logement:#2A8A62;--c-repas:#C08A1C;--c-transport:#4F8FD3;--c-activites:#D6643C;--c-shopping:#9A82E0;
+  --sx-acc:#6DBB8C;--sx-plan:#7E827C;--sx-grid:rgba(255,255,255,.08);--sx-card:#161616;--sx-track:#2A2D2B;--sx-good:#93C9A3;--sx-bad:#F0977E}
+html[data-theme="dark"] .sx-tip{box-shadow:0 6px 24px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.08)}
+html[data-theme="dark"] .sx-tips .ic{background:#232624;color:#ECEBE6}
+html[data-theme="dark"] .sx-rank button.r:hover,html[data-theme="dark"] .sx-rank .r.on,html[data-theme="dark"] .sx-rank .r.me{background:#232624}
+html[data-theme="dark"] #stwrap,html[data-theme="dark"] #fstats,html[data-theme="dark"] .sx-tip,html[data-theme="dark"] .maphead .fs-btn{--ink:#ECEBE6;color:#ECEBE6}
+html[data-theme="dark"] .maphead .fs-btn{border-color:rgba(255,255,255,.18)}
+html[data-theme="dark"] .panel .sx-card,html[data-theme="dark"] .panel .sx-tile{background:#232624}
+html[data-theme="dark"] .panel .sx-rank .r.me{background:#2C302D}
+html[data-theme="dark"] .av.xs{color:#fff}

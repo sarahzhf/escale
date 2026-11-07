@@ -361,9 +361,31 @@ const BADGES = [
 ];
 let BOARD = [], TRAVEL = [];
 const myStats = () => BOARD.find(b => b.me) || { done: 0, fast: 0, streak: 0, countries: 0, wins: 0, sent_done: 0, points: 0 };
+/* bocal de points : une bille par 2 points, un bocal plein tous les 100 points */
+const JAR_CAP = 100, JAR_COLS = ['#E3A585', '#A9C2A3', '#F3C979', '#A9BFD6', '#F1C6CF', '#C9B4E0'];
+function jarSVG(pts, animate) {
+  const inJar = pts % JAR_CAP === 0 && pts ? JAR_CAP : pts % JAR_CAP, n = Math.round(inJar / 2), r = 6.2, L = [];
+  // billes rangées du fond vers le haut, rangs décalés, à l'intérieur du bocal (x 22 à 118)
+  for (let i = 0, row = 0; i < n; row++) { const off = row % 2 ? r : 0, cols = row % 2 ? 7 : 8;
+    for (let c = 0; c < cols && i < n; c++, i++) { const x = 26 + off + c * r * 2 + ((i * 37) % 5) * .4, y = 168 - row * r * 1.75 - ((i * 13) % 3) * .5;
+      L.push(`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${JAR_COLS[(i * 7 + row) % JAR_COLS.length]}" ${animate ? `style="animation-delay:${(i * 18) % 900}ms"` : ''}/>`); } }
+  return `<svg class="jar ${animate ? 'drop' : ''}" viewBox="0 0 140 190" aria-hidden="true"><defs><linearGradient id="jg" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".25" stop-color="#fff" stop-opacity=".08"/><stop offset=".8" stop-color="#fff" stop-opacity=".05"/><stop offset="1" stop-color="#fff" stop-opacity=".35"/></linearGradient><clipPath id="jc"><path d="M24 46c-8 6-12 14-12 26v92c0 10 6 16 16 16h84c10 0 16-6 16-16V72c0-12-4-20-12-26z"/></clipPath></defs>
+    <rect x="34" y="14" width="72" height="20" rx="5" fill="#C9A55A"/><rect x="34" y="20" width="72" height="3" fill="#B98F3C"/><rect x="34" y="27" width="72" height="3" fill="#B98F3C"/>
+    <path d="M30 34h80v12H30z" fill="#E9E2D6" opacity=".9"/>
+    <path d="M24 46c-8 6-12 14-12 26v92c0 10 6 16 16 16h84c10 0 16-6 16-16V72c0-12-4-20-12-26z" fill="rgba(210,228,232,.35)" stroke="rgba(120,140,150,.45)" stroke-width="2"/>
+    <g clip-path="url(#jc)">${L.join('')}</g>
+    <path d="M24 46c-8 6-12 14-12 26v92c0 10 6 16 16 16h84c10 0 16-6 16-16V72c0-12-4-20-12-26z" fill="url(#jg)"/><path d="M22 80v70" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".55"/>
+    <rect x="40" y="56" width="60" height="34" rx="4" fill="#FBF7F0" stroke="#D9CEBC"/><text x="70" y="73" text-anchor="middle" font-family="Georgia,serif" font-size="15" fill="#3A3226">${pts}</text><text x="70" y="85" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" letter-spacing="1" fill="#8A7A62">POINTS</text></svg>`;
+}
+let jarSeen = (() => { try { return +localStorage.getItem('escale:jar') || 0; } catch (e) { return 0; } })();
 function scoreHTML() {
   const m = myStats(), got = BADGES.filter(b => { const [v, n] = b[4](m); return v >= n; }), rank = BOARD.findIndex(b => b.me) + 1;
-  return `<div class="score"><div class="sc-top"><div><b class="num">${m.points}</b><span>points</span></div><div><b class="num">${m.streak}${m.streak ? ' 🔥' : ''}</b><span>série</span></div><div><b class="num">${BOARD.length > 1 ? `${rank}<sup>${rank === 1 ? 're' : 'e'}</sup>` : '–'}</b><span>entre amis</span></div></div>
+  const full = Math.floor(m.points / JAR_CAP) - (m.points && m.points % JAR_CAP === 0 ? 1 : 0), left = JAR_CAP - (m.points % JAR_CAP || (m.points ? JAR_CAP : 0)), grew = m.points > jarSeen;
+  if (grew) { jarSeen = m.points; try { localStorage.setItem('escale:jar', String(m.points)); } catch (e) { } }
+  return `<div class="score jarbox"><div class="jar-w">${jarSVG(m.points, grew && !REDUCED)}${full > 0 ? `<div class="jars-full" aria-label="${full} bocal${full > 1 ? 'x' : ''} rempli${full > 1 ? 's' : ''}">${Array.from({ length: Math.min(full, 5) }, () => '<i></i>').join('')}${full > 5 ? `<b class="num">+${full - 5}</b>` : ''}</div>` : ''}</div>
+    <div class="jar-side"><p class="jar-t">${m.points ? (left === JAR_CAP ? 'Bocal rempli, bravo !' : `Encore <b class="num">${left}</b> points pour remplir ton bocal`) : 'Relève ton premier défi pour y déposer tes premières billes'}</p>
+      <div class="jar-st"><div><b class="num">${m.streak}${m.streak ? ' 🔥' : ''}</b><span>série</span></div><div><b class="num">${BOARD.length > 1 ? `${rank}<sup>${rank === 1 ? 're' : 'e'}</sup>` : '–'}</b><span>entre amis</span></div><div><b class="num">${m.done}</b><span>relevé${m.done > 1 ? 's' : ''}</span></div></div>
+      <div class="jar-bar"><i style="width:${m.points ? 100 - left : 0}%"></i></div></div>
     <button class="sc-badges" data-act="badges" aria-label="Voir tous les badges">${BADGES.map(b => `<i class="${got.includes(b) ? 'on' : ''}" title="${b[2]}">${b[1]}</i>`).join('')}<span>${got.length}/${BADGES.length} badges</span></button></div>`;
 }
 function travelHTML() {
@@ -375,7 +397,7 @@ function boardHTML() {
   return `<div class="sec"><h2>Classement entre amis</h2></div><div class="board">${BOARD.slice(0, 10).map((b, i) => `<div class="br ${b.me ? 'me' : ''}"><span class="pos num">${i + 1}</span>${avatar(b)}<b>${b.me ? 'Toi' : first(b.display_name)}</b><span class="st">${b.streak ? `${b.streak} 🔥` : ''}</span><span class="pts num">${b.points} pts</span></div>`).join('')}</div>`;
 }
 ACT.badges = () => { const m = myStats();
-  openPanel(`<h2>Badges et points</h2><p class="small" style="line-height:1.5">10 points par défi relevé, 5 de plus s'il est relevé en moins de 24 h, 15 pour la photo élue d'un défi de groupe, et 2 quand un ami relève un défi que tu lui as lancé.</p>
+  openPanel(`<h2>Badges et points</h2><p class="small" style="line-height:1.5">Chaque défi relevé dépose des billes dans ton bocal (une bille pour 2 points), et un bocal est plein à 100 points. 10 points par défi relevé, 5 de plus s'il est relevé en moins de 24 h, 15 pour la photo élue d'un défi de groupe, et 2 quand un ami relève un défi que tu lui as lancé.</p>
     <div class="badgelist">${BADGES.map(b => { const [v, n] = b[4](m), ok = v >= n; return `<div class="bd ${ok ? 'on' : ''}"><i>${b[1]}</i><div><b>${b[2]}</b><span>${b[3]}</span>${ok ? '<em>Obtenu</em>' : `<span class="bar"><span style="width:${Math.min(100, v / n * 100)}%"></span></span><em class="num">${Math.min(v, n)} / ${n}</em>`}</div></div>`; }).join('')}</div>${CLOSE('Fermer')}`, null, { nofocus: true }); };
 async function renderDefis() {
   try { await Promise.all([loadChals(), rpc('challenge_board').then(b => { BOARD = b || []; }).catch(() => { BOARD = []; }), rpc('friends_traveling').then(t => { TRAVEL = t || []; }).catch(() => { TRAVEL = []; })]); }

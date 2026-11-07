@@ -45,7 +45,8 @@ const nightsOf = d => d.j2 && d.j2 > d.j ? d.j2 - d.j + 1 : 1;
 /** Part d'une dépense attribuée au jour j : un séjour est réparti à parts égales sur ses nuits. */
 const dayShare = (d, j) => d.j2 && d.j2 > d.j ? (j >= d.j && j <= d.j2 ? myPart(d) / nightsOf(d) : 0) : (d.j === j ? myPart(d) : 0);
 const coversAny = (d, ok) => { for (let j = d.j; j <= (d.j2 && d.j2 > d.j ? d.j2 : d.j); j++) if (ok(j)) return true; return false; };
-const stayTxt = (d, t) => d.j2 && d.j2 > d.j ? `${nightsOf(d)} nuits, du ${fd(addDays(t.du, d.j - 1))} au ${fd(addDays(t.du, d.j2 - 1))}, ${fmt(d.eur / nightsOf(d))} par nuit` : '';
+const MULTI = { logement: { one: 'Une nuit', many: 'Plusieurs nuits', unit: 'nuit', units: 'nuits', first: 'Première nuit', last: 'Dernière nuit', single: 'Nuit du', what: 'Durée du séjour', tot: 'Prix total du séjour' }, transport: { one: 'Un seul jour', many: 'Plusieurs jours', unit: 'jour', units: 'jours', first: 'Premier jour', last: 'Dernier jour', single: 'Jour', what: 'Durée', tot: 'Prix total' } };
+const stayTxt = (d, t) => { const M = MULTI[d.c] || MULTI.logement; return d.j2 && d.j2 > d.j ? `${nightsOf(d)} ${M.units}, du ${fd(addDays(t.du, d.j - 1))} au ${fd(addDays(t.du, d.j2 - 1))}, ${fmt(d.eur / nightsOf(d))} par ${M.unit}` : ''; };
 const expMeta = (d, t) => [d.m, subName(d) || CATS[d.c].n, stayTxt(d, t)].filter(Boolean).join(', ');
 const pct = (a, b) => b ? Math.min(100, a / b * 100) : 0;
 
@@ -109,11 +110,43 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('panel')
 function confirmIn(p, text, yes, label = 'Supprimer') { const old = p.querySelector('.confirm'); if (old) old.remove(); const d = document.createElement('div'); d.className = 'confirm'; d.innerHTML = `<span>${esc(text)}</span><button class="no">Annuler</button><button class="yes">${esc(label)}</button>`; p.appendChild(d); d.querySelector('.no').onclick = () => d.remove(); d.querySelector('.yes').onclick = yes; d.scrollIntoView({ block: 'nearest' }); }
 const CLOSE = label => `<button class="ghostbtn" data-close>${label || 'Annuler'}</button>`;
 
+/* ---------- préparer le voyage : incontournables et checklist ---------- */
+const todoOf = t => (t.todo = Array.isArray(t.todo) ? t.todo : []);
+function prepHTML(t) {
+  const L = todoOf(t), done = L.filter(x => x.ok).length, f = info(t);
+  if (!L.length) return f.futur || f.enCours ? `<div class="sec"><h2>À préparer</h2></div><button class="prep-cta" data-act="prep" data-trip="${t.id}"><i>${SV.star}</i><span><b>Incontournables et checklist</b><em>Les lieux à ne pas rater en ${esc(C(t).n)} et ce qu'il faut réserver</em></span>${SV.right}</button>` : '';
+  const row = (x, i) => `<button class="todo ${x.ok ? 'ok' : ''}" data-act="todoTick" data-trip="${t.id}" data-i="${i}" aria-pressed="${x.ok}"><i>${x.ok ? SV.check : ''}</i><span><b>${esc(x.l)}</b>${x.r ? '<em>À réserver</em>' : ''}</span></button>`;
+  const inc = L.map((x, i) => [x, i]).filter(([x]) => x.k === 'inc'), pra = L.map((x, i) => [x, i]).filter(([x]) => x.k !== 'inc');
+  return `<div class="sec"><h2>À préparer <span class="cnt num">${done}/${L.length}</span></h2><button class="more" data-act="prep" data-trip="${t.id}">Modifier</button></div>
+    <div class="todos">${inc.length ? `<p class="caps">Incontournables</p>${inc.map(([x, i]) => row(x, i)).join('')}` : ''}${pra.length ? `<p class="caps">Checklist</p>${pra.map(([x, i]) => row(x, i)).join('')}` : ''}</div>`;
+}
+ACT.prep = d => prepSheet(d.trip);
+ACT.todoTick = d => { const t = trip(d.trip), x = todoOf(t)[+d.i]; if (!x) return; x.ok = !x.ok; save(); refresh(); if (x.ok && todoOf(t).every(y => y.ok)) toast('Tout est prêt, bon voyage !'); };
+function prepSheet(tid, fresh) {
+  const t = trip(tid); if (!t) return; const cur = todoOf(t), has = l => cur.some(x => x.l === l);
+  const near = [t.ville, ...(t.lieux || [])].join(',').split(/[,;/]|\bet\b/).map(norm).filter(w => w.length > 3), hit = x => near.some(w => norm(x.l + ' ' + x.d).includes(w)) ? 0 : 1;
+  const inc = (INC[t.pays] || []).map(([n, dsc, r]) => ({ k: 'inc', l: n, d: dsc, r: !!r })).sort((a, b) => hit(a) - hit(b)), pra = todoFor(t.pays).map(x => ({ k: x.k, l: x.l }));
+  const sel = new Set(cur.length ? cur.map(x => x.l) : pra.map(x => x.l));
+  const item = x => `<button type="button" class="prp ${sel.has(x.l) ? 'on' : ''}" data-l="${esc(x.l)}"><i>${SV.check}</i><span><b>${esc(x.l)}</b>${x.d ? `<em>${esc(x.d)}</em>` : ''}</span>${x.r ? '<span class="tagr">À réserver</span>' : ''}</button>`;
+  openPanel(`<h2>${fresh ? 'Prépare ton voyage' : 'À préparer'}</h2><p class="small">Coche ce que tu veux suivre pour ${esc(place(t))}. Tu pourras cocher chaque point une fois fait, depuis la page du voyage.</p>
+   ${inc.length ? `<div class="sec"><h2>Les incontournables</h2></div><div class="prps">${inc.map(item).join('')}</div>` : ''}
+   <div class="sec"><h2>Checklist pratique</h2></div><div class="prps">${pra.map(item).join('')}</div>
+   <label class="fld"><span>Ajouter ton idée <i class="opt">facultatif</i></span><input id="pr-own" maxlength="80" placeholder="Ex. Dîner chez Da Michele"></label>
+   <button class="btn full" id="pr-ok">Enregistrer<i>${SV.arrow}</i></button>${CLOSE(fresh ? 'Plus tard' : 'Annuler')}`, p => {
+    p.querySelectorAll('.prp').forEach(b => b.onclick = () => { const l = b.dataset.l; sel.has(l) ? sel.delete(l) : sel.add(l); b.classList.toggle('on'); });
+    p.querySelector('#pr-ok').onclick = () => {
+      const keep = cur.filter(x => sel.has(x.l) || x.k === 'own'), out = keep.slice();
+      [...inc, ...pra].forEach(x => { if (sel.has(x.l) && !has(x.l)) out.push({ id: uid(), k: x.k, l: x.l, r: x.r || false, ok: false }); });
+      const own = p.querySelector('#pr-own').value.trim().slice(0, 80); if (own && !out.some(x => x.l === own)) out.push({ id: uid(), k: 'own', l: own, r: false, ok: false });
+      const order = x => x.k === 'inc' ? 0 : x.k === 'own' ? 1 : 2; t.todo = out.sort((a, b) => order(a) - order(b)).slice(0, 40);
+      save(); closePanel(); refresh(); toast(t.todo.length ? `${t.todo.length} point${t.todo.length > 1 ? 's' : ''} à préparer` : 'Liste vidée'); };
+  }, { nofocus: true });
+}
 function tripSheet(id) {
   const t = id ? trip(id) : null;
   openPanel(`<h2>${t ? 'Modifier le voyage' : 'Nouveau voyage'}</h2><p class="small">${t ? 'Change les infos de ce carnet.' : 'Un carnet se crée avec des emplacements vides pour tes photos.'} Les champs marqués <span class="req">*</span> sont obligatoires.</p>
    <label class="fld" data-f="pays"><span>Pays <span class="req">*</span></span><input id="f-pays" list="pays-list" autocomplete="off" maxlength="40" placeholder="Tape un pays, ex. Italie" value="${t ? esc(C(t).n) : ''}" required>${paysList()}<em class="ferr"></em></label>
-   <label class="fld" data-f="ville"><span>Ville ou région <i class="opt">facultatif</i></span><input id="f-ville" maxlength="80" value="${t ? esc(t.ville) : ''}" placeholder="Ex. Naples, ou laisse vide pour un roadtrip"></label>
+   <label class="fld" data-f="ville"><span>Ville ou région <i class="opt">facultatif</i></span><input id="f-ville" maxlength="80" value="${t ? esc(t.ville) : ''}" placeholder="Ex. Pouilles, ou Bari, Lecce, Matera"><em class="small">Plusieurs villes : sépare-les par des virgules, elles apparaîtront sur ta carte. Laisse vide pour un roadtrip.</em></label>
    <div class="two"><label class="fld" data-f="du"><span>Départ <span class="req">*</span></span><input id="f-du" type="date" required value="${t ? t.du : addDays(TODAY, 30)}"><em class="ferr"></em></label><label class="fld" data-f="au"><span>Retour <span class="req">*</span></span><input id="f-au" type="date" required value="${t ? t.au : addDays(TODAY, 36)}"><em class="ferr"></em></label></div>
    <label class="fld" data-f="bud"><span>Budget total en euros <span class="req">*</span></span><input id="f-bud" type="number" inputmode="numeric" min="0" max="10000000" required value="${t ? t.budget : 900}"><em class="ferr"></em></label>
    <button class="btn full" id="f-ok">${t ? 'Enregistrer' : 'Créer le carnet'}<i>${SV.arrow}</i></button>
@@ -133,8 +166,8 @@ function tripSheet(id) {
       if (bt === '' || !(b >= 0) || b > 1e7) ko = bad('bud', 'Indique un budget, même approximatif (0 accepté)');
       if (ko) { const f = p.querySelector('.fld.bad input'); f && f.focus(); toast('Il manque des informations'); return; }
       if (t) { Object.assign(t, { pays, ville, du, au, budget: b }); if (t.budgets) { const tot = Object.values(t.budgets).reduce((a, c) => a + c, 0); if (tot !== b) t.budgets = null; } save(); closePanel(); refresh(); toast('Carnet mis à jour'); }
-      else { const nt = { id: uid(), pays, ville, du, au, budget: b, cover: null, fav: false, vis: 'prive', lieux: [], membres: [], reglements: [], entrees: [{ id: uid(), j: 1, t: 'Premier jour', n: '', photos: [null, null] }], depenses: [] };
-        S.trips.push(nt); S.envies = S.envies.filter(w => w.pays !== pays); save(); closePanel(); setTimeout(() => openTrip(nt.id), 380); toast('Carnet créé'); }
+      else { const nt = { id: uid(), pays, ville, du, au, budget: b, cover: null, fav: false, vis: 'prive', lieux: [], todo: [], membres: [], reglements: [], entrees: [{ id: uid(), j: 1, t: 'Premier jour', n: '', photos: [null, null] }], depenses: [] };
+        S.trips.push(nt); S.envies = S.envies.filter(w => w.pays !== pays); save(); closePanel(); setTimeout(() => { openTrip(nt.id); setTimeout(() => prepSheet(nt.id, true), 420); }, 380); toast('Carnet créé'); }
     };
     const del = p.querySelector('#f-del'); if (del) del.onclick = () => confirmIn(p, 'Supprimer ce carnet, ses dépenses et ses photos ?', () => {
       [t.cover, ...t.entrees.flatMap(e => e.photos)].forEach(releaseMedia);
@@ -160,8 +193,8 @@ function expSheet(tid, eid, lock) {
    <div class="fld"><span>Précision <i class="opt">facultatif</i></span><div class="picker sub" id="e-sub"></div></div>
    <label class="fld"><span>Description</span><input id="e-lbl" maxlength="80" value="${d ? esc(d.l) : ''}" placeholder="Ex. Dîner à Gion"></label>
    <label class="fld"><span>Commerçant <i class="opt">facultatif</i></span><input id="e-mer" maxlength="60" list="e-merl" autocomplete="off" value="${d && d.m ? esc(d.m) : ''}" placeholder="Ex. Nishiki Market, Uber, Hôtel Kyoto"><datalist id="e-merl">${merchantsUsed().map(m => `<option value="${esc(m)}"></option>`).join('')}</datalist></label>
-   <div id="e-stay" hidden><div class="fld"><span>Durée du séjour</span><div class="seg wide" id="e-stayk"><button type="button" data-v="1">Une nuit</button><button type="button" data-v="n">Plusieurs nuits</button><button type="button" data-v="all">Tout le voyage</button></div></div></div>
-   <div class="two"><label class="fld"><span id="e-dayl">Jour</span><select id="e-day"></select></label><label class="fld" id="e-day2w" hidden><span>Dernière nuit</span><select id="e-day2"></select></label></div>
+   <div id="e-stay" hidden><div class="fld"><span id="e-stayw">Durée du séjour</span><div class="seg wide" id="e-stayk"><button type="button" data-v="1">Une nuit</button><button type="button" data-v="n">Plusieurs nuits</button><button type="button" data-v="all">Tout le voyage</button></div></div></div>
+   <div class="two"><label class="fld"><span id="e-dayl">Jour</span><select id="e-day"></select></label><label class="fld" id="e-day2w" hidden><span id="e-day2l">Dernière nuit</span><select id="e-day2"></select></label></div>
    <p class="small num" id="e-pernight"></p>
    <div id="e-grp"></div>
    ${!navigator.onLine ? `<p class="offnote">${SV.cloudOff}Hors connexion : la dépense est gardée sur ton téléphone et partira toute seule au retour du réseau.</p>` : ''}
@@ -179,15 +212,16 @@ function expSheet(tid, eid, lock) {
     const subs = () => { const L = SUBS[cat] || {}; if (sub && !L[sub]) sub = null;
       p.querySelector('#e-sub').innerHTML = Object.entries(L).map(([k, n]) => `<button type="button" class="pill ${sub === k ? 'on' : ''}" data-s="${k}">${n}</button>`).join('');
       p.querySelectorAll('#e-sub .pill').forEach(b => b.onclick = () => { sub = sub === b.dataset.s ? null : b.dataset.s; subs(); }); };
-    const stayUI = () => { const lg = cat === 'logement', n = info(t).jours; p.querySelector('#e-stay').hidden = !lg; if (!lg) stay = '1';
+    const stayUI = () => { const lg = !!MULTI[cat], M = MULTI[cat] || MULTI.logement, n = info(t).jours; p.querySelector('#e-stay').hidden = !lg; if (!lg) stay = '1';
+      const sb = p.querySelectorAll('#e-stayk button'); sb[0].textContent = M.one; sb[1].textContent = M.many; p.querySelector('#e-stayw').textContent = M.what; p.querySelector('#e-day2l').textContent = M.last;
       p.querySelectorAll('#e-stayk button').forEach(b => b.classList.toggle('on', b.dataset.v === stay));
       if (stay === 'all') { p.querySelector('#e-day').value = '1'; p.querySelector('#e-day2').value = String(n); }
-      p.querySelector('#e-day2w').hidden = !(lg && stay !== '1'); p.querySelector('#e-dayl').textContent = lg ? (stay === '1' ? 'Nuit du' : 'Première nuit') : 'Jour';
+      p.querySelector('#e-day2w').hidden = !(lg && stay !== '1'); p.querySelector('#e-dayl').textContent = lg ? (stay === '1' ? M.single : M.first) : 'Jour';
       p.querySelector('#e-day').disabled = p.querySelector('#e-day2').disabled = stay === 'all';
-      p.querySelector('.amount input').setAttribute('aria-label', lg && stay !== '1' ? 'Prix total du séjour' : 'Montant'); perNight(); };
-    const nights = () => { if (cat !== 'logement' || stay === '1') return 1; const a = +p.querySelector('#e-day').value, b = +p.querySelector('#e-day2').value; return b > a ? b - a + 1 : 1; };
+      p.querySelector('.amount input').setAttribute('aria-label', lg && stay !== '1' ? M.tot : 'Montant'); perNight(); };
+    const nights = () => { if (!MULTI[cat] || stay === '1') return 1; const a = +p.querySelector('#e-day').value, b = +p.querySelector('#e-day2').value; return b > a ? b - a + 1 : 1; };
     const perNight = () => { const el = p.querySelector('#e-pernight'), v = +p.querySelector('#e-amt').value / rate(), n = nights();
-      el.textContent = cat === 'logement' && stay !== '1' ? (n > 1 ? (v ? `Prix total du séjour : ${n} nuits, soit ${fmt(v / n)} par nuit, réparti automatiquement jour par jour.` : `Indique le prix total pour les ${n} nuits : Escale le répartit par nuit.`) : 'Choisis une dernière nuit après la première.') : ''; };
+      const M = MULTI[cat]; el.textContent = M && stay !== '1' ? (n > 1 ? (v ? `${M.tot} : ${n} ${M.units}, soit ${fmt(v / n)} par ${M.unit}, réparti automatiquement jour par jour.` : `Indique le prix total pour les ${n} ${M.units} : Escale le répartit par ${M.unit}.`) : (M.unit === 'nuit' ? 'Choisis une dernière nuit après la première.' : 'Choisis un dernier jour après le premier.')) : ''; };
     const conv = () => { const v = +p.querySelector('#e-amt').value, r = rate(); const out = p.querySelector('#e-conv');
       if (!v) { out.textContent = cur === 'E' ? '' : `1 € = ${fmtRate(r)} ${curName()}, ${rateNote()}`; return; }
       out.textContent = cur === 'E' ? (C(t).rate !== 1 ? `soit ${fmtL(v * C(t).rate, t)}, ${rateNote()}` : '') : `soit ${(v / r).toFixed(2).replace('.', ',')} €, 1 € = ${fmtRate(r)} ${curName()} (${rateNote()})`; };
@@ -210,8 +244,8 @@ function expSheet(tid, eid, lock) {
       const v = +p.querySelector('#e-amt').value; if (!(v > 0) || v > 1e9) { toast('Indique un montant'); p.querySelector('#e-amt').focus(); return; }
       const eur = v / rate(); if (eur > 1e7) { toast('Montant trop élevé'); return; }
       const M = t.membres || [], shared = M.length && split && !(split.length === 1 && split[0] === 'me' && by === 'me');
-      const j1 = +p.querySelector('#e-day').value, j2 = cat === 'logement' && stay !== '1' && +p.querySelector('#e-day2').value > j1 ? +p.querySelector('#e-day2').value : null;
-      if (cat === 'logement' && stay === 'n' && !j2) { toast('Choisis une dernière nuit après la première'); return; }
+      const j1 = +p.querySelector('#e-day').value, j2 = MULTI[cat] && stay !== '1' && +p.querySelector('#e-day2').value > j1 ? +p.querySelector('#e-day2').value : null;
+      if (MULTI[cat] && stay === 'n' && !j2) { toast(cat === 'logement' ? 'Choisis une dernière nuit après la première' : 'Choisis un dernier jour après le premier'); return; }
       const rec = { j: j1, j2, s: sub, l: p.querySelector('#e-lbl').value.trim().slice(0, 80) || (sub ? SUBS[cat][sub] : CATS[cat].n), c: cat, m: cleanMerchant(p.querySelector('#e-mer').value), v: cur === 'E' ? null : v, cur: cur === 'X' ? xcur : null, eur, by: M.length ? by : 'me', split: shared ? split : null };
       if (d) { Object.assign(d, rec); save(); closePanel(); refresh(); toast(navigator.onLine ? 'Dépense mise à jour' : 'Dépense mise à jour sur ton téléphone'); return; }
       t.depenses.push({ id: uid(), ...rec, at: new Date().toISOString() }); save(); flyAndDone(rec, t);
@@ -303,6 +337,7 @@ function openTrip(id, keep) {
     <div class="sec"><h2>À propos de ce voyage</h2><button class="more" data-act="editTrip" data-trip="${t.id}">Modifier</button></div>
     <p class="about">${t.entrees[0] && t.entrees[0].n ? esc(t.entrees[0].n) + ' ' : ''}${t.entrees.length} page${t.entrees.length > 1 ? 's' : ''} de souvenirs, ${t.lieux.length} lieu${t.lieux.length > 1 ? 'x' : ''} noté${t.lieux.length > 1 ? 's' : ''} et ${photosCount(t)} photo${photosCount(t) > 1 ? 's' : ''}.</p>
     <div class="tags">${t.lieux.map((l, i) => `<span class="pill">${esc(l)}<button class="x" data-act="rmPlace" data-trip="${t.id}" data-i="${i}" aria-label="Retirer ${esc(l)}">${SV.x.replace('<svg', '<svg width="11" height="11"')}</button></span>`).join('')}<button class="pill add" data-act="addPlace" data-trip="${t.id}">${SV.plus}Lieu</button></div>
+    ${prepHTML(t)}
     <div class="sec"><h2>Album</h2><button class="more" data-act="albumVis" data-trip="${t.id}">${esc(VISN[t.vis || 'prive'])}</button></div>
     <p class="small">${t.vis === 'public' ? 'Tout le monde peut voir les photos et les pages de ce carnet (jamais les dépenses).' : t.vis === 'amis' ? 'Tes amis peuvent voir les photos et les pages de ce carnet (jamais les dépenses).' : 'Ce carnet est privé : toi seule le vois.'}</p>
     <div class="sec"><h2>Budget</h2><button class="more" data-act="budget" data-trip="${t.id}">Modifier</button></div>
@@ -502,7 +537,8 @@ function renderHome() {
      <div class="dest" id="picks"></div>
      ${first ? '' : (() => { const vis = new Set(S.trips.filter(x => !info(x).futur).map(x => x.pays)).size, pc = Math.round(vis / 195 * 1000) / 10;
        return `<div class="hfeat"><button class="hf map" data-act="go" data-to="carte"><span class="ic">${SV.globe}</span><b>Ma carte du monde</b><span><strong class="num">${vis}</strong> pays visité${vis > 1 ? 's' : ''}${vis ? `, ${String(pc).replace('.', ',')} % du monde` : ''}, ${S.envies.length} envie${S.envies.length > 1 ? 's' : ''}</span><em>Voir le globe${SV.right}</em></button>
-         <button class="hf ai" data-act="go" data-to="ia"><span class="ic">${SV.spark}</span><b>Assistant de voyage</b><span>${cur ? 'Combien il me reste par jour ?' : 'Quel voyage m\'a coûté le plus ?'}</span><em>Poser une question${SV.right}</em></button></div>`; })()}
+         <button class="hf ai" data-act="go" data-to="ia"><span class="ic">${SV.spark}</span><b>Assistant de voyage</b><span>${cur ? 'Combien il me reste par jour ?' : 'Quel voyage m\'a coûté le plus ?'}</span><em>Poser une question${SV.right}</em></button></div>
+         <button class="hf-wide" data-act="go" data-to="conseil"><span class="ic">${SV.star}</span><span><b>Où partir ensuite ?</b><em>Des idées de voyages selon tes goûts et ton budget</em></span>${SV.right}</button>`; })()}
      ${S.trips.length ? `<div class="sec"><h2>${next && !cur ? 'Prochain départ' : 'Calendrier des voyages'}</h2>${next && !cur ? `<span class="small">${esc(place(next))}, dans ${diffDays(TODAY, next.du)} jour${diffDays(TODAY, next.du) > 1 ? 's' : ''}</span>` : ''}</div>${calHTML()}` : ''}
      ${t && cur ? `<div class="sec"><h2>En ce moment</h2><button class="more" data-open="${t.id}">Ouvrir</button></div>
      <div class="rec" data-open="${t.id}">${phHTML(t.cover, `${t.id}|cover`, 'Ajouter une photo')}<span class="sh"></span>
@@ -541,7 +577,7 @@ function renderCards() {
   const list = sorted().filter(t => inYear(t) && stF(t));
   const days = S.trips.reduce((a, t) => a + info(t).jours, 0);
   $('s-carnets').innerHTML = `
-   <div class="vtop"><button class="iconbtn" data-act="back" aria-label="Retour">${SV.back}</button><h1>Mes voyages</h1><div class="r"><button class="iconbtn" data-act="go" data-to="journal" aria-label="Journal">${SV.book}</button><button class="iconbtn" data-act="go" data-to="carte" aria-label="Carte">${SV.globe}</button><button class="iconbtn" data-act="newTrip" aria-label="Nouveau voyage">${SV.plus}</button></div></div>
+   <div class="vtop"><button class="iconbtn" data-act="back" aria-label="Retour">${SV.back}</button><h1>Mes voyages</h1><div class="r"><button class="iconbtn" data-act="go" data-to="journal" aria-label="Journal">${SV.book}</button><button class="iconbtn" data-act="go" data-to="carte" aria-label="Carte">${SV.globe}</button><button class="iconbtn" data-act="go" data-to="conseil" aria-label="Conseils">${SV.star}</button><button class="iconbtn" data-act="newTrip" aria-label="Nouveau voyage">${SV.plus}</button></div></div>
    <div class="vsearch">${SV.globe}<div><b>${S.trips.length} carnet${S.trips.length > 1 ? 's' : ''}, ${new Set(S.trips.map(x => x.pays)).size} pays</b><span>${days} jours de voyage, ${fmt(S.trips.reduce((a, x) => a + spentOf(x), 0))} dépensés</span></div></div>
    ${typeof shelfBanner === 'function' ? shelfBanner() : ''}
    ${S.trips.length ? `<div class="vchips">${years.length ? ddHTML('vy', 'Année', years.map(y => [y, String(y)]), vF.y === 'all' ? '' : vF.y) : ''}${V_STATUS.map(([k, l, fn]) => { const n = S.trips.filter(t => inYear(t) && fn(t)).length; return `<button data-act="vf" data-k="s" data-v="${k}" class="${vF.s === k ? 'on' : ''}" ${n || k === 'all' ? '' : 'disabled'}>${l}<i class="num">${n}</i></button>`; }).join('')}</div>
@@ -651,6 +687,8 @@ ACT.pickJournal = () => openPanel(`<h2>Choisir un voyage</h2><div class="menulis
 ACT.setJournal = d => { jId = d.trip; closePanel(); renderJournal(); };
 
 /* ---------- carte à plat ---------- */
+/** Toutes les villes et régions visitées (sauf le point principal déjà épinglé), pour les afficher en petits points. */
+function cityDots() { const out = []; S.trips.forEach(t => tripPlaces(t).forEach((c, i) => { if (i > 0 || t.lieux && t.lieux.length || t.ville) out.push({ n: c.n, ll: c.ll, on: t.id === mapSel, main: i === 0 }); })); return out; }
 let mapSel = null, mapT = { x: 0, y: 0, k: 1 }, mapBuilt = false, mproj = null;
 let mapMode = (() => { try { return localStorage.getItem('escale:map') || 'globe'; } catch (e) { return 'globe'; } })();
 const mapToggle = () => `<div class="mtoggle" role="tablist"><button class="${mapMode === 'globe' ? 'on' : ''}" data-act="mapMode" data-v="globe">${SV.globe}Globe 3D</button><button class="${mapMode === 'plan' ? 'on' : ''}" data-act="mapMode" data-v="plan">${SV.flatmap}Plan</button></div>`;
@@ -670,13 +708,14 @@ function renderCarte() {
   const path = d3.geoPath(mproj), cur = currentTrip(), visited = new Set(S.trips.map(t => C(t).iso)), wish = new Set(S.envies.map(w => C(w).iso));
   if (!mapSel || !trip(mapSel)) mapSel = (cur || sorted()[0] || {}).id;
   sc.innerHTML = `<div class="mapwrap" id="mapwrap"><div class="mapinner" id="mapinner"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-label="Carte du monde de tes voyages">${feats.map(f => `<path class="land ${cur && f.id === C(cur).iso ? 'c' : visited.has(f.id) ? 'v' : wish.has(f.id) ? 'w' : ''}" d="${path(f)}"/>`).join('')}</svg>
-     ${mapItems().map(it => { const [x, y] = mproj(C(it.t).ll); return pinHTML(it, `style="left:${x}px;top:${y}px"`) + `<span class="mlabel" style="left:${x}px;top:${y}px">${esc(it.wish ? C(it.t).n : short(it.t))}</span>`; }).join('')}</div></div>
+     ${cityDots().map(c => { const [x, y] = mproj(c.ll); return `<span class="mcity${c.on ? ' on' : ''}" style="left:${x}px;top:${y}px"></span><span class="mlabel city" style="left:${x}px;top:${y}px">${esc(c.n)}</span>`; }).join('')}
+     ${mapItems().map(it => { const [x, y] = mproj(it.wish ? C(it.t).ll : tripLL(it.t)); return pinHTML(it, `style="left:${x}px;top:${y}px"`) + `<span class="mlabel" style="left:${x}px;top:${y}px">${esc(it.wish ? C(it.t).n : short(it.t))}</span>`; }).join('')}</div></div>
    <div class="maphead"><div class="mh-row"><h1 class="bigtitle">Carte</h1><button class="pill fs-btn" data-act="friendStats">${SV.users}Entre amis</button></div><p class="caps" style="margin-top:6px">${new Set(S.trips.map(t => t.pays)).size} pays visités, ${S.envies.length} envie${S.envies.length > 1 ? 's' : ''}</p></div>
    ${mapToggle()}${mapLegend()}
    <div class="zoom"><button data-act="zoom" data-z="1.4" aria-label="Zoomer">${SV.plus}</button><button data-act="zoom" data-z="0.7" aria-label="Dézoomer">${SV.minus}</button><button data-act="zoomAll" aria-label="Tout afficher">${SV.globe}</button></div>
    <div id="mapcard"></div>`;
   const wrap = $('mapwrap');
-  if (!mapBuilt) { mapBuilt = true; const t = trip(mapSel); centerOn(t ? C(t).ll : [10, 40], t ? 2.2 : .62, false); }
+  if (!mapBuilt) { mapBuilt = true; const t = trip(mapSel); centerOn(t ? tripLL(t) : [10, 40], t ? 2.2 : .62, false); }
   applyMap();
   let p0 = null, start = null, moved = false, pinch = null; const pts = new Map();
   // pincer à deux doigts pour zoomer ou dézoomer, autour du point entre les doigts
@@ -695,19 +734,22 @@ function renderCarte() {
   wrap.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.deltaY < 0 ? 1.15 : .87, e.clientX, e.clientY); }, { passive: false });
   renderMapCard();
 }
-function applyMap() { const el = $('mapinner'); if (el) el.style.transform = `translate(${mapT.x}px,${mapT.y}px) scale(${mapT.k})`; document.querySelectorAll('#mapinner .mpin,#mapinner .mlabel').forEach(p => { p.style.transform = (p.classList.contains('mlabel') ? 'translate(10px,-6px) ' : '') + `scale(${1 / mapT.k})`; p.style.transformOrigin = p.classList.contains('mpin') ? '50% 100%' : '0 50%'; }); }
+function applyMap() { const el = $('mapinner'); if (el) el.style.transform = `translate(${mapT.x}px,${mapT.y}px) scale(${mapT.k})`; document.querySelectorAll('#mapinner .mpin,#mapinner .mlabel,#mapinner .mcity').forEach(p => { p.style.transform = (p.classList.contains('mlabel') ? `translate(${10 / mapT.k}px,${-8 / mapT.k}px) ` : '') + `scale(${1 / mapT.k})`; p.style.transformOrigin = p.classList.contains('mpin') ? '50% 100%' : p.classList.contains('mcity') ? '50% 50%' : '0 0'; }); const wrapEl = $('mapwrap'); if (wrapEl) wrapEl.classList.toggle('zin', mapT.k >= 3.5); planLabels(); }
+/* noms des villes sur le plan : on masque ceux qui se chevauchent */
+function planLabels() { if (mapT.k < 3.5) return; const shown = []; document.querySelectorAll('#mapinner .mlabel.city').forEach(l => { l.classList.remove('hid'); const r = l.getBoundingClientRect();
+  if (shown.some(o => r.left < o.right + 4 && r.right + 4 > o.left && r.top < o.bottom && r.bottom > o.top)) l.classList.add('hid'); else shown.push(r); }); }
 function centerOn(ll, k, anim) { const wrap = $('mapwrap'); if (!wrap) return; const r = wrap.getBoundingClientRect(), [x, y] = mproj(ll); const to = { k, x: r.width / 2 - x * k, y: r.height * .48 - y * k };
   if (anim && window.gsap && !REDUCED) gsap.to(mapT, { ...to, duration: .8, ease: 'power2.inOut', onUpdate: applyMap }); else { Object.assign(mapT, to); applyMap(); } }
 function zoomAt(f, cx, cy) { const r = $('mapwrap').getBoundingClientRect(), px = (cx ?? r.left + r.width / 2) - r.left, py = (cy ?? r.top + r.height / 2) - r.top, k = Math.max(.6, Math.min(8, mapT.k * f)); mapT.x = px - (px - mapT.x) * (k / mapT.k); mapT.y = py - (py - mapT.y) * (k / mapT.k); mapT.k = k; applyMap(); }
-ACT.zoom = d => { if (mapMode === 'globe' && $('gwrap')) { const z = Math.max(.8, Math.min(4, GL.z * (+d.z > 1 ? 1.4 : 1 / 1.4))); GL.fly = null; if (window.gsap && !REDUCED) gsap.to(GL, { z, duration: .35, ease: 'power2.out' }); else GL.z = z; return; } zoomAt(+d.z); };
-ACT.zoomAll = () => { if (mapMode === 'globe' && $('gwrap')) { const t = trip(mapSel); glFly(t ? C(t).ll : [10, 35], 1); return; } centerOn([20, 30], .62, true); };
+ACT.zoom = d => { if (mapMode === 'globe' && $('gwrap')) { const z = Math.max(.8, Math.min(10, GL.z * (+d.z > 1 ? 1.4 : 1 / 1.4))); GL.fly = null; if (window.gsap && !REDUCED) gsap.to(GL, { z, duration: .35, ease: 'power2.out' }); else GL.z = z; return; } zoomAt(+d.z); };
+ACT.zoomAll = () => { if (mapMode === 'globe' && $('gwrap')) { const t = trip(mapSel); glFly(t ? tripLL(t) : [10, 35], 1); return; } centerOn([20, 30], .62, true); };
 function renderMapCard() { const t = trip(mapSel), host = $('mapcard'); if (!host) return; if (!t) { host.innerHTML = S.trips.length ? '' : `<div class="mapcard"><div class="m"><h3>Ta carte est vide</h3><p class="small">Chaque voyage ajoute un repère sur la carte.</p></div><button class="go" data-act="newTrip" aria-label="Créer un voyage">${SV.plus}</button></div>`; return; } const f = info(t);
   host.innerHTML = `<div class="mapcard">${phHTML(t.cover, `${t.id}|cover`)}<div class="m"><h3>${esc(place(t))}</h3><p class="small">${esc(C(t).n)}, ${f.enCours ? 'en cours' : f.futur ? 'à venir' : 'visité'} le ${fd(t.du)} ${D(t.du).getFullYear()}</p><p class="small num">${fmt(f.futur ? t.budget : spentOf(t))}, ${f.jours} jours</p></div><button class="go" data-open="${t.id}" aria-label="Ouvrir ${esc(place(t))}">${SV.chev}</button></div>`;
-  if (mapMode === 'plan') centerOn(C(t).ll, Math.max(mapT.k, 2.2), true); }
+  if (mapMode === 'plan') centerOn(tripLL(t), Math.max(mapT.k, 2.2), true); }
 
 /* ---------- globe 3D ---------- */
 const GL = { rot: [-15, -38, 0], vel: 0, drag: false, idle: true, fly: null, z: 1, run: false, sel: null };
-let glFeats, glGrat, glProj, glPath, glCtx, glPins = [], glW = 0, glH = 0, glDpr = 1;
+let glDots = [], glFeats, glGrat, glProj, glPath, glCtx, glPins = [], glW = 0, glH = 0, glDpr = 1;
 function renderGlobe() {
   const sc = $('s-carte');
   if (!window.d3 || !window.topojson) { sc.innerHTML = `<div style="padding:70px 20px"><h1 class="bigtitle">Carte</h1><p class="small" style="margin-top:12px">Le globe n'a pas pu se charger.</p></div>${mapToggle()}`; return; }
@@ -719,20 +761,21 @@ function renderGlobe() {
    ${mapToggle()}${mapLegend()}
    <div class="zoom"><button data-act="zoom" data-z="1.4" aria-label="Zoomer">${SV.plus}</button><button data-act="zoom" data-z="0.7" aria-label="Dézoomer">${SV.minus}</button><button data-act="zoomAll" aria-label="Recentrer">${SV.globe}</button></div>
    <div id="mapcard"></div>`;
-  glPins = [...sc.querySelectorAll('.gpins2 .mpin')].map((b, i) => ({ b, ll: C(items[i].t).ll }));
+  glPins = [...sc.querySelectorAll('.gpins2 .mpin')].map((b, i) => ({ b, ll: items[i].wish ? C(items[i].t).ll : tripLL(items[i].t) }));
+  glDots = cityDots();
   glCtx = $('gcv2').getContext('2d'); glPath = d3.geoPath(glProj, glCtx); glW = 0;
   const box = $('gwrap'), pts = new Map(); let pinch = null;
   box.addEventListener('pointerdown', e => { if (e.target.closest('.mpin')) return; pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); try { box.setPointerCapture(e.pointerId); } catch (_) { }
     GL.drag = true; GL.idle = false; GL.fly = null; GL.vel = 0;
     if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: GL.z }; } });
   box.addEventListener('pointermove', e => { const o = pts.get(e.pointerId); if (!o) return; const dx = e.clientX - o.x, dy = e.clientY - o.y; pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pts.size >= 2 && pinch) { const [a, b] = [...pts.values()]; GL.z = Math.max(.8, Math.min(4, pinch.z * Math.hypot(a.x - b.x, a.y - b.y) / pinch.d)); return; }
+    if (pts.size >= 2 && pinch) { const [a, b] = [...pts.values()]; GL.z = Math.max(.8, Math.min(10, pinch.z * Math.hypot(a.x - b.x, a.y - b.y) / pinch.d)); return; }
     const k = .32 / GL.z; GL.rot[0] += dx * k; GL.rot[1] = Math.max(-75, Math.min(75, GL.rot[1] - dy * k)); GL.vel = dx * k; });
   const up = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch = null; if (!pts.size) GL.drag = false; };
   box.addEventListener('pointerup', up); box.addEventListener('pointercancel', up);
-  box.addEventListener('wheel', e => { e.preventDefault(); GL.z = Math.max(.8, Math.min(4, GL.z * (e.deltaY < 0 ? 1.12 : .89))); }, { passive: false });
+  box.addEventListener('wheel', e => { e.preventDefault(); GL.z = Math.max(.8, Math.min(10, GL.z * (e.deltaY < 0 ? 1.12 : .89))); }, { passive: false });
   if (!GL.run) { GL.run = true; requestAnimationFrame(glLoop); addEventListener('resize', () => glW = 0); }
-  const t = trip(mapSel); if (t && !GL.placed) { GL.placed = true; GL.rot = [-C(t).ll[0], -C(t).ll[1] + 8, 0]; }
+  const t = trip(mapSel); if (t && !GL.placed) { GL.placed = true; const ll = tripLL(t); GL.rot = [-ll[0], -ll[1] + 8, 0]; }
   renderMapCard();
 }
 function glDraw() {
@@ -750,6 +793,12 @@ function glDraw() {
   g = ctx.createRadialGradient(cx - R * .3, cy - R * .35, R * .2, cx, cy, R * 1.02); g.addColorStop(0, 'rgba(255,255,255,.14)'); g.addColorStop(.7, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(15,25,20,.25)');
   ctx.beginPath(); glPath({ type: 'Sphere' }); ctx.fillStyle = g; ctx.fill();
   const center = [-GL.rot[0], -GL.rot[1]];
+  // villes et régions visitées : petits points, avec leur nom quand on zoome
+  ctx.font = '600 10px Inter, sans-serif'; ctx.textBaseline = 'middle';
+  const boxes = [];
+  glDots.forEach(c => { if (d3.geoDistance(c.ll, center) > 1.35) return; const [x, y] = glProj(c.ll);
+    ctx.beginPath(); ctx.arc(x, y, c.on ? 3.6 : 2.8, 0, 7); ctx.fillStyle = c.on ? '#C65D3B' : '#2E5E3E'; ctx.fill(); ctx.lineWidth = 1.4; ctx.strokeStyle = '#fff'; ctx.stroke();
+    const w = ctx.measureText(c.n).width, bx = [x + 5, y - 7, x + 9 + w, y + 7]; if (GL.z >= 3 && !boxes.some(o => bx[0] < o[2] && bx[2] > o[0] && bx[1] < o[3] && bx[3] > o[1])) { boxes.push(bx); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.strokeText(c.n, x + 6, y); ctx.fillStyle = '#1F2A24'; ctx.fillText(c.n, x + 6, y); } });
   glPins.forEach(({ b, ll }) => { const dist = d3.geoDistance(ll, center), vis = dist < 1.45, [x, y] = glProj(ll), depth = Math.cos(Math.min(dist, 1.57));
     b.style.transform = `translate(${x}px,${y}px) scale(${.55 + .45 * depth})`; b.style.opacity = vis ? Math.min(1, depth * 1.8) : 0; b.style.pointerEvents = vis ? 'auto' : 'none'; b.style.zIndex = Math.round(depth * 100) + (b.classList.contains('on') ? 100 : 0); });
 }
@@ -765,7 +814,7 @@ function glFly(ll, z) { GL.idle = false; const to = [-ll[0], -ll[1] + 8, 0], fro
   if (REDUCED) { GL.rot = to; if (z) GL.z = z; return; } GL.fly = { r: d3.interpolate(from, to), z: z ? d3.interpolate(GL.z, z) : null, t0: performance.now(), dur: 1100 }; }
 ACT.gpin = d => { if (!d.pin) { const w = S.envies.find(x => C(x).n === d.wish); toast(`${d.wish} est dans tes envies${w && w.note ? ' : ' + w.note : ''}`); if (w) glFly(C(w).ll); return; }
   if (d.pin === mapSel && GL.sel === d.pin) { openTrip(d.pin); return; }
-  mapSel = d.pin; GL.sel = d.pin; document.querySelectorAll('#gpins2 .mpin').forEach(x => x.classList.toggle('on', x.dataset.pin === d.pin)); renderMapCard(); glFly(C(trip(d.pin)).ll, Math.max(GL.z, 1.6)); };
+  mapSel = d.pin; GL.sel = d.pin; glDots = cityDots(); document.querySelectorAll('#gpins2 .mpin').forEach(x => x.classList.toggle('on', x.dataset.pin === d.pin)); renderMapCard(); glFly(tripLL(trip(d.pin)), Math.max(GL.z, 2.2)); };
 
 /* ---------- navigation ---------- */
 let current = 'home', prev = 'home';
@@ -776,10 +825,10 @@ function go(s, mode) {
   current = s;
   document.querySelectorAll('.screen').forEach(x => { x.hidden = x.id !== 's-' + s; x.classList.remove('enter', 'push', 'flip'); });
   const el = $('s-' + s); if (s !== 'carnet') el.scrollTop = 0; void el.offsetWidth; el.classList.add(mode === 'flip' ? 'push' : (mode || 'enter'));
-  const tab = { home: 'home', carnets: 'carnets', carnet: 'carnets', journal: 'carnets', carte: 'home', depenses: 'depenses', ia: 'home', fil: 'fil', profil: 'profil', ami: 'fil' }[s];
+  const tab = { home: 'home', carnets: 'carnets', carnet: 'carnets', journal: 'carnets', carte: 'home', conseil: 'home', depenses: 'depenses', ia: 'home', fil: 'fil', profil: 'profil', ami: 'fil' }[s];
   document.querySelectorAll('nav [data-go]').forEach(b => b.classList.toggle('on', b.dataset.go === tab));
   document.querySelector('nav').hidden = s === 'carnet';
-  $('fab').hidden = ['carnet', 'ia', 'carte', 'ami', 'fil', 'profil'].includes(s);
+  $('fab').hidden = ['carnet', 'ia', 'carte', 'conseil', 'ami', 'fil', 'profil'].includes(s);
   $('askbar').hidden = s !== 'ia'; $('dock').hidden = s !== 'carnet';
   if (SCREENS[s]) SCREENS[s]();
   if (s === 'ia') { renderScope(); renderSugg(); if (!$('chat').children.length) greet(); }

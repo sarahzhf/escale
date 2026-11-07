@@ -520,10 +520,7 @@ const DECOR = {
     <path d="M40 30h40l-3 42H43z" fill="url(#mg${u})"/><path d="M80 38c14 0 14 22 0 22" fill="none" stroke="#E2D9CA" stroke-width="6"/><path d="M42 40h36v10H42z" fill="#B9946A"/><path d="M52 24c-4-6 4-8 0-14M62 24c-4-6 4-8 0-14" fill="none" stroke="#D9D0C2" stroke-width="2.4" stroke-linecap="round"/></svg>`
 };
 let decorN = 0;
-function shelfDecor(n, side) {
-  const kinds = side === 'l' ? (n <= 3 ? ['plant', 'stack'] : n <= 6 ? ['stack'] : []) : (n <= 3 ? ['clock', 'cup'] : ['plant']);
-  return kinds.map(k => `<span class="decor d-${k}" aria-hidden="true">${DECOR[k](++decorN)}</span>`).join('');
-}
+/* shelfDecor : voir shelf.js (objets choisis par l'utilisatrice) */
 /** Entrée vers la bibliothèque (accueil et Mes voyages) : une petite étagère avec les carnets de l'utilisatrice. */
 function shelfBanner() {
   const list = sorted(); if (!list.length) return '';

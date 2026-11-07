@@ -68,3 +68,7 @@ html[data-theme="dark"] .gauge{box-shadow:none}
 html[data-theme="dark"] .g-bub{color:#151714}
 html[data-theme="dark"] .g-seg .seg button.on{background:#ECEBE6;color:#151714}
 html[data-theme="dark"] .sx-list .ic.sm{background:#232624;color:#ECEBE6}
+
+/* v2.0 : cases à cocher visibles en sombre */
+html[data-theme="dark"] .todo > i, html[data-theme="dark"] .prp > i { border-color: rgba(255,255,255,.4); }
+html[data-theme="dark"] .hf-wide { background: #2E2A20; color: #F3EBDD; }

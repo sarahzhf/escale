@@ -309,6 +309,7 @@ ACT.deleteAccount = () => { const hasPw = (ME.app_metadata && (ME.app_metadata.p
   const { data: { session } } = await sb.auth.getSession();
   setTimeout(() => $('splash') && $('splash').classList.add('out'), 300);
   if (isReset && session) return newPasswordForm();
+  if (INV_TOKEN) return guestBoot();
   if (session) { if (new URLSearchParams(location.search).has('code')) history.replaceState(null, '', location.pathname); await afterLogin(); }
   else welcome();
 })();

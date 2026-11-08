@@ -470,3 +470,6 @@ html[data-theme="dark"] .bpass.bus .bp-band{background:#29241B}
 html[data-theme="dark"] .mission{background:#ECEBE6;color:#151714}
 html[data-theme="dark"] .mission .btn{background:#161616;color:#D4DDD8}
 html[data-theme="dark"] .ms-list em{color:#C0DAC9}
+html[data-theme="dark"] .gst-card{background:#161616}
+html[data-theme="dark"] .gst-bar i{background:#3A4B3E}
+html[data-theme="dark"] .gst-who .pill.on{background:#ECEBE6;color:#151714}

@@ -2461,3 +2461,20 @@ button.jar-w { border: 0; background: none; padding: 0; font: inherit; color: in
 .ms-list p { margin: 6px 0; font-size: 13px; } .ms-list em { font-style: normal; color: #2E5E3E; font-weight: 700; }
 @media (prefers-reduced-motion: reduce) { .ms-ic { animation: none; } }
 .seg.wide.cf-tabs{width:auto;max-width:none;box-sizing:border-box;display:flex;margin:4px 20px 12px}.cf-tabs button{flex:1 1 0;min-width:0;white-space:nowrap}
+
+/* v2.2 : invité sans compte */
+body.gated .scrim{z-index:85}body.gated .panel{z-index:90}
+.gst{display:flex;flex-direction:column;gap:14px;max-width:520px;margin:0 auto}
+.gst h2 .flag{vertical-align:-3px}
+.gst-k{margin:0;font-size:.85rem;color:var(--mid,#6b6b7b)}
+.gst-who{display:flex;flex-wrap:wrap;gap:8px}
+.gst-who .pill:not(.on){opacity:.55}
+.gst-card{display:flex;flex-direction:column;gap:4px;padding:18px;border-radius:22px;background:#fff}
+.gst-card b{font-size:2rem;font-family:var(--serif)}
+.gst-bar{height:8px;border-radius:8px;background:rgba(0,0,0,.07);overflow:hidden;margin:6px 0 2px}.gst-bar i{display:block;height:100%;background:#8FCB9B;border-radius:8px}
+.gst-act{display:grid;gap:10px}.gst-act .btn{justify-content:center;width:100%}
+.gst-who .pill.on{background:var(--ink,#20243A);color:#fff;opacity:1}
+.gst .exp .p{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.gst-foot{text-align:center;font-size:.8rem;color:var(--mid,#6b6b7b);margin-top:18px}
+.inv-url{margin:14px 0;padding:12px 14px;border-radius:14px;background:rgba(0,0,0,.05);font:500 .85rem/1.4 ui-monospace,monospace;word-break:break-all;user-select:all}
+.btn.ghost{background:transparent;color:inherit;box-shadow:inset 0 0 0 1.5px currentColor}

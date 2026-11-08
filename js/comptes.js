@@ -90,6 +90,7 @@ function membersSheet(tid) {
   openPanel(`<h2>Qui part avec toi ?</h2><p class="small">${esc(place(t))}. Ajoute juste un prénom : tes amis n'ont pas besoin d'avoir Escale. Leurs noms restent dans ton carnet privé.</p>
    <div id="m-list" class="mlist"></div>
    <form class="madd" id="m-form"><input id="m-new" maxlength="30" placeholder="Prénom, ex. Léa" autocomplete="off"><button class="pill dark" type="submit">${SV.plus}Ajouter</button></form>
+   <button type="button" class="link small" data-act="inviteLink" data-trip="${t.id}" style="margin:10px 0">${SV.userPlus}Inviter par un lien, sans compte</button>
    <button class="btn full" id="m-ok">Enregistrer<i>${SV.arrow}</i></button>${CLOSE()}`, p => {
     draw(p);
     p.querySelector('#m-form').onsubmit = e => { e.preventDefault(); const i = p.querySelector('#m-new'), n = i.value.trim().slice(0, 30); if (!n) return;

@@ -36,7 +36,7 @@ const FLAG={
  TR:`<rect width="30" height="30" fill="#e30a17"/><circle cx="12" cy="15" r="7" fill="#fff"/><circle cx="14" cy="15" r="5.6" fill="#e30a17"/>`,
  DZ:`<rect width="15" height="30" fill="#006233"/><rect x="15" width="15" height="30" fill="#fff"/><circle cx="15.5" cy="15" r="6" fill="#d21034"/><circle cx="17" cy="15" r="5" fill="#fff"/><circle cx="15.5" cy="15" r="6" fill="none"/>`
 };
-const flag=k=>FLAG[k]?`<span class="flag"><svg viewBox="0 0 30 30" aria-hidden="true">${FLAG[k]}</svg></span>`:`<span class="flag">${k}</span>`;
+const flag=k=>FLAG[k]?`<span class="flag"><svg viewBox="0 0 30 30" aria-hidden="true">${FLAG[k]}</svg></span>`:/^[A-Z]{2}$/.test(k||"")?`<span class="flag"><img src="vendor/flags/${k.toLowerCase()}.svg" alt="" loading="lazy" decoding="async"></span>`:`<span class="flag">${k||""}</span>`;
 const CATS={
   logement:{n:"Logement",ic:'<path d="M3 18v-7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v7M3 14h18M7 9V6h4v3"/>',pct:.36},
   repas:{n:"Repas",ic:'<path d="M4 11h16a8 8 0 0 1-16 0zM9 3c-1 2 1 3 0 5M14 3c-1 2 1 3 0 5"/>',pct:.24},

@@ -77,9 +77,9 @@ const cmtChips = (c, p) => Object.entries(c.reactions || {}).filter(([, n]) => n
 const cmtHeart = (c, p) => `<button class="cheart ${c.my_reaction ? 'on' : ''}" data-act="cQuick" data-c="${c.id}" data-p="${p.id}" aria-label="${c.my_reaction ? 'Retirer ta réaction' : 'Aimer ce commentaire'}">${c.my_reaction && c.my_reaction !== '❤️' ? `<span class="em">${esc(c.my_reaction)}</span>` : HEART}</button>`;
 const cmtTray = (c, p) => `<div class="ctray" hidden>${CRX.map(e => `<button data-act="cReact" data-c="${c.id}" data-p="${p.id}" data-e="${e}" class="${c.my_reaction === e ? 'on' : ''}" aria-label="Réagir ${e}">${e}</button>`).join('')}</div>`;
 function cmtLine(c, p) { // aperçu dans le fil
-  return `<div class="cm2" data-cmt="${c.id}"><div class="t"><p><b>${first(c.display_name)}</b>${esc(c.body)}</p><div class="crx">${cmtChips(c, p)}<button class="cadd" data-act="cTray" data-c="${c.id}" aria-label="Choisir une réaction">${SV.smile || '+'}</button></div>${cmtTray(c, p)}</div>${cmtHeart(c, p)}</div>`; }
+  return `<div class="cm2" data-cmt="${c.id}"><div class="t"><p>${c.author_id ? `<button class="cname" data-act="openUser" data-u="${c.author_id}">${first(c.display_name)}</button>` : `<b>${first(c.display_name)}</b>`}${esc(c.body)}</p><div class="crx">${cmtChips(c, p)}<button class="cadd" data-act="cTray" data-c="${c.id}" aria-label="Choisir une réaction">${SV.smile || '+'}</button></div>${cmtTray(c, p)}</div>${cmtHeart(c, p)}</div>`; }
 function cmtHTML(c, p) { // panneau de tous les commentaires
-  return `<div class="frow cmt" data-cmt="${c.id}">${avatar({ id: c.author_id, display_name: c.display_name, avatar_path: c.avatar_path }, 'sm')}<div class="m"><b>${esc(c.display_name)}</b><span class="wrap">${esc(c.body)}</span>
+  return `<div class="frow cmt" data-cmt="${c.id}"><button class="cav" data-act="openUser" data-u="${c.author_id}" aria-label="Profil de ${esc(c.display_name)}">${avatar({ id: c.author_id, display_name: c.display_name, avatar_path: c.avatar_path }, 'sm')}</button><div class="m"><button class="cname full" data-act="openUser" data-u="${c.author_id}">${esc(c.display_name)}</button><span class="wrap">${esc(c.body)}</span>
     <div class="crx">${cmtChips(c, p)}<button class="cadd" data-act="cTray" data-c="${c.id}" aria-label="Choisir une réaction">${SV.smile || '+'}</button>${c.author_id === ME.id || p.author_id === ME.id ? `<button class="cadd" data-act="delComment" data-c="${c.id}" data-p="${p.id}">Supprimer</button>` : ''}</div>${cmtTray(c, p)}</div>
     ${cmtHeart(c, p)}</div>`; }
 function renderCmts() { const box = document.querySelector('#panel .flist.cmts'), p = POSTS.get(cmtPost); if (box && p) box.innerHTML = CMTS.map(c => cmtHTML(c, p)).join('') || '<p class="small">Aucun commentaire.</p>'; }
@@ -382,9 +382,9 @@ function scoreHTML() {
   const m = myStats(), got = BADGES.filter(b => { const [v, n] = b[4](m); return v >= n; }), rank = BOARD.findIndex(b => b.me) + 1;
   const full = Math.floor(m.points / JAR_CAP) - (m.points && m.points % JAR_CAP === 0 ? 1 : 0), left = JAR_CAP - (m.points % JAR_CAP || (m.points ? JAR_CAP : 0)), grew = m.points > jarSeen;
   if (grew) { jarSeen = m.points; try { localStorage.setItem('escale:jar', String(m.points)); } catch (e) { } }
-  return `<div class="score jarbox"><div class="jar-w">${jarSVG(m.points, grew && !REDUCED)}${full > 0 ? `<div class="jars-full" aria-label="${full} bocal${full > 1 ? 'x' : ''} rempli${full > 1 ? 's' : ''}">${Array.from({ length: Math.min(full, 5) }, () => '<i></i>').join('')}${full > 5 ? `<b class="num">+${full - 5}</b>` : ''}</div>` : ''}</div>
+  return `<div class="score jarbox"><button class="jar-w" data-act="jar3d" aria-label="Voir ton bocal en grand">${jarSVG(m.points, grew && !REDUCED)}${full > 0 ? `<div class="jars-full" aria-label="${full} bocal${full > 1 ? 'x' : ''} rempli${full > 1 ? 's' : ''}">${Array.from({ length: Math.min(full, 5) }, () => '<i></i>').join('')}${full > 5 ? `<b class="num">+${full - 5}</b>` : ''}</div>` : ''}<span class="jar-zoom">Toucher pour agrandir</span></button>
     <div class="jar-side"><p class="jar-t">${m.points ? (left === JAR_CAP ? 'Bocal rempli, bravo !' : `Encore <b class="num">${left}</b> points pour remplir ton bocal`) : 'Relève ton premier défi pour y déposer tes premières billes'}</p>
-      <div class="jar-st"><div><b class="num">${m.streak}${m.streak ? ' 🔥' : ''}</b><span>série</span></div><div><b class="num">${BOARD.length > 1 ? `${rank}<sup>${rank === 1 ? 're' : 'e'}</sup>` : '–'}</b><span>entre amis</span></div><div><b class="num">${m.done}</b><span>relevé${m.done > 1 ? 's' : ''}</span></div></div>
+      <div class="jar-st"><div><b class="num">${m.streak}${m.streak ? ' 🔥' : ''}</b><span>série</span></div><div><b class="num">${m.countries || 0}</b><span>pays</span></div><div><b class="num">${m.done}</b><span>relevé${m.done > 1 ? 's' : ''}</span></div></div>
       <div class="jar-bar"><i style="width:${m.points ? 100 - left : 0}%"></i></div></div>
     <button class="sc-badges" data-act="badges" aria-label="Voir tous les badges">${BADGES.map(b => `<i class="${got.includes(b) ? 'on' : ''}" title="${b[2]}">${b[1]}</i>`).join('')}<span>${got.length}/${BADGES.length} badges</span></button></div>`;
 }
@@ -398,7 +398,7 @@ function boardHTML() {
 }
 ACT.badges = () => { const m = myStats();
   openPanel(`<h2>Badges et points</h2><p class="small" style="line-height:1.5">Chaque défi relevé dépose des billes dans ton bocal (une bille pour 2 points), et un bocal est plein à 100 points. 10 points par défi relevé, 5 de plus s'il est relevé en moins de 24 h, 15 pour la photo élue d'un défi de groupe, et 2 quand un ami relève un défi que tu lui as lancé.</p>
-    <div class="badgelist">${BADGES.map(b => { const [v, n] = b[4](m), ok = v >= n; return `<div class="bd ${ok ? 'on' : ''}"><i>${b[1]}</i><div><b>${b[2]}</b><span>${b[3]}</span>${ok ? '<em>Obtenu</em>' : `<span class="bar"><span style="width:${Math.min(100, v / n * 100)}%"></span></span><em class="num">${Math.min(v, n)} / ${n}</em>`}</div></div>`; }).join('')}</div>${CLOSE('Fermer')}`, null, { nofocus: true }); };
+    <div class="badgelist">${BADGES.map(b => { const [v, n] = b[4](m), ok = v >= n; return `<div class="bd ${ok ? 'on' : ''}"><i>${b[1]}</i><div><b>${b[2]}</b><span>${b[3]}</span>${ok ? '<em>Obtenu</em>' : `<span class="bar"><span style="width:${Math.min(100, v / n * 100)}%"></span></span><em class="num">${Math.min(v, n)} / ${n}</em>`}</div></div>`; }).join('')}</div>${typeof placeBadgesHTML === 'function' ? placeBadgesHTML() : ''}${CLOSE('Fermer')}`, null, { nofocus: true }); };
 async function renderDefis() {
   try { await Promise.all([loadChals(), rpc('challenge_board').then(b => { BOARD = b || []; }).catch(() => { BOARD = []; }), rpc('friends_traveling').then(t => { TRAVEL = t || []; }).catch(() => { TRAVEL = []; })]); }
   catch (e) { $('feedbox').innerHTML = '<div class="emptyfeed">Les défis ne peuvent pas être chargés pour le moment.</div>'; return; }
@@ -410,7 +410,6 @@ async function renderDefis() {
    ${travelHTML()}
    <div class="sec"><h2>À relever</h2></div>${open.map(chalCard).join('') || `<div class="emptyfeed">Aucun défi en cours. Tes amis peuvent t'en lancer depuis ton profil.</div>`}
    <div class="sec"><h2>Envoyés</h2></div>${out.map(c => c.group_id ? sentGroupCard(c) : chalCard(c)).join('') || `<div class="emptyfeed">Lance un défi à un ami : un lieu, une photo, un délai.</div>`}
-   ${boardHTML()}
    ${inc.filter(c => c.status !== 'open').length ? `<div class="sec"><h2>Historique</h2></div>${inc.filter(c => c.status !== 'open').map(chalCard).join('')}` : ''}`;
 }
 /** Défi de groupe envoyé : un seul cadre pour tout le groupe. */
@@ -432,10 +431,11 @@ ACT.newChal = fromPanel(async d => {
   openPanel(`<h2 id="nc-h">${head()}</h2><p class="small">Choisis un ou plusieurs amis. À plusieurs, chacun prend sa photo puis le groupe vote pour la plus belle.</p>
    <div class="fld"><span>Qui défier ?</span><div class="frchips" id="nc-to">${fr.map(f => `<button type="button" data-u="${f.id}" class="${to.has(f.id) ? 'on' : ''}" aria-pressed="${to.has(f.id)}">${avatar(f)}${first(f.display_name)}</button>`).join('')}</div></div>
    <label class="fld"><span>Le lieu à photographier</span><input id="nc-place" maxlength="120" placeholder="Ex. le pont de Galata à Istanbul" autocomplete="off" value="${esc(d.place || '')}"></label>
-   <label class="fld"><span>Pays (facultatif)</span><input id="nc-pays" list="pays-list" maxlength="40" autocomplete="off" placeholder="Tape un pays" value="${esc(d.pays && COUNTRIES[d.pays] ? COUNTRIES[d.pays].n : '')}">${paysList()}</label>
+   <label class="fld"><span>Pays (facultatif)</span><input id="nc-pays" maxlength="40" autocomplete="off" placeholder="Tape un pays" value="${esc(d.pays && COUNTRIES[d.pays] ? COUNTRIES[d.pays].n : '')}">${paysList()}</label>
    <label class="fld"><span>La consigne</span><textarea id="nc-note" maxlength="300" placeholder="Ex. au lever du soleil, sans personne dans le cadre"></textarea></label>
    <div class="fld"><span>Délai</span><div class="dlseg" id="nc-dl">${[[3, '3 jours'], [7, '1 semaine'], [30, '1 mois']].map(([v, l]) => `<button type="button" data-v="${v}" class="${v === dl ? 'on' : ''}">${l}</button>`).join('')}</div></div>
    <button class="btn full" id="nc-ok">Envoyer le défi<i>${SV.right}</i></button>${CLOSE()}`, p => {
+    combo(p.querySelector('#nc-pays'), countryItems);
     p.querySelectorAll('#nc-to button').forEach(b => b.onclick = () => { const u = b.dataset.u;
       if (to.has(u)) { if (to.size > 1) to.delete(u); } else { if (to.size >= 8) { toast('8 amis au maximum'); return; } to.add(u); }
       b.classList.toggle('on', to.has(u)); b.setAttribute('aria-pressed', to.has(u)); p.querySelector('#nc-h').textContent = head(); });

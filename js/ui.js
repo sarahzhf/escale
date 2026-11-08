@@ -145,20 +145,21 @@ function prepSheet(tid, fresh) {
 function tripSheet(id) {
   const t = id ? trip(id) : null;
   openPanel(`<h2>${t ? 'Modifier le voyage' : 'Nouveau voyage'}</h2><p class="small">${t ? 'Change les infos de ce carnet.' : 'Un carnet se crée avec des emplacements vides pour tes photos.'} Les champs marqués <span class="req">*</span> sont obligatoires.</p>
-   <label class="fld" data-f="pays"><span>Pays <span class="req">*</span></span><input id="f-pays" list="pays-list" autocomplete="off" maxlength="40" placeholder="Tape un pays, ex. Italie" value="${t ? esc(C(t).n) : ''}" required>${paysList()}<em class="ferr"></em></label>
+   <label class="fld" data-f="pays"><span>Pays <span class="req">*</span></span><input id="f-pays" autocomplete="off" maxlength="40" placeholder="Tape un pays, ex. Italie" value="${t ? esc(C(t).n) : ''}" required>${paysList()}<em class="ferr"></em></label>
    <label class="fld" data-f="ville"><span>Ville ou région <i class="opt">facultatif</i></span><input id="f-ville" maxlength="80" value="${t ? esc(t.ville) : ''}" placeholder="Ex. Pouilles, ou Bari, Lecce, Matera"><em class="small">Plusieurs villes : sépare-les par des virgules, elles apparaîtront sur ta carte. Laisse vide pour un roadtrip.</em></label>
    <div class="two"><label class="fld" data-f="du"><span>Départ <span class="req">*</span></span><input id="f-du" type="date" required value="${t ? t.du : addDays(TODAY, 30)}"><em class="ferr"></em></label><label class="fld" data-f="au"><span>Retour <span class="req">*</span></span><input id="f-au" type="date" required value="${t ? t.au : addDays(TODAY, 36)}"><em class="ferr"></em></label></div>
    <label class="fld" data-f="bud"><span>Budget total en euros <span class="req">*</span></span><input id="f-bud" type="number" inputmode="numeric" min="0" max="10000000" required value="${t ? t.budget : 900}"><em class="ferr"></em></label>
    <button class="btn full" id="f-ok">${t ? 'Enregistrer' : 'Créer le carnet'}<i>${SV.arrow}</i></button>
    ${t ? `<button class="danger" id="f-del">Supprimer ce carnet</button>` : ''}${CLOSE()}`, p => {
     const bad = (k, msg) => { const f = p.querySelector(`[data-f="${k}"]`); f.classList.add('bad'); f.querySelector('.ferr').textContent = msg; return true; };
+    combo(p.querySelector('#f-pays'), countryItems); combo(p.querySelector('#f-ville'), () => cityItems(paysCode(p.querySelector('#f-pays').value))(), { multi: true });
     p.querySelectorAll('.fld input').forEach(i => i.addEventListener('input', () => { const f = i.closest('.fld'); f.classList.remove('bad'); const e = f.querySelector('.ferr'); if (e) e.textContent = ''; }));
     p.querySelector('#f-ok').onclick = () => {
       p.querySelectorAll('.fld.bad').forEach(f => { f.classList.remove('bad'); f.querySelector('.ferr').textContent = ''; });
       const ville = p.querySelector('#f-ville').value.trim(), du = p.querySelector('#f-du').value, au = p.querySelector('#f-au').value, bt = p.querySelector('#f-bud').value, b = +bt, praw = p.querySelector('#f-pays').value.trim(), pays = paysCode(praw);
       let ko = false;
       if (!praw) ko = bad('pays', 'Indique le pays du voyage');
-      else if (!pays) ko = bad('pays', 'Pays non reconnu, choisis-le dans les suggestions');
+      else if (!pays) ko = bad('pays', 'Pays non reconnu, choisis-le dans la liste');
       if (!du) ko = bad('du', 'Indique la date de départ');
       if (!au) ko = bad('au', 'Indique la date de retour');
       else if (du && D(au) < D(du)) ko = bad('au', 'Le retour doit suivre le départ');
@@ -180,7 +181,7 @@ function merchantsUsed() { const n = {}; S.trips.forEach(t => t.depenses.forEach
 function expSheet(tid, eid, lock) {
   let t = trip(tid); const d = eid ? t.depenses.find(x => x.id === eid) : null;
   // E = euros, L = devise du pays, X = autre devise (ex. dollars au Cambodge, roadtrip sur plusieurs pays)
-  let cur = d ? (d.v == null ? 'E' : d.cur ? 'X' : 'L') : (C(t).rate !== 1 ? 'L' : 'E'), xcur = d && d.cur ? d.cur : 'USD', cat = d ? d.c : 'repas';
+  let cur = d ? (d.v == null ? 'E' : d.cur ? 'X' : 'L') : 'E', xcur = d && d.cur ? d.cur : 'USD', cat = d ? d.c : 'repas';
   let by = d ? d.by || 'me' : 'me', split = d && d.split ? d.split.slice() : null;
   let sub = d ? d.s || null : null, stay = d && d.j2 && d.j2 > d.j ? (d.j === 1 && d.j2 === info(t).jours ? 'all' : 'n') : '1';
   openPanel(`<h2>${d ? 'Modifier la dépense' : 'Nouvelle dépense'}</h2>${d || lock ? `<p class="small">${esc(place(t))}</p>` : ''}
@@ -200,7 +201,11 @@ function expSheet(tid, eid, lock) {
    ${!navigator.onLine ? `<p class="offnote">${SV.cloudOff}Hors connexion : la dépense est gardée sur ton téléphone et partira toute seule au retour du réseau.</p>` : ''}
    <button class="btn full" id="e-ok">${d ? 'Enregistrer' : 'Ajouter au carnet'}<i>${SV.arrow}</i></button>
    ${d ? `<button class="danger" id="e-del">Supprimer cette dépense</button>` : ''}${CLOSE()}`, p => {
-    const rate = () => cur === 'L' ? C(t).rate : cur === 'X' ? rateFor(xcur) : 1;
+    // taux d'origine d'une dépense déjà saisie en devise : on le garde, sauf si on choisit le taux du jour
+    const cur0 = d && d.v != null ? (d.cur ? 'X' : 'L') : null, x0 = d && d.cur, r0 = d && d.v != null && d.eur > 0 ? d.v / d.eur : null; let keepOld = !!r0;
+    const same = () => r0 && cur === cur0 && (cur !== 'X' || xcur === x0);
+    const todayRate = () => cur === 'L' ? C(t).rate : cur === 'X' ? rateFor(xcur) : 1;
+    const rate = () => same() && keepOld ? r0 : todayRate();
     const curName = () => cur === 'L' ? C(t).cur : cur === 'X' ? xcur : '€';
     const segs = () => { const l = C(t).rate !== 1;
       if (cur === 'L' && !l) cur = 'E';
@@ -224,7 +229,10 @@ function expSheet(tid, eid, lock) {
       const M = MULTI[cat]; el.textContent = M && stay !== '1' ? (n > 1 ? (v ? `${M.tot} : ${n} ${M.units}, soit ${fmt(v / n)} par ${M.unit}, réparti automatiquement jour par jour.` : `Indique le prix total pour les ${n} ${M.units} : Escale le répartit par ${M.unit}.`) : (M.unit === 'nuit' ? 'Choisis une dernière nuit après la première.' : 'Choisis un dernier jour après le premier.')) : ''; };
     const conv = () => { const v = +p.querySelector('#e-amt').value, r = rate(); const out = p.querySelector('#e-conv');
       if (!v) { out.textContent = cur === 'E' ? '' : `1 € = ${fmtRate(r)} ${curName()}, ${rateNote()}`; return; }
-      out.textContent = cur === 'E' ? (C(t).rate !== 1 ? `soit ${fmtL(v * C(t).rate, t)}, ${rateNote()}` : '') : `soit ${(v / r).toFixed(2).replace('.', ',')} €, 1 € = ${fmtRate(r)} ${curName()} (${rateNote()})`; };
+      if (same() && Math.abs(r0 - todayRate()) / r0 > .0005) { const e = n => (v / n).toFixed(2).replace('.', ',');
+        out.innerHTML = `<span class="rates"><button type="button" data-k="old" class="${keepOld ? 'on' : ''}"><b>${e(r0)} €</b><em>Taux de la dépense<br>1 € = ${fmtRate(r0)} ${esc(curName())}</em></button><button type="button" data-k="new" class="${keepOld ? '' : 'on'}"><b>${e(todayRate())} €</b><em>Taux d'aujourd'hui<br>1 € = ${fmtRate(todayRate())} ${esc(curName())}</em></button></span>`;
+        out.querySelectorAll('.rates button').forEach(b => b.onclick = () => { keepOld = b.dataset.k === 'old'; conv(); each(); perNight(); }); return; }
+      out.textContent = cur === 'E' ? (C(t).rate !== 1 ? `soit ${fmtL(v * C(t).rate, t)}, ${rateNote()}` : '') : `soit ${(v / r).toFixed(2).replace('.', ',')} €, 1 € = ${fmtRate(r)} ${curName()} (${same() ? 'taux enregistré avec la dépense' : rateNote()})`; };
     const grp = () => { const box = p.querySelector('#e-grp'), M = t.membres || []; if (!M.length) { box.innerHTML = `<button type="button" class="link small" id="e-addm">${SV.userPlus}Dépense partagée ? Ajoute des amis au voyage</button>`; box.querySelector('#e-addm').onclick = () => { closePanel(); setTimeout(() => membersSheet(t.id), 380); }; return; }
       const all = ['me', ...M.map(m => m.id)]; if (!split) split = all.slice();
       box.innerHTML = `<div class="fld"><span>Payé par</span><div class="picker" id="e-by">${all.map(id => `<button type="button" class="pill ${by === id ? 'on' : ''}" data-id="${id}">${esc(memberName(t, id))}</button>`).join('')}</div></div>
@@ -238,7 +246,7 @@ function expSheet(tid, eid, lock) {
     p.querySelector('#e-day').onchange = p.querySelector('#e-day2').onchange = () => { const a = p.querySelector('#e-day'), b = p.querySelector('#e-day2'); if (+b.value < +a.value) b.value = a.value; perNight(); };
     p.querySelector('#e-amt').oninput = () => { conv(); each(); perNight(); };
     p.querySelector('#e-x').onchange = e => { xcur = e.target.value; conv(); each(); };
-    const ts = p.querySelector('#e-trip'); if (ts) ts.onchange = () => { t = trip(ts.value); cur = C(t).rate !== 1 ? 'L' : 'E'; by = 'me'; split = null; segs(); days(); conv(); grp(); stayUI(); };
+    const ts = p.querySelector('#e-trip'); if (ts) ts.onchange = () => { t = trip(ts.value); cur = 'E'; by = 'me'; split = null; segs(); days(); conv(); grp(); stayUI(); };
     p.querySelectorAll('#e-cat .pill').forEach(b => b.onclick = () => { cat = b.dataset.c; p.querySelectorAll('#e-cat .pill').forEach(x => x.classList.toggle('on', x === b)); subs(); stayUI(); });
     p.querySelector('#e-ok').onclick = () => {
       const v = +p.querySelector('#e-amt').value; if (!(v > 0) || v > 1e9) { toast('Indique un montant'); p.querySelector('#e-amt').focus(); return; }
@@ -306,10 +314,11 @@ function budgetSheet(tid) {
 }
 function wishSheet() {
   openPanel(`<h2>Nouvelle envie</h2><p class="small">Elle apparaîtra sur ta carte et ton globe.</p>
-   <label class="fld"><span>Pays</span><input id="w-p" list="pays-list" autocomplete="off" maxlength="40" placeholder="Tape un pays, ex. Mexique">${paysList()}</label>
+   <label class="fld"><span>Pays</span><input id="w-p" autocomplete="off" maxlength="40" placeholder="Tape un pays, ex. Mexique">${paysList()}</label>
    <label class="fld"><span>Note</span><input id="w-n" maxlength="80" placeholder="Ex. Pour mes 30 ans"></label>
    <button class="btn full" id="w-ok">Ajouter l'envie<i>${SV.arrow}</i></button>${CLOSE()}`, p => {
-    p.querySelector('#w-ok').onclick = () => { const pays = paysCode(p.querySelector('#w-p').value); if (!pays) { toast('Pays non reconnu, choisis-le dans les suggestions'); return; }
+    combo(p.querySelector('#w-p'), countryItems);
+    p.querySelector('#w-ok').onclick = () => { const pays = paysCode(p.querySelector('#w-p').value); if (!pays) { toast('Pays non reconnu, choisis-le dans la liste'); return; }
       if (S.envies.some(w => w.pays === pays)) { toast('Ce pays est déjà dans tes envies'); return; }
       S.envies.push({ id: uid(), pays, note: p.querySelector('#w-n').value.trim().slice(0, 80) }); save(); closePanel(); refresh(); toast('Envie ajoutée'); };
   });
@@ -710,7 +719,7 @@ function renderCarte() {
   sc.innerHTML = `<div class="mapwrap" id="mapwrap"><div class="mapinner" id="mapinner"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-label="Carte du monde de tes voyages">${feats.map(f => `<path class="land ${cur && f.id === C(cur).iso ? 'c' : visited.has(f.id) ? 'v' : wish.has(f.id) ? 'w' : ''}" d="${path(f)}"/>`).join('')}</svg>
      ${cityDots().map(c => { const [x, y] = mproj(c.ll); return `<span class="mcity${c.on ? ' on' : ''}" style="left:${x}px;top:${y}px"></span><span class="mlabel city" style="left:${x}px;top:${y}px">${esc(c.n)}</span>`; }).join('')}
      ${mapItems().map(it => { const [x, y] = mproj(it.wish ? C(it.t).ll : tripLL(it.t)); return pinHTML(it, `style="left:${x}px;top:${y}px"`) + `<span class="mlabel" style="left:${x}px;top:${y}px">${esc(it.wish ? C(it.t).n : short(it.t))}</span>`; }).join('')}</div></div>
-   <div class="maphead"><div class="mh-row"><h1 class="bigtitle">Carte</h1><button class="pill fs-btn" data-act="friendStats">${SV.users}Entre amis</button></div><p class="caps" style="margin-top:6px">${new Set(S.trips.map(t => t.pays)).size} pays visités, ${S.envies.length} envie${S.envies.length > 1 ? 's' : ''}</p></div>
+   <div class="maphead"><div class="mh-row"><h1 class="bigtitle">Carte</h1><span class="mh-btns"><button class="pill fs-btn" data-act="go" data-to="monde">${SV.scale}En chiffres</button><button class="pill fs-btn" data-act="friendStats">${SV.users}Entre amis</button></span></div><p class="caps" style="margin-top:6px">${new Set(S.trips.map(t => t.pays)).size} pays visités, ${S.envies.length} envie${S.envies.length > 1 ? 's' : ''}</p></div>
    ${mapToggle()}${mapLegend()}
    <div class="zoom"><button data-act="zoom" data-z="1.4" aria-label="Zoomer">${SV.plus}</button><button data-act="zoom" data-z="0.7" aria-label="Dézoomer">${SV.minus}</button><button data-act="zoomAll" aria-label="Tout afficher">${SV.globe}</button></div>
    <div id="mapcard"></div>`;
@@ -757,7 +766,7 @@ function renderGlobe() {
   const items = mapItems();
   if (!mapSel || !trip(mapSel)) mapSel = (currentTrip() || sorted()[0] || {}).id;
   sc.innerHTML = `<div class="gwrap" id="gwrap"><canvas id="gcv2"></canvas><div class="gpins2" id="gpins2">${items.map(it => pinHTML(it, 'data-act="gpin"')).join('')}</div></div>
-   <div class="maphead"><div class="mh-row"><h1 class="bigtitle">Carte</h1><button class="pill fs-btn" data-act="friendStats">${SV.users}Entre amis</button></div><p class="caps" style="margin-top:6px">${new Set(S.trips.map(t => t.pays)).size} pays visités, ${S.envies.length} envie${S.envies.length > 1 ? 's' : ''}</p></div>
+   <div class="maphead"><div class="mh-row"><h1 class="bigtitle">Carte</h1><span class="mh-btns"><button class="pill fs-btn" data-act="go" data-to="monde">${SV.scale}En chiffres</button><button class="pill fs-btn" data-act="friendStats">${SV.users}Entre amis</button></span></div><p class="caps" style="margin-top:6px">${new Set(S.trips.map(t => t.pays)).size} pays visités, ${S.envies.length} envie${S.envies.length > 1 ? 's' : ''}</p></div>
    ${mapToggle()}${mapLegend()}
    <div class="zoom"><button data-act="zoom" data-z="1.4" aria-label="Zoomer">${SV.plus}</button><button data-act="zoom" data-z="0.7" aria-label="Dézoomer">${SV.minus}</button><button data-act="zoomAll" aria-label="Recentrer">${SV.globe}</button></div>
    <div id="mapcard"></div>`;
@@ -825,10 +834,10 @@ function go(s, mode) {
   current = s;
   document.querySelectorAll('.screen').forEach(x => { x.hidden = x.id !== 's-' + s; x.classList.remove('enter', 'push', 'flip'); });
   const el = $('s-' + s); if (s !== 'carnet') el.scrollTop = 0; void el.offsetWidth; el.classList.add(mode === 'flip' ? 'push' : (mode || 'enter'));
-  const tab = { home: 'home', carnets: 'carnets', carnet: 'carnets', journal: 'carnets', carte: 'home', conseil: 'home', depenses: 'depenses', ia: 'home', fil: 'fil', profil: 'profil', ami: 'fil' }[s];
+  const tab = { home: 'home', carnets: 'carnets', carnet: 'carnets', journal: 'carnets', carte: 'home', conseil: 'home', monde: 'home', depenses: 'depenses', ia: 'home', fil: 'fil', profil: 'profil', ami: 'fil' }[s];
   document.querySelectorAll('nav [data-go]').forEach(b => b.classList.toggle('on', b.dataset.go === tab));
   document.querySelector('nav').hidden = s === 'carnet';
-  $('fab').hidden = ['carnet', 'ia', 'carte', 'conseil', 'ami', 'fil', 'profil'].includes(s);
+  $('fab').hidden = ['carnet', 'ia', 'carte', 'conseil', 'monde', 'ami', 'fil', 'profil'].includes(s);
   $('askbar').hidden = s !== 'ia'; $('dock').hidden = s !== 'carnet';
   if (SCREENS[s]) SCREENS[s]();
   if (s === 'ia') { renderScope(); renderSugg(); if (!$('chat').children.length) greet(); }

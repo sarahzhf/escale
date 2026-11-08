@@ -63,7 +63,7 @@ html[data-theme="dark"] .panel .sx-card,html[data-theme="dark"] .panel .sx-tile{
 html[data-theme="dark"] .panel .sx-rank .r.me{background:#2C302D}
 html[data-theme="dark"] .av.xs{color:#fff}
 /* v1.9.1 jauge du budget */
-html[data-theme="dark"]{--g-from:#25232F;--g-to:#2E2521;--g-tick:rgba(255,255,255,.16);--g-on:#93C9A3;--g-over:#F0977E;--g-ink:#ECEBE6;--g-chip:rgba(255,255,255,.07)}
+html[data-theme="dark"]{--g-from:#1E2A21;--g-to:#243127;--g-tick:rgba(255,255,255,.16);--g-on:#93C9A3;--g-over:#F0977E;--g-ink:#ECEBE6;--g-chip:rgba(255,255,255,.07)}
 html[data-theme="dark"] .gauge{box-shadow:none}
 html[data-theme="dark"] .g-bub{color:#151714}
 html[data-theme="dark"] .g-seg .seg button.on{background:#ECEBE6;color:#151714}
@@ -72,3 +72,13 @@ html[data-theme="dark"] .sx-list .ic.sm{background:#232624;color:#ECEBE6}
 /* v2.0 : cases à cocher visibles en sombre */
 html[data-theme="dark"] .todo > i, html[data-theme="dark"] .prp > i { border-color: rgba(255,255,255,.4); }
 html[data-theme="dark"] .hf-wide { background: #2E2A20; color: #F3EBDD; }
+
+/* v2.1 */
+html[data-theme="dark"] .combo { background: #222824; border-color: rgba(255,255,255,.08); }
+html[data-theme="dark"] .combo mark { color: #93C9A3; }
+html[data-theme="dark"] .mw-tile, html[data-theme="dark"] .cf-row { border-color: rgba(255,255,255,.08); }
+html[data-theme="dark"] .flagbox { background: radial-gradient(120% 90% at 50% 0%, #2B2A24, #1E1D19); }
+html[data-theme="dark"] .rates button { border-color: rgba(255,255,255,.15); }
+html[data-theme="dark"] .cf-months span.ok { background: #2F4A35; color: #CFE8C9; }
+html[data-theme="dark"] .jar3d { background: radial-gradient(90% 70% at 50% 40%, #2E2A20, #17150F); } html[data-theme="dark"] .j3-txt { color: #F3EBDD; }
+html[data-theme="dark"] .pb.on { background: #2E2A20; }

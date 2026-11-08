@@ -8,7 +8,7 @@ const kmBetween = (a, b) => { const r = Math.PI / 180, la1 = a[1] * r, la2 = b[1
 const CONT = (() => { const m = {}, L = {
   'Europe': 'FR IT ES PT GR HR NL DE GB IS BE CH IE NO SE DK FI PL CZ AT HU ME AL MT CY AD BA BG BY EE LI LT LU LV MC MD MK RO RS RU SI SK SM UA VA XK',
   'Afrique': 'MA TN DZ EG SN ZA KE TZ MG MU AO BF BI BJ BW CD CF CG CI CM CV DJ ER ET GA GH GM GN GQ GW KM LR LS LY ML MR MW MZ NA NE NG RE RW SC SD SL SO SS ST SZ TD TG UG YT ZM ZW',
-  'Asie': 'JP VN TH ID TR CN KR IN LK MV AE JO PH MY SG KH NP AF AM AZ BD BH BN BT GE HK IL IQ IR KG KP KW KZ LA LB MM MN MO OM PK PS QA SA SY TJ TL TM TW UZ YE',
+  'Asie': 'JP VN TH ID TR CN KR IN LK MV AE JO PH MY SG KH NP AF AM AZ BD BH BN BT GE HK IQ IR KG KP KW KZ LA LB MM MN MO OM PK PS QA SA SY TJ TL TM TW UZ YE',
   'Amériques': 'US MX BR CA AR CL PE CO CU CR AG BB BO BS BZ DM DO EC GD GF GL GP GT GY HN HT JM KN LC MQ NI PA PR PY SR SV TT UY VC VE',
   'Océanie': 'AU NZ FJ FM KI MH NC NR PF PG PW SB TO TV VU WS' };
   Object.entries(L).forEach(([c, s]) => s.split(' ').forEach(k => m[k] = c)); return m; })();

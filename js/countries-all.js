@@ -52,7 +52,6 @@ HN|Honduras|340|-87.19|14.07|HNL|L|28
 HT|Haïti|332|-72.34|18.54|HTG|HTG|142
 IQ|Irak|368|44.36|33.31|IQD|IQD|1410
 IR|Iran|364|51.39|35.69|IRR|IRR|45000
-IL|Israël|376|35.21|31.77|ILS|₪|4
 JM|Jamaïque|388|-76.79|18.01|JMD|J$|170
 KG|Kirghizistan|417|74.59|42.87|KGS|KGS|94
 KI|Kiribati|296|173.03|1.45|AUD|AUD|1.65
@@ -149,4 +148,4 @@ MO|Macao|446|113.54|22.2|MOP|MOP|8.7`.split('\n').forEach(l => { const [k, n, is
   if (k.length !== 2 || COUNTRIES[k]) return;
   COUNTRIES[k] = { n, iso, ll: [+x, +y], cur, rate: +rate, code };
 });
-Object.assign(ALIAS, { 'etats unis d amerique': 'US', 'royaume uni': 'GB', 'uk': 'GB', 'russie': 'RU', 'reunion': 'RE', 'polynesie': 'PF', 'tahiti': 'PF', 'bora bora': 'PF', 'zanzibar': 'TZ', 'nouvelle caledonie': 'NC', 'guadeloupe': 'GP', 'martinique': 'MQ', 'tchequie': 'CZ', 'republique tcheque': 'CZ', 'prague': 'CZ', 'birmanie': 'MM', 'myanmar': 'MM', 'cote d ivoire': 'CI', 'ivory coast': 'CI', 'kosovo': 'XK', 'macedoine': 'MK', 'hongkong': 'HK', 'dubai': 'AE', 'abou dabi': 'AE', 'israel': 'IL', 'taiwan': 'TW', 'maurice': 'MU', 'ile maurice': 'MU', 'emirats arabes unis': 'AE', 'arabie': 'SA', 'perou': 'PE', 'equateur': 'EC', 'galapagos': 'EC', 'patagonie': 'AR', 'laponie': 'FI' });
+Object.assign(ALIAS, { 'etats unis d amerique': 'US', 'royaume uni': 'GB', 'uk': 'GB', 'russie': 'RU', 'reunion': 'RE', 'polynesie': 'PF', 'tahiti': 'PF', 'bora bora': 'PF', 'zanzibar': 'TZ', 'nouvelle caledonie': 'NC', 'guadeloupe': 'GP', 'martinique': 'MQ', 'tchequie': 'CZ', 'republique tcheque': 'CZ', 'prague': 'CZ', 'birmanie': 'MM', 'myanmar': 'MM', 'cote d ivoire': 'CI', 'ivory coast': 'CI', 'kosovo': 'XK', 'macedoine': 'MK', 'hongkong': 'HK', 'dubai': 'AE', 'abou dabi': 'AE', 'taiwan': 'TW', 'maurice': 'MU', 'ile maurice': 'MU', 'emirats arabes unis': 'AE', 'arabie': 'SA', 'perou': 'PE', 'equateur': 'EC', 'galapagos': 'EC', 'patagonie': 'AR', 'laponie': 'FI' });

@@ -92,7 +92,6 @@ HN|plage,aventure|2,3,4,5|Roatán:Plongée sur la barrière de corail.;Ruines de
 HT|culture|11,12,1,2,3|Citadelle Laferrière:Forteresse classée.;Jacmel:Carnaval et artisanat.;Bassin Bleu:Cascades turquoise.
 IQ|culture|3,4,10,11|Babylone:Site antique.;Erbil:Citadelle habitée.;Marais du sud:Mode de vie millénaire.
 IR|culture,desert|3,4,5,10,11|Ispahan:La place Naqsh-e Jahan.;Persépolis:Capitale achéménide.;Yazd:Ville du désert.
-IL|culture,ville,plage|3,4,5,10,11|Jérusalem:Vieille ville et lieux saints.;Mer Morte et Massada:Lever du soleil.;Tel-Aviv:Plages et vie nocturne.
 JM|plage,fete,nature|12,1,2,3,4|Negril:Falaises et coucher de soleil.;Chutes de Dunn's River:À escalader.;Blue Mountains:Café et randonnée.
 KG|nature,aventure|6,7,8,9|Lac Issyk-Koul:Plages en altitude.;Song Köl:Nuit en yourte.;Karakol:Treks vers les lacs.
 KI|iles,plage|5,6,7,8,9|Kiritimati:Pêche et oiseaux.;Tarawa:Lagon.;Ligne de changement de date:Premiers au nouvel an.

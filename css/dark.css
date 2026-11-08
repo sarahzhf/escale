@@ -484,3 +484,5 @@ html[data-theme="dark"] .lt-env{background:#332E25}
 html[data-theme="dark"] .lt-flap{background:#3F392F}
 html[data-theme="dark"] .lt-paper{background:#211E16 repeating-linear-gradient(transparent 0 29px,#302C24 29px 30px)}
 html[data-theme="dark"] .lt-b{color:#BFC3DA}
+html[data-theme="dark"] .cout{background:#161616}
+html[data-theme="dark"] .cout-r{border-top:1px solid rgba(255,255,255,.05)}

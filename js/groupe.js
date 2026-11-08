@@ -20,7 +20,7 @@ function gmCard(g, compact) {
   const me = gmMine(g), w = gmWinner(g), open = !g.closed;
   const photos = g.entries.map(e => { const mine = e.user.id === ME.id, voted = g.my_vote === e.user.id, won = w && w.includes(e.user.id);
     return `<div class="gp ${won ? 'won' : ''}"><span class="gp-img">${IMG(e.photo, 'Photo de ' + e.user.display_name)}</span>${won ? '<span class="crown" aria-label="Photo élue">👑</span>' : ''}
-      <div class="gp-f"><b>${mine ? 'Toi' : esc(first(e.user.display_name))}</b>${open && !mine ? `<button class="vote ${voted ? 'on' : ''}" data-act="gmVote" data-id="${g.id}" data-u="${e.user.id}" aria-pressed="${voted}">♥ <span class="num">${e.votes}</span></button>` : `<span class="vcount">♥ <span class="num">${e.votes}</span></span>`}</div></div>`; }).join('');
+      <div class="gp-f"><b>${mine ? 'Toi' : first(e.user.display_name)}</b>${open && !mine ? `<button class="vote ${voted ? 'on' : ''}" data-act="gmVote" data-id="${g.id}" data-u="${e.user.id}" aria-pressed="${voted}">♥ <span class="num">${e.votes}</span></button>` : `<span class="vcount">♥ <span class="num">${e.votes}</span></span>`}</div></div>`; }).join('');
   return `<section class="mission gm" id="gm-${g.id}"><div class="ms-h"><span class="ms-ic">👥</span><div><b>Mission de groupe · ${gmPlace(g)}</b><em class="num" data-gdue="${g.due_at}">${gmLeft(g)}</em></div></div>
     <p class="ms-t">${esc(g.txt)}</p>
     <p class="gm-n">${g.entries.length}/${g.crew} ${g.entries.length > 1 ? 'ont relevé' : 'a relevé'}${g.entries.length > 1 && open ? ' · votez pour la plus belle photo' : ''}</p>

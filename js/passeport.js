@@ -1,6 +1,6 @@
 /* Escale : le passeport.
    Un livret qui s'ouvre et se feuillette, une page d'identité (photo, nom, pays tamponnés) et un tampon par pays visité.
-   Il se feuillette comme les carnets. Le tampon tombe en direct le jour où un voyage commence dans un nouveau pays.
+   Le tampon tombe en direct (son, secousse, encre) le jour où un voyage commence dans un nouveau pays.
    Les tampons sont dessinés par l'appli : forme, encre et motif propres à chaque pays, sans emblème officiel. */
 'use strict';
 const PP_COLORS = [['#22283A', '#C9A85C', 'Nuit'], ['#5B2230', '#D4B57A', 'Bordeaux'], ['#2E3B33', '#CBB178', 'Forêt'], ['#1E1D1B', '#BFA46A', 'Noir'], ['#8E9A94', '#F1ECE0', 'Sauge'], ['#B89468', '#FBF5E8', 'Sable']];
@@ -56,103 +56,158 @@ function ppStamp(v, n, isNew) {
 }
 
 
-/* ---------- le livret : il s'ouvre et se feuillette comme les carnets (mêmes gestes, mêmes pages qui tournent) ---------- */
-BOOKS.ppvert = { n: 'Vert', c: '#2E5E3E', d: '#244B31', m: 'A', rib: '#C9A15A', ink: '#E6D49C' };
-BOOKS.ppnuit = { n: 'Nuit', c: '#22283A', d: '#181D2B', m: 'A', rib: '#C9A15A', ink: '#E2CB8C' };
-BOOKS.ppbordeaux = { n: 'Bordeaux', c: '#5B2230', d: '#471925', m: 'A', rib: '#C9A15A', ink: '#E8D3A0' };
-BOOKS.ppnoir = { n: 'Noir', c: '#1E1D1B', d: '#141312', m: 'A', rib: '#C9A15A', ink: '#D9C185' };
-BOOKS.ppsable = { n: 'Sable', c: '#B89468', d: '#9F7D53', m: 'A', rib: '#2E5E3E', ink: '#FBF5E8' };
-const PP_BOOKS = ['ppvert', 'ppnuit', 'ppbordeaux', 'ppnoir', 'ppsable'];
-const PP_POS = [[4, 15], [50, 19], [6, 53], [48, 57]], PP_PER = 4;
+/* ---------- le livret : couverture du prototype, pages qui se tournent au doigt ---------- */
+const PP_POS = [[5, 14], [50, 18], [7, 50], [49, 54]], PP_PER = 4;
 const ppPrefs = () => (SETTINGS && SETTINGS.passport) || {};
-
-/** Les visas : premier passage dans chaque pays, du plus ancien au plus récent (voyages commencés). */
+const ppCol = hex => PP_COLORS.find(c => c[0] === hex) || PP_COLORS[0];
 const ppVisasOf = trips => { const seen = new Map(); trips.filter(t => t.du <= TODAY).slice().sort((a, b) => a.du.localeCompare(b.du)).forEach(t => { if (!seen.has(t.pays)) seen.set(t.pays, { cc: t.pays, du: t.du, city: t.ville }); }); return [...seen.values()]; };
 const ppVisas = () => ppVisasOf(S.trips);
+const ppGuil = s => { let w = ''; for (let y = 6; y < 340; y += 7) w += `<path d="M0 ${y} Q 20 ${y - 5 - s} 40 ${y} T 80 ${y} T 120 ${y} T 160 ${y} T 200 ${y} T 240 ${y}"/>`; let r = ''; for (let i = 0; i < 18; i++) r += `<ellipse cx="120" cy="175" rx="95" ry="32" transform="rotate(${i * 10} 120 175)"/>`;
+  return `<svg class="pp-guil" viewBox="0 0 240 340" preserveAspectRatio="none" fill="none" aria-hidden="true"><g stroke="#D5CCB2" stroke-width=".35">${w}</g><g stroke="#D9CFB4" stroke-width=".3">${r}</g><circle cx="120" cy="175" r="22" stroke="#D2C7AB" stroke-width=".5"/><text x="120" y="181" text-anchor="middle" font-family="Cormorant Garamond,serif" font-size="16" fill="#E2D9C2">E</text></svg>`; };
+// tampons déjà posés (pour que les nouveaux tombent en direct à l'ouverture)
+const ppLandedKey = () => ME ? 'escale:ppl:' + ME.id : null;
+const ppLanded = () => { try { return new Set(JSON.parse(localStorage.getItem(ppLandedKey()) || '[]')); } catch (_) { return new Set(); } };
+const ppLand = cc => { try { const s = ppLanded(); s.add(cc); localStorage.setItem(ppLandedKey(), JSON.stringify([...s])); } catch (_) { } };
 
-const ppGuil = s => { let w = ''; for (let y = 6; y < 420; y += 7) w += `<path d="M0 ${y} Q 25 ${y - 5 - s} 50 ${y} T 100 ${y} T 150 ${y} T 200 ${y} T 250 ${y} T 300 ${y}"/>`; let r = ''; for (let i = 0; i < 18; i++) r += `<ellipse cx="150" cy="215" rx="115" ry="38" transform="rotate(${i * 10} 150 215)"/>`;
-  return `<svg class="pp-guil" viewBox="0 0 300 417" fill="none" aria-hidden="true"><g stroke="#D5CCB2" stroke-width=".4">${w}</g><g stroke="#D9CFB4" stroke-width=".35">${r}</g><circle cx="150" cy="215" r="26" stroke="#D2C7AB" stroke-width=".6"/><text x="150" y="223" text-anchor="middle" font-family="Cormorant Garamond,serif" font-size="20" fill="#E2D9C2">E</text></svg>`; };
+/** o : { name, visas, photo, cover, own } */
+function ppOpen(o) {
+  if (document.querySelector('.pp-ov')) return;
+  o = o || {}; const own = o.own !== false;
+  const pref = ppPrefs(), V = o.visas || ppVisas(), name = o.name || (PROFILE && PROFILE.display_name) || S.user || '';
+  const col = ppCol(own ? pref.cover : o.cover), photo = own ? pref.photo : null;
+  const [fn, ...rest] = name.split(' '), ln = rest.join(' ');
+  const landed = own ? ppLanded() : null, pending = own ? V.map((v, n) => landed.has(v.cc) ? -1 : n).filter(n => n >= 0) : [];
+  const hidden = new Set(pending);
+  const visaPages = Math.max(6, (Math.ceil((V.length + 1) / PP_PER) + 1) & ~1), NL = 2 + visaPages / 2;
+  const ov = document.createElement('div'); ov.className = 'pp-ov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', own ? 'Mon passeport' : 'Passeport de ' + fn);
+  ov.style.setProperty('--cover', col[0]); ov.style.setProperty('--foil', col[1]);
+  const mrz = () => { const c = s => ppNorm(s || 'X').replace(/[^A-Z]/g, ''), pad = (s, n) => (s + '<'.repeat(n)).slice(0, n); return pad(`P<ESC${c(ln || fn)}<<${c(fn)}`, 32) + '\n' + pad(`ESC<<${V.length}PAYS<<${V[0] ? V[0].du.slice(0, 4) : ''}`, 32); };
+  const identity = () => `${ppGuil(1)}<div class="pp-ph pp-id"><h2>Escale</h2><div class="pp-hd"><span>Passeport</span><span>N° ESC-${String(V.length).padStart(3, '0')}</span></div>
+    <div class="pp-grid"><div class="pp-photo">${photo ? IMG(photo, 'Photo') : '<svg viewBox="0 0 30 40" aria-hidden="true"><circle cx="15" cy="15" r="7" fill="#B9B09D"/><path d="M3 40q2-14 12-14t12 14z" fill="#B9B09D"/></svg>'}</div>
+    <dl><div><dt>Nom</dt><dd>${esc(ln || '·')}</dd></div><div><dt>Prénom</dt><dd>${esc(fn || '·')}</dd></div><div><dt>Pays tamponnés</dt><dd>${V.length} / 207</dd></div><div><dt>Premier voyage</dt><dd>${V[0] ? ppDate(V[0].du) : '·'}</dd></div><div><dt>Délivré par</dt><dd>Escale</dd></div></dl></div>
+    <div class="pp-sign">${esc(fn || '')} ${ln ? esc(ln[0]) + '.' : ''}</div><div class="pp-holo"></div><div class="pp-mrz">${esc(mrz())}</div></div><div class="pp-no">1</div>`;
+  const visa = k => { let h = `${ppGuil(k % 3)}<div class="pp-ph"><h2>Visas</h2><div class="pp-hd"><span>Entrées</span><span>Arrivées</span></div></div>`;
+    V.forEach((v, n) => { if (Math.floor(n / PP_PER) !== k) return; const [x, y] = PP_POS[n % PP_PER];
+      h += `<div class="pp-slot${hidden.has(n) ? ' wait' : ''}" data-n="${n}" style="left:${x}%;top:${y}%">${ppStamp(v, n, false)}</div>`; });
+    return h + `<div class="pp-no">${k + 2}</div>`; };
+  const face = (i, side) => {
+    if (i === 0 && side === 0) return `<div class="pp-cover"><div class="pp-rep pp-foil">Escale<br>République des voyageurs</div><h1 class="pp-foil">Passeport</h1><div class="pp-sub pp-foil">Carnet de voyage</div><svg class="pp-foil" viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="60" cy="60" r="54"/><circle cx="60" cy="60" r="48" stroke-dasharray="1 3"/><circle cx="60" cy="60" r="28"/><ellipse cx="60" cy="60" rx="12" ry="28"/><path d="M32 60h56M36 46h48M36 74h48"/><path d="M60 4l4 10h-8zM60 116l4-10h-8zM4 60l10 4v-8zM116 60l-10 4v-8z" fill="currentColor"/></svg><div class="pp-sub pp-foil">Titulaire</div><div class="pp-who pp-foil">${esc(name.toUpperCase())}</div><div class="pp-bio"></div></div>`;
+    if (i === 0) return `${ppGuil(2)}<div class="pp-ph pp-inside"><p>Chaque tampon est un pays foulé, chaque page une histoire à raconter.</p><div class="pp-sig">bon voyage</div></div>`;
+    if (i === 1 && side === 0) return identity();
+    const k = side === 1 ? (i - 1) * 2 : (i - 1) * 2 - 1;
+    return k >= visaPages ? `${ppGuil(0)}<div class="pp-ph pp-inside"><p>Il reste tant de pays à tamponner.</p></div>` : visa(k);
+  };
+  ov.innerHTML = `<div class="pp-top"><button class="pp-x" aria-label="Fermer">${SV.x}</button>${own ? '<button class="pp-perso">Personnaliser</button>' : ''}</div>
+    <div class="pp-stage"><div class="pp-book"><div class="pp-back"></div>${Array.from({ length: NL }, () => '<div class="pp-leaf"><div class="pp-face f"></div><div class="pp-face b"></div><div class="pp-shade"></div></div>').join('')}</div></div>
+    <div class="pp-nav"><button class="pp-b" data-d="-1" aria-label="Page précédente">‹</button><span class="pp-pg">Touche la couverture</span><button class="pp-b" data-d="1" aria-label="Page suivante">›</button></div>
+    <p class="pp-tip">Fais glisser les pages du doigt</p>`;
+  document.body.appendChild(ov);
+  const book = ov.querySelector('.pp-book'), L = [...ov.querySelectorAll('.pp-leaf')];
+  L.forEach((l, i) => { l.children[0].innerHTML = face(i, 0); l.children[1].innerHTML = face(i, 1); });
+  const size = () => ov.style.setProperty('--w', Math.max(140, Math.min(300, (Math.min(820, innerWidth) - 24) / 2, (innerHeight - 190) * 88 / 125)) + 'px');
+  size(); addEventListener('resize', size);
 
-function ppBook(o) {   // o : { name, visas, photo, own, hide (index du tampon pas encore posé), fresh (index du tampon qui vient de tomber) }
-  const V = o.visas, [fn, ...rest] = (o.name || '').split(' '), ln = rest.join(' ');
-  const mrz = () => { const c = s => ppNorm(s || 'X').replace(/[^A-Z]/g, ''), pad = (s, n) => (s + '<'.repeat(n)).slice(0, n); return pad(`P<ESC${c(ln || fn)}<<${c(fn)}`, 30) + '\n' + pad(`ESC<<${V.length}PAYS<<${V[0] ? V[0].du.slice(0, 4) : ''}`, 30); };
-  const pg = (inner, no) => `<div class="pg pp-pg">${ppGuil(no % 3)}${inner}${no ? `<span class="pp-no">${no}</span>` : ''}</div>`;
-  const inside = pg(`<div class="pp-inside"><p>Chaque tampon est un pays foulé, chaque page une histoire à raconter.</p><b>bon voyage</b></div>`, 0);
-  const ident = pg(`<div class="pp-ph"><h2>Escale</h2><div class="pp-hd"><span>Passeport</span><span>N° ESC-${String(V.length).padStart(3, '0')}</span></div>
-    <div class="pp-grid"><div class="pp-photo">${o.photo ? IMG(o.photo, 'Photo') : '<svg viewBox="0 0 30 40" aria-hidden="true"><circle cx="15" cy="15" r="7" fill="#B9B09D"/><path d="M3 40q2-14 12-14t12 14z" fill="#B9B09D"/></svg>'}</div>
-    <dl><div><dt>Nom</dt><dd>${esc(ln || '·')}</dd></div><div><dt>Prénom</dt><dd>${esc(fn || '·')}</dd></div><div><dt>Pays tamponnés</dt><dd>${V.length} / 207</dd></div><div><dt>Premier voyage</dt><dd>${V[0] ? ppDate(V[0].du) : '·'}</dd></div></dl></div>
-    <div class="pp-sign">${esc(fn || '')} ${ln ? esc(ln[0]) + '.' : ''}</div><div class="pp-mrz">${esc(mrz())}</div></div>`, 1);
-  const visa = k => { let h = `<div class="pp-ph"><h2>Visas</h2><div class="pp-hd"><span>Entrées</span><span>Arrivées</span></div></div>`;
-    V.forEach((v, n) => { if (n === o.hide || Math.floor(n / PP_PER) !== k) return; const [x, y] = PP_POS[n % PP_PER]; h += `<div class="pp-slot" style="left:${x}%;top:${y}%">${ppStamp(v, n, n === o.fresh)}</div>`; });
-    return pg(h, k + 2); };
-  const nv = Math.max(4, Math.ceil(V.length / PP_PER) + 1 + (Math.ceil(V.length / PP_PER) + 1) % 2), spreads = [{ kind: 'pp', l: inside, r: ident }];
-  for (let k = 0; k < nv; k += 2) spreads.push({ kind: 'pp', l: visa(k), r: visa(k + 1) });
-  return { own: false, passport: true, color: PP_BOOKS.includes(o.cover) ? o.cover : 'ppvert', title: 'Passeport', country: '', pays: '', spreads };
+  /* tourner : la feuille qui tourne passe au-dessus de tout jusqu'à la fin du mouvement */
+  let at = 0, busy = false;
+  const zRest = () => L.forEach((l, i) => l.style.zIndex = i < at ? i + 1 : NL - i + 10);
+  const lbl = () => at === 0 ? 'Couverture' : at === 1 ? 'Identité' : at >= NL ? 'Fin' : `Visas ${(at - 2) * 2 + 1} et ${(at - 2) * 2 + 2}`;
+  const setAt = n => { at = n; book.classList.toggle('open', at > 0 && at < NL); ov.querySelector('.pp-pg').textContent = lbl(); };
+  const turn = (dir, from) => new Promise(res => {
+    const idx = dir > 0 ? at : at - 1, l = L[idx]; if (!l || busy) return res(false);
+    busy = true; l.style.zIndex = 200; l.classList.add('turning'); l.style.transition = ''; void l.offsetWidth;
+    l.style.transform = dir > 0 ? 'rotateY(-180deg)' : 'rotateY(0deg)';
+    setAt(at + dir);
+    const ms = from == null ? 950 : Math.max(250, 950 * (dir > 0 ? 1 - from : from));
+    l.style.transitionDuration = ms + 'ms';
+    setTimeout(() => { l.classList.remove('turning'); l.style.transitionDuration = ''; zRest(); busy = false; res(true); }, ms + 30);
+  });
+  const go = async n => { n = Math.max(0, Math.min(NL, n)); while (at !== n) { if (!(await turn(n > at ? 1 : -1))) break; } };
+  zRest();
+
+  /* au doigt : la feuille suit le geste, on lâche pour finir ou revenir */
+  let drag = null;
+  book.addEventListener('pointerdown', e => { if (busy) return; drag = { x: e.clientX, y: e.clientY, dir: 0, moved: false }; });
+  addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up);
+  function mv(e) { if (!drag) return; const dx = e.clientX - drag.x, W = book.offsetWidth / 2;
+    if (!drag.dir) { if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(e.clientY - drag.y)) return; drag.dir = dx < 0 ? 1 : -1; drag.l = L[drag.dir > 0 ? at : at - 1];
+      if (!drag.l) { drag = null; return; } drag.l.style.zIndex = 200; drag.l.style.transition = 'none'; drag.l.classList.add('turning'); }
+    drag.moved = true; const p = Math.max(0, Math.min(1, -dx / (W * 1.4) * drag.dir)); drag.p = p;
+    drag.l.style.transform = `rotateY(${drag.dir > 0 ? -180 * p : -180 * (1 - p)}deg)`; }
+  function up() { if (!drag) return; const d = drag; drag = null; if (!d.moved || !d.l) { return; }
+    d.l.style.transition = ''; if ((d.p || 0) > .3) turn(d.dir, d.dir > 0 ? d.p : 1 - d.p);
+    else { d.l.style.transform = d.dir > 0 ? 'rotateY(0deg)' : 'rotateY(-180deg)'; setTimeout(() => { d.l.classList.remove('turning'); zRest(); }, 400); } }
+  L[0].children[0].addEventListener('click', () => { if (at === 0 && !busy) go(1); });
+  ov.querySelectorAll('.pp-b').forEach(b => b.onclick = () => go(at + +b.dataset.d));
+  const key = e => { if (e.key === 'Escape') close(); if (e.key === 'ArrowRight') go(at + 1); if (e.key === 'ArrowLeft') go(at - 1); };
+  addEventListener('keydown', key);
+  const close = () => { removeEventListener('resize', size); removeEventListener('keydown', key); removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up); ov.classList.add('out'); setTimeout(() => ov.remove(), 300); };
+  ov.querySelector('.pp-x').onclick = close;
+  if (own) ov.querySelector('.pp-perso').onclick = () => ppCustom(ov, () => { close(); setTimeout(() => ppOpen(), 320); });
+  requestAnimationFrame(() => ov.classList.add('in'));
+
+  /* les tampons pas encore posés tombent un par un, en direct */
+  if (pending.length) setTimeout(async () => {
+    await go(1); await new Promise(r => setTimeout(r, 450));
+    for (const n of pending.slice(0, 12)) {
+      if (!ov.isConnected) return;
+      const k = Math.floor(n / PP_PER), target = k % 2 === 0 ? k / 2 + 2 : (k + 1) / 2 + 1;
+      await go(target); await new Promise(r => setTimeout(r, 250));
+      const slot = ov.querySelector(`.pp-slot[data-n="${n}"]`); if (!slot) continue;
+      await ppHit(ov, slot); hidden.delete(n); ppLand(V[n].cc);
+    }
+    pending.slice(12).forEach(n => { const s = ov.querySelector(`.pp-slot[data-n="${n}"]`); if (s) s.classList.remove('wait'); ppLand(V[n].cc); });
+  }, 600);
 }
-{ const ph0 = pageHTML; pageHTML = (b, s, side) => s && s.kind === 'pp' ? s[side] : ph0(b, s, side); }
-const ppSpreadOf = n => 1 + Math.floor(Math.floor(n / PP_PER) / 2);
-
-function ppOpen(stampCC) {
-  const V = ppVisas(), pref = ppPrefs(), name = (PROFILE && PROFILE.display_name) || S.user || '';
-  const ni = stampCC ? V.findIndex(v => v.cc === stampCC) : -1;
-  const make = o => ppBook({ name, visas: V, photo: pref.photo, own: true, cover: pref.cover, ...o });
-  openBook(make({ hide: ni }), ni >= 0 ? ppSpreadOf(ni) : 0);
-  const top = document.querySelector('#book .bk-top');
-  if (top) { const sp = top.lastElementChild; const b = document.createElement('button'); b.className = 'bk-ic'; b.setAttribute('aria-label', 'Personnaliser mon passeport'); b.innerHTML = SV.edit || SV.menu; b.onclick = () => { closeBook(); setTimeout(ppCustom, 300); };
-    if (sp && sp.tagName === 'SPAN') sp.replaceWith(b); else top.appendChild(b); }
-  if (ni >= 0) setTimeout(() => ppStampFx(ni, () => { if (!BK || !BK.book.passport) return; BK.book = make({ fresh: ni }); bkRender(); }), 700);
-}
-/** Le coup de tampon : un tampon en bois descend sur la page, s'écrase, l'encre apparaît. */
-function ppStampFx(n, show) {
-  const k = Math.floor(n / PP_PER), side = k % 2 ? 'bkR' : 'bkL', pgEl = $(side), ov = $('book'); if (!pgEl || !ov) { show(); return; }
-  if (BK && !BK.wide && typeof snapZoom === 'function') snapZoom(k % 2 ? 'r' : 'l');
-  const r = pgEl.getBoundingClientRect(), o = ov.getBoundingClientRect(), [x, y] = PP_POS[n % PP_PER], w = Math.max(54, r.width * .3);
+/** Un coup de tampon : le tampon en bois descend sur l'emplacement, s'écrase, l'encre apparaît. */
+function ppHit(ov, slot) { return new Promise(res => {
+  const r = slot.getBoundingClientRect(), o = ov.getBoundingClientRect(), w = Math.max(48, r.width * .72);
   const rub = document.createElement('div'); rub.className = 'pp-rub';
   rub.innerHTML = `<div class="sh"></div><svg class="body" viewBox="0 0 84 120" aria-hidden="true"><defs><linearGradient id="ppwd" x1="0" x2="1"><stop offset="0" stop-color="#8E5E33"/><stop offset=".45" stop-color="#D2A06B"/><stop offset="1" stop-color="#7E5029"/></linearGradient></defs><ellipse cx="42" cy="16" rx="17" ry="15" fill="url(#ppwd)"/><path d="M34 28h16l3 40H31z" fill="url(#ppwd)"/><rect x="6" y="66" width="72" height="36" rx="4" fill="url(#ppwd)"/><rect x="6" y="66" width="72" height="5" fill="rgba(255,255,255,.2)"/><rect x="4" y="100" width="76" height="12" rx="2" fill="#2E2622"/></svg>`;
-  rub.style.width = w + 'px'; rub.style.left = (r.left - o.left + r.width * (x / 100 + .22) - w / 2) + 'px'; rub.style.top = (r.top - o.top + r.height * (y / 100) + r.width * .22 - w * 1.33) + 'px';
+  rub.style.width = w + 'px'; rub.style.left = (r.left - o.left + r.width / 2 - w / 2) + 'px'; rub.style.top = (r.top - o.top + r.height / 2 - w * 1.33) + 'px';
   ov.appendChild(rub); requestAnimationFrame(() => rub.classList.add('go'));
-  setTimeout(() => { show(); ppThump(); const bk = $('bkBook'); if (bk) { bk.classList.remove('pp-thud'); void bk.offsetWidth; bk.classList.add('pp-thud'); } try { navigator.vibrate && navigator.vibrate(35); } catch (_) { }
-    toast(`Nouveau tampon : ${(COUNTRIES[ppVisas()[n].cc] || {}).n || ''}`); }, 530);
-  setTimeout(() => rub.remove(), 1300);
-}
+  setTimeout(() => { slot.classList.remove('wait'); const s = slot.querySelector('.pp-stamp'); if (s) s.classList.add('new'); ppThump();
+    const bk = ov.querySelector('.pp-book'); bk.classList.remove('thud'); void bk.offsetWidth; bk.classList.add('thud'); try { navigator.vibrate && navigator.vibrate(35); } catch (_) { } }, 530);
+  setTimeout(() => { rub.remove(); res(); }, 1250);
+}); }
 let ppAc; function ppThump() { try { ppAc = ppAc || new (window.AudioContext || window.webkitAudioContext)(); const t = ppAc.currentTime, o = ppAc.createOscillator(), g = ppAc.createGain();
   o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(40, t + .14); g.gain.setValueAtTime(.6, t); g.gain.exponentialRampToValueAtTime(.001, t + .18); o.connect(g).connect(ppAc.destination); o.start(t); o.stop(t + .2);
   const b = ppAc.createBuffer(1, ppAc.sampleRate * .05, ppAc.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
   const s = ppAc.createBufferSource(), g2 = ppAc.createGain(); g2.gain.value = .25; s.buffer = b; s.connect(g2).connect(ppAc.destination); s.start(t); } catch (_) { } }
 
-/* ---------- personnaliser : couleur, photo et qui peut le voir ---------- */
-function ppCustom() { const pref = { vis: 'private', ...ppPrefs() };
-  openPanel(`<h2>Mon passeport</h2>
-    <p class="small">Couleur de la couverture</p><div class="pp-sws" role="group" aria-label="Couleur">${PP_BOOKS.map(k => `<button type="button" class="pp-sw ${(pref.cover || 'ppvert') === k ? 'on' : ''}" style="background:${BOOKS[k].c}" data-c="${k}" aria-label="${BOOKS[k].n}" aria-pressed="${(pref.cover || 'ppvert') === k}"></button>`).join('')}</div>
-    <p class="small" style="margin-top:16px">Qui peut le voir</p><div class="seg wide" id="pp-vis"><button type="button" data-v="private" class="${pref.vis !== 'friends' ? 'on' : ''}">Moi seulement</button><button type="button" data-v="friends" class="${pref.vis === 'friends' ? 'on' : ''}">Mes amis</button></div>
-    <button class="btn full" id="pp-pic" style="margin-top:16px"><span>${pref.photo ? 'Changer ma photo' : 'Ajouter ma photo'}</span><i>${SV.cam || SV.arrow}</i></button>
-    <button class="btn full" id="pp-ok" style="margin-top:10px">Enregistrer et ouvrir<i>${SV.arrow}</i></button>${CLOSE()}`, p => {
-    p.querySelectorAll('.pp-sw').forEach(b => b.onclick = () => { pref.cover = b.dataset.c; p.querySelectorAll('.pp-sw').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); });
-    p.querySelectorAll('#pp-vis button').forEach(b => b.onclick = () => { pref.vis = b.dataset.v; p.querySelectorAll('#pp-vis button').forEach(x => x.classList.toggle('on', x === b)); });
-    p.querySelector('#pp-pic').onclick = () => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = async () => { const f = i.files && i.files[0]; if (!f) return; toast('Envoi de la photo…');
-      try { pref.photo = await uploadPhoto(f, 'avatar', { max: 600 }); p.querySelector('#pp-pic span').textContent = 'Photo ajoutée'; } catch (e) { toast(errMsg(e)); } }; i.click(); };
-    p.querySelector('#pp-ok').onclick = async () => { const { error } = await sb.from('account_settings').update({ passport: pref }).eq('user_id', ME.id); if (error) { toast('Non enregistré, réessaie'); return; }
-      if (SETTINGS) SETTINGS.passport = pref; closePanel(); setTimeout(() => ppOpen(), 380); };
-  }); }
+/* ---------- personnaliser, dans le passeport (couleur, photo, qui peut le voir) ---------- */
+function ppCustom(ov, done) {
+  const pref = { vis: 'private', ...ppPrefs() }; if (!PP_COLORS.some(c => c[0] === pref.cover)) pref.cover = PP_COLORS[0][0];
+  const sh = document.createElement('div'); sh.className = 'pp-sheet'; sh.setAttribute('role', 'dialog'); sh.setAttribute('aria-label', 'Personnaliser mon passeport');
+  sh.innerHTML = `<h2>Mon passeport</h2><p class="small">Couleur de la couverture</p>
+    <div class="pp-sws">${PP_COLORS.map(([c, , n]) => `<button type="button" class="pp-sw ${pref.cover === c ? 'on' : ''}" style="background:${c}" data-c="${c}" aria-label="${n}" aria-pressed="${pref.cover === c}"></button>`).join('')}</div>
+    <p class="small">Qui peut le voir</p><div class="seg wide" id="pp-vis"><button type="button" data-v="private" class="${pref.vis !== 'friends' ? 'on' : ''}">Moi seulement</button><button type="button" data-v="friends" class="${pref.vis === 'friends' ? 'on' : ''}">Mes amis</button></div>
+    <button class="btn full" id="pp-pic"><span>${pref.photo ? 'Changer ma photo' : 'Ajouter ma photo'}</span><i>${SV.cam || SV.arrow}</i></button>
+    <div class="pp-sheet-b"><button class="btn2" id="pp-no">Annuler</button><button class="btn2 g" id="pp-ok">Enregistrer</button></div>`;
+  ov.appendChild(sh); requestAnimationFrame(() => sh.classList.add('in'));
+  const shut = () => { sh.classList.remove('in'); setTimeout(() => sh.remove(), 300); };
+  sh.querySelectorAll('.pp-sw').forEach(b => b.onclick = () => { pref.cover = b.dataset.c; sh.querySelectorAll('.pp-sw').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); const c = ppCol(pref.cover); ov.style.setProperty('--cover', c[0]); ov.style.setProperty('--foil', c[1]); });
+  sh.querySelectorAll('#pp-vis button').forEach(b => b.onclick = () => { pref.vis = b.dataset.v; sh.querySelectorAll('#pp-vis button').forEach(x => x.classList.toggle('on', x === b)); });
+  sh.querySelector('#pp-pic').onclick = () => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = async () => { const f = i.files && i.files[0]; if (!f) return; toast('Envoi de la photo…');
+    try { pref.photo = await uploadPhoto(f, 'avatar', { max: 600 }); sh.querySelector('#pp-pic span').textContent = 'Photo ajoutée'; } catch (e) { toast(errMsg(e)); } }; i.click(); };
+  sh.querySelector('#pp-no').onclick = () => { const c = ppCol(ppPrefs().cover); ov.style.setProperty('--cover', c[0]); ov.style.setProperty('--foil', c[1]); shut(); };
+  sh.querySelector('#pp-ok').onclick = async () => { const { error } = await sb.from('account_settings').update({ passport: pref }).eq('user_id', ME.id); if (error) { toast('Non enregistré, réessaie'); return; }
+    if (SETTINGS) SETTINGS.passport = pref; shut(); toast('Passeport mis à jour'); if (pref.photo !== (ppPrefs().photo)) done(); else setTimeout(done, 250); };
+}
 
 ACT.passport = d => { if (!d || !d.u || (ME && d.u === ME.id)) { ppOpen(); return; } ppFriend(d.u); };
-async function ppFriend(uid) {
-  let r = null; try { r = await rpc('friend_passport', { p_user: uid }); } catch (_) { }
+async function ppFriend(uid) { let r = null; try { r = await rpc('friend_passport', { p_user: uid }); } catch (_) { }
   if (!r) { toast('Son passeport est privé'); return; }
-  openBook(ppBook({ name: r.name, visas: (r.visas || []).map(v => ({ cc: v.cc, du: v.du, city: v.city })), cover: r.cover }), 0);
-}
+  ppOpen({ own: false, name: r.name, cover: r.cover, visas: (r.visas || []).map(v => ({ cc: v.cc, du: v.du, city: v.city })) }); }
 
 /* ---------- sur le profil, à côté du prénom ---------- */
 { const p0 = profileHTML; profileHTML = async id => { let h = await p0(id); const me = !id || (ME && id === ME.id);
   let show = me; if (!me) { try { show = !!(await rpc('friend_passport', { p_user: id })); } catch (_) { show = false; } }
-  if (show) h = h.replace(/(<h1 class="pname">[\s\S]*?<\/h1>)/, `<div class="pname-row">$1<button class="pp-chip" data-act="passport" data-u="${me ? '' : id}"><span class="pp-mini" style="background:${BOOKS[me ? (ppPrefs().cover || 'ppvert') : 'ppvert'].c}"></span>${me ? 'Mon passeport' : 'Passeport'}${me ? `<i>${ppPrefs().vis === 'friends' ? SV.users : SV.lock}</i>` : ''}</button></div>`);
+  if (show) h = h.replace(/(<h1 class="pname">[\s\S]*?<\/h1>)/, `<div class="pname-row">$1<button class="pp-chip" data-act="passport" data-u="${me ? '' : id}"><span class="pp-mini" style="background:${ppCol(me ? ppPrefs().cover : null)[0]}"></span>${me ? 'Mon passeport' : 'Passeport'}${me ? `<i>${ppPrefs().vis === 'friends' ? SV.users : SV.lock}</i>` : ''}</button></div>`);
   return h; }; }
 
-/* ---------- le coup de tampon automatique : le jour où un voyage commence dans un nouveau pays ---------- */
-const ppSeenKey = () => ME ? 'escale:pp:' + ME.id : null;
-function ppCheckNew() { try { const k = ppSeenKey(); if (!k || BK) return; const V = ppVisas().map(v => v.cc), raw = localStorage.getItem(k);
-  if (raw === null) { localStorage.setItem(k, JSON.stringify(V)); return; }
-  const seen = new Set(JSON.parse(raw)), nw = V.find(c => !seen.has(c)); if (!nw) return; seen.add(nw); localStorage.setItem(k, JSON.stringify([...seen])); setTimeout(() => ppOpen(nw), 900); } catch (_) { } }
+/* ---------- un voyage commence dans un nouveau pays : le passeport s'ouvre et le tampon tombe ---------- */
+function ppCheckNew() { try { if (!ME || document.querySelector('.pp-ov')) return; const L = ppLanded(); if (!L.size) return;   // jamais ouvert : les tampons tomberont à la première ouverture
+  if (ppVisas().some(v => !L.has(v.cc))) setTimeout(() => ppOpen(), 900); } catch (_) { } }
 { const rh = SCREENS.home; SCREENS.home = (...a) => { const r = rh(...a); ppCheckNew(); return r; }; }
 
 document.body.insertAdjacentHTML('beforeend', `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="ppink" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="3" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.5 1.55" result="m"/><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="8" result="big"/><feColorMatrix in="big" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1 1.5" result="bm"/><feComposite in="m" in2="bm" operator="in" result="mask"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6" result="d"/><feComposite in="d" in2="mask" operator="in"/></filter></svg>`);

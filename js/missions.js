@@ -7,7 +7,7 @@ let MISSIONS = [];
 const MISSION_PTS = m => m.done_at ? (m.late ? 5 : 10) : 0;
 const missionPoints = () => MISSIONS.reduce((a, m) => a + MISSION_PTS(m), 0);
 /** Points du bocal = défis + missions. */
-const withMissions = s => ({ ...s, points: (s.points || 0) + missionPoints(), missions: MISSIONS.filter(m => m.done_at).length });
+let withMissions = s => ({ ...s, points: (s.points || 0) + missionPoints(), missions: MISSIONS.filter(m => m.done_at).length });
 async function loadMissions() { try { const { data, error } = await sb.from('missions').select('*').order('day', { ascending: false }).limit(60); if (!error) MISSIONS = data || []; } catch (_) { } }
 async function syncTz() { try { const tz = Intl.DateTimeFormat().resolvedOptions().timeZone; if (tz && SETTINGS && SETTINGS.tz !== tz) { SETTINGS.tz = tz; await sb.from('account_settings').update({ tz }).eq('user_id', ME.id); } } catch (_) { } }
 { const ld0 = loadData; loadData = async (...a) => { const r = await ld0(...a); await loadMissions(); syncTz(); return r; }; }

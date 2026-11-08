@@ -473,3 +473,7 @@ html[data-theme="dark"] .ms-list em{color:#C0DAC9}
 html[data-theme="dark"] .gst-card{background:#161616}
 html[data-theme="dark"] .gst-bar i{background:#3A4B3E}
 html[data-theme="dark"] .gst-who .pill.on{background:#ECEBE6;color:#151714}
+html[data-theme="dark"] .mission.gm{background:linear-gradient(160deg,#161921,#211F19)}
+html[data-theme="dark"] .crew-r{border:1.5px solid rgba(255,255,255,.08);background:#161616}
+html[data-theme="dark"] .crew-r i{border:1.5px solid rgba(255,255,255,.2)}
+html[data-theme="dark"] .crew-r.on i{background:#ECEBE6;color:#151714}

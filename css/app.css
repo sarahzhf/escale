@@ -2460,3 +2460,4 @@ button.jar-w { border: 0; background: none; padding: 0; font: inherit; color: in
 .ms-n { margin: 10px 0 0; font-size: 12px; opacity: .75; } .ms-n .link { color: #CFE8C9; font-size: 12px; }
 .ms-list p { margin: 6px 0; font-size: 13px; } .ms-list em { font-style: normal; color: #2E5E3E; font-weight: 700; }
 @media (prefers-reduced-motion: reduce) { .ms-ic { animation: none; } }
+.seg.wide.cf-tabs{width:auto;max-width:none;box-sizing:border-box;display:flex;margin:4px 20px 12px}.cf-tabs button{flex:1 1 0;min-width:0;white-space:nowrap}

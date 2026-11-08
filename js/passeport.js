@@ -203,7 +203,7 @@ async function ppFriend(uid) { let r = null; try { r = await rpc('friend_passpor
 { const p0 = profileHTML; profileHTML = async id => { let h = await p0(id); const me = !id || (ME && id === ME.id);
   let show = me; if (!me) { try { show = !!(await rpc('friend_passport', { p_user: id })); } catch (_) { show = false; } }
   if (show) { const chip = `<button class="pp-chip" data-act="passport" data-u="${me ? '' : id}"><span class="pp-mini" style="background:${ppCol(me ? ppPrefs().cover : null)[0]}"></span>${me ? 'Mon passeport' : 'Passeport'}${me ? `<i>${ppPrefs().vis === 'friends' ? SV.users : SV.lock}</i>` : ''}</button>`;
-    h = h.replace(/<div class="btns">([\s\S]*?)<\/div><\/div>(\s*<h1 class="pname">)/, (m, a, b) => `<div class="btnsw"><div class="btns">${a}</div>${chip}</div></div>${b}`); }
+    h = h.replace(/(<h1 class="pname">[\s\S]*?<\/h1>)/, `<div class="pname-row">$1${chip}</div>`); }
   return h; }; }
 
 /* ---------- un voyage commence dans un nouveau pays : le passeport s'ouvre et le tampon tombe ---------- */

@@ -31,7 +31,7 @@ function placeBadgesHTML() { const B = placeBadges(), st = Object.entries(B.stam
     <p class="small">Les badges de lieux se gagnent selon l'endroit du défi relevé : un café, un coucher de soleil, un marché, un sommet...</p>`; }
 
 /* ---------- bocal en 3D ---------- */
-ACT.jar3d = () => { const pts = myStats().points;
+ACT.jar3d = () => { const pts = (typeof withMissions === 'function' ? withMissions(myStats()) : myStats()).points;
   const ov = document.createElement('div'); ov.className = 'jar3d'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', `Ton bocal : ${pts} points`);
   ov.innerHTML = `<button class="iconbtn j3-close" aria-label="Fermer">${SV.x || '✕'}</button><canvas></canvas><div class="j3-txt"><b class="num">${pts}</b><span>points dans ton bocal</span><em>Fais-le tourner du doigt</em></div>`;
   document.body.appendChild(ov); requestAnimationFrame(() => ov.classList.add('on'));

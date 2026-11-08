@@ -178,22 +178,23 @@ function tripSheet(id) {
 /* commerçant : texte libre, espaces et caractères invisibles retirés ; propositions = ceux déjà utilisés */
 const cleanMerchant = v => { const m = String(v || '').replace(/[\u0000-\u001f\u007f]/g, '').replace(/\s+/g, ' ').trim().slice(0, 60); return m || null; };
 function merchantsUsed() { const n = {}; S.trips.forEach(t => t.depenses.forEach(d => { if (d.m) n[d.m] = (n[d.m] || 0) + 1; })); return Object.keys(n).sort((a, b) => n[b] - n[a] || a.localeCompare(b, 'fr')).slice(0, 40); }
-function expSheet(tid, eid, lock) {
-  let t = trip(tid); const d = eid ? t.depenses.find(x => x.id === eid) : null;
+function expSheet(tid, eid, lock, pre) {
+  let t = trip(tid); const d = eid ? t.depenses.find(x => x.id === eid) : null; pre = pre || null;
   // E = euros, L = devise du pays, X = autre devise (ex. dollars au Cambodge, roadtrip sur plusieurs pays)
-  let cur = d ? (d.v == null ? 'E' : d.cur ? 'X' : 'L') : 'E', xcur = d && d.cur ? d.cur : 'USD', cat = d ? d.c : 'repas';
+  let cur = d ? (d.v == null ? 'E' : d.cur ? 'X' : 'L') : pre && pre.cur && pre.cur !== 'EUR' ? (pre.cur === C(t).code ? 'L' : 'X') : 'E', xcur = d && d.cur ? d.cur : pre && pre.cur && pre.cur !== 'EUR' && pre.cur !== C(t).code ? pre.cur : 'USD', cat = d ? d.c : 'repas';
   let by = d ? d.by || 'me' : 'me', split = d && d.split ? d.split.slice() : null;
   let sub = d ? d.s || null : null, stay = d && d.j2 && d.j2 > d.j ? (d.j === 1 && d.j2 === info(t).jours ? 'all' : 'n') : '1';
   openPanel(`<h2>${d ? 'Modifier la dépense' : 'Nouvelle dépense'}</h2>${d || lock ? `<p class="small">${esc(place(t))}</p>` : ''}
    ${d || lock ? '' : `<label class="fld"><span>Voyage</span><select id="e-trip">${sorted().map(x => `<option value="${x.id}" ${x.id === tid ? 'selected' : ''}>${esc(place(x))}</option>`).join('')}</select></label>`}
+   ${d ? '' : `<button type="button" class="scanbtn" data-act="scanTicket" data-trip="${tid}">${SV.cam || ''}<span><b>Scanner un ticket</b><em>Montant, date et commerçant lus sur ton téléphone</em></span></button>`}
    <div style="display:flex;justify-content:center;margin-top:12px"><div class="seg" id="e-cur"></div></div>
    <div class="xcur" id="e-xwrap" hidden><select id="e-x" aria-label="Devise">${curList().map(c => `<option value="${c}" ${c === xcur ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
-   <div class="amount"><input id="e-amt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="Montant" value="${d ? (d.v != null ? d.v : Math.round(d.eur * 100) / 100) : ''}"></div>
+   <div class="amount"><input id="e-amt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" aria-label="Montant" value="${d ? (d.v != null ? d.v : Math.round(d.eur * 100) / 100) : pre && pre.amt ? pre.amt : ''}"></div>
    <p class="conv num" id="e-conv"></p>
    <div class="fld"><span>Catégorie</span><div class="picker" id="e-cat">${Object.keys(CATS).map(k => `<button class="pill ${k === cat ? 'on' : ''}" data-c="${k}" type="button">${CATS[k].n}</button>`).join('')}</div></div>
    <div class="fld"><span>Précision <i class="opt">facultatif</i></span><div class="picker sub" id="e-sub"></div></div>
    <label class="fld"><span>Description</span><input id="e-lbl" maxlength="80" value="${d ? esc(d.l) : ''}" placeholder="Ex. Dîner à Gion"></label>
-   <label class="fld"><span>Commerçant <i class="opt">facultatif</i></span><input id="e-mer" maxlength="60" list="e-merl" autocomplete="off" value="${d && d.m ? esc(d.m) : ''}" placeholder="Ex. Nishiki Market, Uber, Hôtel Kyoto"><datalist id="e-merl">${merchantsUsed().map(m => `<option value="${esc(m)}"></option>`).join('')}</datalist></label>
+   <label class="fld"><span>Commerçant <i class="opt">facultatif</i></span><input id="e-mer" maxlength="60" list="e-merl" autocomplete="off" value="${d && d.m ? esc(d.m) : pre && pre.mer ? esc(pre.mer) : ''}" placeholder="Ex. Nishiki Market, Uber, Hôtel Kyoto"><datalist id="e-merl">${merchantsUsed().map(m => `<option value="${esc(m)}"></option>`).join('')}</datalist></label>
    <div id="e-stay" hidden><div class="fld"><span id="e-stayw">Durée du séjour</span><div class="seg wide" id="e-stayk"><button type="button" data-v="1">Une nuit</button><button type="button" data-v="n">Plusieurs nuits</button><button type="button" data-v="all">Tout le voyage</button></div></div></div>
    <div class="two"><label class="fld"><span id="e-dayl">Jour</span><select id="e-day"></select></label><label class="fld" id="e-day2w" hidden><span id="e-day2l">Dernière nuit</span><select id="e-day2"></select></label></div>
    <p class="small num" id="e-pernight"></p>
@@ -213,7 +214,7 @@ function expSheet(tid, eid, lock) {
       p.querySelector('#e-xwrap').hidden = cur !== 'X';
       p.querySelectorAll('#e-cur button').forEach(b => b.onclick = () => { cur = b.dataset.v; segs(); conv(); }); };
     const days = () => { const n = info(t).jours, cd = info(t).enCours ? info(t).jour : 1, opt = sel => Array.from({ length: n }, (_, i) => `<option value="${i + 1}" ${sel === i + 1 ? 'selected' : ''}>Jour ${i + 1}, ${fd(addDays(t.du, i))}</option>`).join('');
-      p.querySelector('#e-day').innerHTML = opt(d ? d.j : cd); p.querySelector('#e-day2').innerHTML = opt(d && d.j2 ? d.j2 : Math.min(n, (d ? d.j : cd) + 1)); };
+      p.querySelector('#e-day').innerHTML = opt(d ? d.j : pre && pre.day ? pre.day : cd); p.querySelector('#e-day2').innerHTML = opt(d && d.j2 ? d.j2 : Math.min(n, (d ? d.j : cd) + 1)); };
     const subs = () => { const L = SUBS[cat] || {}; if (sub && !L[sub]) sub = null;
       p.querySelector('#e-sub').innerHTML = Object.entries(L).map(([k, n]) => `<button type="button" class="pill ${sub === k ? 'on' : ''}" data-s="${k}">${n}</button>`).join('');
       p.querySelectorAll('#e-sub .pill').forEach(b => b.onclick = () => { sub = sub === b.dataset.s ? null : b.dataset.s; subs(); }); };
@@ -346,6 +347,8 @@ function openTrip(id, keep) {
     <div class="sec"><h2>À propos de ce voyage</h2><button class="more" data-act="editTrip" data-trip="${t.id}">Modifier</button></div>
     <p class="about">${t.entrees[0] && t.entrees[0].n ? esc(t.entrees[0].n) + ' ' : ''}${t.entrees.length} page${t.entrees.length > 1 ? 's' : ''} de souvenirs, ${t.lieux.length} lieu${t.lieux.length > 1 ? 'x' : ''} noté${t.lieux.length > 1 ? 's' : ''} et ${photosCount(t)} photo${photosCount(t) > 1 ? 's' : ''}.</p>
     <div class="tags">${t.lieux.map((l, i) => `<span class="pill">${esc(l)}<button class="x" data-act="rmPlace" data-trip="${t.id}" data-i="${i}" aria-label="Retirer ${esc(l)}">${SV.x.replace('<svg', '<svg width="11" height="11"')}</button></span>`).join('')}<button class="pill add" data-act="addPlace" data-trip="${t.id}">${SV.plus}Lieu</button></div>
+    ${typeof missionHTML === 'function' ? missionHTML(t) : ''}
+    ${typeof ticketsHTML === 'function' ? ticketsHTML(t) : ''}
     ${prepHTML(t)}
     <div class="sec"><h2>Album</h2><button class="more" data-act="albumVis" data-trip="${t.id}">${esc(VISN[t.vis || 'prive'])}</button></div>
     <p class="small">${t.vis === 'public' ? 'Tout le monde peut voir les photos et les pages de ce carnet (jamais les dépenses).' : t.vis === 'amis' ? 'Tes amis peuvent voir les photos et les pages de ce carnet (jamais les dépenses).' : 'Ce carnet est privé : toi seule le vois.'}</p>

@@ -50,9 +50,10 @@
 
   /* ouvrir l'écran visé par une notification */
   function openTarget(href) {
-    const q = new URL(href, location.href).searchParams, to = q.get('go'), post = q.get('post');
-    if (!to && !post) return false;
-    if (post) ACT.openPost({ p: post });
+    const q = new URL(href, location.href).searchParams, to = q.get('go'), post = q.get('post'), mi = q.get('mission');
+    if (!to && !post && !mi) return false;
+    if (mi && ACT.missionOpen) ACT.missionOpen({ id: mi });
+    else if (post) ACT.openPost({ p: post });
     else if (to === 'defis') ACT.openChals();
     else if (to === 'amis') ACT.findFriends();
     else if (to === 'fil') go('fil');

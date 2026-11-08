@@ -379,7 +379,7 @@ function jarSVG(pts, animate) {
 }
 let jarSeen = (() => { try { return +localStorage.getItem('escale:jar') || 0; } catch (e) { return 0; } })();
 function scoreHTML() {
-  const m = myStats(), got = BADGES.filter(b => { const [v, n] = b[4](m); return v >= n; }), rank = BOARD.findIndex(b => b.me) + 1;
+  const m = typeof withMissions === 'function' ? withMissions(myStats()) : myStats(), got = BADGES.filter(b => { const [v, n] = b[4](m); return v >= n; }), rank = BOARD.findIndex(b => b.me) + 1;
   const full = Math.floor(m.points / JAR_CAP) - (m.points && m.points % JAR_CAP === 0 ? 1 : 0), left = JAR_CAP - (m.points % JAR_CAP || (m.points ? JAR_CAP : 0)), grew = m.points > jarSeen;
   if (grew) { jarSeen = m.points; try { localStorage.setItem('escale:jar', String(m.points)); } catch (e) { } }
   return `<div class="score jarbox"><button class="jar-w" data-act="jar3d" aria-label="Voir ton bocal en grand">${jarSVG(m.points, grew && !REDUCED)}${full > 0 ? `<div class="jars-full" aria-label="${full} bocal${full > 1 ? 'x' : ''} rempli${full > 1 ? 's' : ''}">${Array.from({ length: Math.min(full, 5) }, () => '<i></i>').join('')}${full > 5 ? `<b class="num">+${full - 5}</b>` : ''}</div>` : ''}<span class="jar-zoom">Toucher pour agrandir</span></button>

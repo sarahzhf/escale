@@ -1,4 +1,5 @@
 /* Généré par tools/dark/gen.py à partir de app.css : ne pas modifier à la main (voir dark-extra.css). */
+html[data-theme="dark"] .caps{color:#A3A69F}
 html[data-theme="dark"] .small{color:#A3A69F}
 html[data-theme="dark"] .flag{box-shadow:0 0 0 1.5px #1C1F1D}
 html[data-theme="dark"] .pill.add{color:#A3A69F}
@@ -476,13 +477,5 @@ html[data-theme="dark"] .mission.gm{background:linear-gradient(160deg,#161921,#2
 html[data-theme="dark"] .crew-r{border:1.5px solid rgba(255,255,255,.08);background:#161616}
 html[data-theme="dark"] .crew-r i{border:1.5px solid rgba(255,255,255,.2)}
 html[data-theme="dark"] .crew-r.on i{background:#ECEBE6;color:#151714}
-html[data-theme="dark"] .caps{color:#A3A69F;background:#26211A}
-html[data-theme="dark"] .caps-env{background:#332E25}
-html[data-theme="dark"] .caps-env::before{background:#3F392F}
-html[data-theme="dark"] .cap-paper{background:#211E16 repeating-linear-gradient(transparent 0 27px,#302C24 27px 28px);color:#BFC3DA}
-html[data-theme="dark"] .lt-env{background:#332E25}
-html[data-theme="dark"] .lt-flap{background:#3F392F}
-html[data-theme="dark"] .lt-paper{background:#211E16 repeating-linear-gradient(transparent 0 29px,#302C24 29px 30px)}
-html[data-theme="dark"] .lt-b{color:#BFC3DA}
 html[data-theme="dark"] .cout{background:#161616}
 html[data-theme="dark"] .cout-r{border-top:1px solid rgba(255,255,255,.05)}

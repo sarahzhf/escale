@@ -50,9 +50,8 @@
 
   /* ouvrir l'écran visé par une notification */
   function openTarget(href) {
-    const q = new URL(href, location.href).searchParams, to = q.get('go'), post = q.get('post'), mi = q.get('mission'), gm = q.get('gmission'), cap = q.get('capsule');
-    if (!to && !post && !mi && !gm && !cap) return false;
-    if (cap && ACT.capOpen) { ACT.capOpen({ id: cap }); return true; }
+    const q = new URL(href, location.href).searchParams, to = q.get('go'), post = q.get('post'), mi = q.get('mission'), gm = q.get('gmission');
+    if (!to && !post && !mi && !gm) return false;
     if (gm && ACT.gmOpen) { ACT.gmOpen({ id: gm }); return true; }
     if (mi && ACT.missionOpen) ACT.missionOpen({ id: mi });
     else if (post) ACT.openPost({ p: post });
@@ -62,7 +61,7 @@
     return true;
   }
   if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', e => { if (e.data && e.data.type === 'open' && typeof ME !== 'undefined' && ME) openTarget(e.data.url); });
-  if (/[?&](go|post|mission|gmission|capsule)=/.test(location.search)) {
+  if (/[?&](go|post|mission|gmission)=/.test(location.search)) {
     const href = location.href; let n = 0;
     const t = setInterval(() => { n++;
       const ready = typeof ME !== 'undefined' && ME && !document.body.classList.contains('gated') && typeof current !== 'undefined' && current;

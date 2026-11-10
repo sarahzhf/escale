@@ -93,19 +93,46 @@
   // l'heure avance toute seule tant que la page du voyage est ouverte
   setInterval(() => document.querySelectorAll('.meteo[data-trip]').forEach(el => { const t = trip(el.dataset.trip); const b = el.querySelector('.mt-head b'); if (t && b) { const w = cacheGet((coordsOf(t) || []).map(x => (+x).toFixed(2)).join(',')); const v = localTime(w); if (v) b.textContent = v; } }), 30e3);
 
-  /* ---------- compte à rebours ---------- */
-  function countdown(t) {
-    const f = info(t); if (!f.futur) return null;
-    const n = diffDays(TODAY, t.du);
-    return { n, label: n === 1 ? 'C’est demain' : n === 0 ? 'C’est aujourd’hui' : `jour${n > 1 ? 's' : ''}` };
+  /* ---------- compte à rebours animé ----------
+   * Cible : l'heure de départ du premier billet du jour du départ s'il y en a un, sinon minuit (heure du téléphone).
+   * Jours, heures, minutes et secondes défilent ; chaque chiffre qui change glisse vers le bas. */
+  function departAt(t) {
+    const k = (typeof ticketsOf === 'function' ? ticketsOf(t) : []).filter(x => x.kind !== 'doc' && x.date === t.du && /^\d{1,2}:\d{2}/.test(x.dep || ''))
+      .sort((a, b) => a.dep.localeCompare(b.dep))[0];
+    const [y, m, d] = t.du.split('-').map(Number), [hh, mm] = k ? k.dep.split(':').map(Number) : [0, 0];
+    return { at: new Date(y, m - 1, d, hh, mm).getTime(), k };
   }
+  const pad = n => String(n).padStart(2, '0');
+  function parts(ms) { const s = Math.max(0, Math.floor(ms / 1000)); return [Math.floor(s / 86400), Math.floor(s / 3600) % 24, Math.floor(s / 60) % 60, s % 60]; }
+  const UNITS = [['j', 'jours', 'jour'], ['h', 'heures', 'heure'], ['m', 'minutes', 'minute'], ['s', 'secondes', 'seconde']];
+  const digits = v => [...v].map(c => `<span class="cd-dg"><i>${c}</i></span>`).join('');
   window.countdownHTML = (t, home) => {
-    const c = countdown(t); if (!c) return '';
-    const soon = c.n <= 1;
-    return `<${home ? `button data-open="${t.id}"` : 'div'} class="cdown${home ? ' home' : ''}">
-      ${soon ? `<b class="cd-n soon">${c.label}</b>` : `<b class="cd-n num">${c.n}</b><span class="cd-u">${c.label}</span>`}
-      <span class="cd-t">${soon ? 'Départ pour ' : 'avant '}${esc(place(t))}</span></${home ? 'button' : 'div'}>`;
+    if (!info(t).futur) return '';
+    const { at, k } = departAt(t), p = parts(at - Date.now());
+    const what = k ? (k.kind === 'train' ? 'avant ton train pour ' : 'avant le décollage pour ') : 'avant le départ pour ';
+    const tag = home ? `button data-open="${t.id}"` : 'div';
+    return `<${tag} class="cdown${home ? ' home' : ''}" data-at="${at}" role="timer" aria-label="Départ dans ${p[0]} jours">
+      <span class="cd-t">${what}<b>${esc(place(t))}</b></span>
+      <span class="cd-row">${UNITS.map(([u, pl], i) => `<span class="cd-c" data-u="${u}"><span class="cd-v num">${digits(i ? pad(p[i]) : String(p[i]))}</span><em>${pl}</em></span>`).join('')}</span>
+    </${home ? 'button' : 'div'}>`;
   };
+  function tick() {
+    document.querySelectorAll('.cdown[data-at]').forEach(el => {
+      const ms = +el.dataset.at - Date.now();
+      if (ms <= 0) { el.classList.add('done'); const r = el.querySelector('.cd-row'); if (r && !el.dataset.over) { el.dataset.over = '1'; r.innerHTML = '<span class="cd-go">C’est le grand jour, bon voyage !</span>'; } return; }
+      const p = parts(ms);
+      el.querySelectorAll('.cd-c').forEach((c, i) => {
+        const v = i ? pad(p[i]) : String(p[i]), box = c.querySelector('.cd-v'), cur = [...box.querySelectorAll('.cd-dg i')].map(x => x.textContent).join('');
+        if (cur === v) return;
+        if (cur.length !== v.length) { box.innerHTML = digits(v); return; }
+        box.querySelectorAll('.cd-dg').forEach((dg, j) => { if (dg.textContent === v[j]) return;
+          const old = dg.querySelector('i'); old.classList.add('out'); const n = document.createElement('i'); n.className = 'in'; n.textContent = v[j]; dg.appendChild(n);
+          setTimeout(() => { old.remove(); n.classList.remove('in'); }, 420); });
+        const em = c.querySelector('em'), u = UNITS[i]; if (em) em.textContent = +v > 1 ? u[1] : u[2];
+      });
+    });
+  }
+  setInterval(tick, 1000);
 
   /* ---------- coffre à documents ---------- */
   const DOC_CATS = { reservation: 'Réservation', assurance: 'Assurance', identite: 'Identité et visa', transport: 'Transport sur place', autre: 'Autre' };

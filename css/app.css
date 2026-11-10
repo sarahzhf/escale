@@ -2565,12 +2565,21 @@ body.gated .scrim{z-index:85}body.gated .panel{z-index:90}
 
 /* v2.3 : compte à rebours, météo et heure locale, dossier de documents */
 .tnow{display:grid;gap:10px;margin-top:14px}
-.cdown{display:flex;align-items:baseline;gap:8px;padding:14px 16px;border-radius:18px;border:1px solid var(--line);background:var(--card,#fff);text-align:left;width:100%;font:inherit}
-.cdown .cd-n{font-family:var(--serif);font-size:2.1rem;font-weight:500;line-height:1;letter-spacing:-.02em}
-.cdown .cd-n.soon{font-size:1.25rem}
-.cdown .cd-u{font-size:.9rem;font-weight:600}
-.cdown .cd-t{margin-left:auto;font-size:.82rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%}
+.cdown{display:grid;gap:10px;padding:16px;border-radius:20px;border:1px solid var(--line);background:linear-gradient(160deg,var(--card,#fff),var(--pale));text-align:left;width:100%;font:inherit;color:inherit}
+.cdown .cd-t{font-size:.8rem;color:var(--muted)}.cdown .cd-t b{color:var(--ink);font-weight:600}
+.cd-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.cd-c{display:grid;justify-items:center;gap:4px;padding:10px 0 8px;border-radius:14px;background:var(--card,#fff);box-shadow:0 1px 0 var(--line),0 6px 14px -10px rgba(32,36,58,.35)}
+.cd-v{display:flex;font-family:var(--serif);font-size:1.75rem;font-weight:500;line-height:1}
+.cd-dg{position:relative;display:inline-block;width:.62em;height:1.1em;overflow:hidden;text-align:center}
+.cd-dg i{position:absolute;inset:0;font-style:normal;line-height:1.1em;transition:transform .4s cubic-bezier(.3,.7,.2,1),opacity .4s}
+.cd-dg i.out{transform:translateY(100%);opacity:0}
+.cd-dg i.in{animation:cdIn .4s cubic-bezier(.3,.7,.2,1)}
+@keyframes cdIn{from{transform:translateY(-100%);opacity:0}}
+.cd-c em{font-style:normal;font-size:.66rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.cd-c[data-u="s"] .cd-v{color:var(--pink-ink)}
+.cd-go{grid-column:1/-1;text-align:center;font-family:var(--serif);font-size:1.2rem;padding:8px 0}
 .cdown.home{margin:2px 0 14px}
+@media (prefers-reduced-motion:reduce){.cd-dg i,.cd-dg i.in{transition:none;animation:none}}
 .meteo{padding:14px 16px;border-radius:18px;border:1px solid var(--line);background:var(--card,#fff);display:grid;gap:12px}
 .mt-head{display:flex;align-items:center;gap:12px}
 .mt-head>span{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:var(--pale);flex:none}

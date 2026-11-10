@@ -171,7 +171,7 @@ function tripSheet(id) {
         S.trips.push(nt); S.envies = S.envies.filter(w => w.pays !== pays); save(); closePanel(); setTimeout(() => { openTrip(nt.id); setTimeout(() => prepSheet(nt.id, true), 420); }, 380); toast('Carnet créé'); }
     };
     const del = p.querySelector('#f-del'); if (del) del.onclick = () => confirmIn(p, 'Supprimer ce carnet, ses dépenses et ses photos ?', () => {
-      [t.cover, ...t.entrees.flatMap(e => e.photos)].forEach(releaseMedia);
+      [t.cover, ...t.entrees.flatMap(e => e.photos), ...(t.tickets || []).filter(x => x.kind === 'doc').map(x => x.p)].forEach(releaseMedia);
       S.trips = S.trips.filter(x => x.id !== t.id); save(); closePanel(); go('home'); toast('Carnet supprimé'); });
   });
 }

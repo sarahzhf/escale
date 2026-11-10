@@ -72,19 +72,18 @@
     const f = info(t), time = localTime(w), gap = gapText(w);
     let wHTML = '';
     if (w) {
-      if (f.enCours && w.now) { const [ic, n] = wx(w.now.c); const d0 = w.days[0];
-        wHTML = `<div class="mt-w"><i>${W_IC[ic]}</i><b class="num">${deg(w.now.t)}</b><span>${n}${d0 ? `, ${deg(d0.min)} à ${deg(d0.max)}` : ''}</span></div>`;
-      } else {
-        const ds = w.days.filter(x => x.d >= t.du && x.d <= t.au).slice(0, 5);
-        if (ds.length) wHTML = `<div class="mt-days">${ds.map(x => { const [ic, n] = wx(x.c); return `<span title="${n}"><em>${D(x.d).toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '')}</em><i>${W_IC[ic]}</i><b class="num">${deg(x.max)}</b><small class="num">${deg(x.min)}</small></span>`; }).join('')}</div>`;
-        else wHTML = `<p class="mt-soon">Les prévisions apparaissent environ deux semaines avant le départ.</p>`;
-      }
+      const nowH = lbl => { if (!w.now) return ''; const [ic, n] = wx(w.now.c), d0 = w.days[0];
+        return `<div class="mt-w"><i>${W_IC[ic]}</i><b class="num">${deg(w.now.t)}</b><span>${lbl ? `<small>${lbl}</small>` : ''}${n}${d0 ? `, ${deg(d0.min)} à ${deg(d0.max)}` : ''}</span></div>`; };
+      const ds = f.futur ? w.days.filter(x => x.d >= t.du && x.d <= t.au).slice(0, 5) : [];
+      if (f.enCours) wHTML = nowH('');
+      else if (ds.length) wHTML = `<div class="mt-days">${ds.map(x => { const [ic, n] = wx(x.c); return `<span title="${n}"><em>${D(x.d).toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '')}</em><i>${W_IC[ic]}</i><b class="num">${deg(x.max)}</b><small class="num">${deg(x.min)}</small></span>`; }).join('')}</div>`;
+      else wHTML = nowH(`En ce moment à ${esc(place(t))}`) + (f.futur ? `<p class="mt-soon">Les prévisions de tes dates apparaissent environ deux semaines avant le départ.</p>` : '');
     } else wHTML = `<p class="mt-soon">${navigator.onLine ? 'Chargement de la météo…' : 'Météo indisponible hors connexion.'}</p>`;
     return `<div class="mt-head"><span>${W_IC.clock}</span><div><b class="num">${time || '--:--'}</b><em>Heure à ${esc(place(t))}${gap ? `, ${gap}` : ''}</em></div></div>${wHTML}${w ? '<a class="mt-src" href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Météo : Open-Meteo.com (CC BY 4.0)</a>' : ''}`;
   }
-  /** Bloc météo et heure : seulement pour un voyage à venir ou en cours. */
+  /** Bloc météo et heure : pour tous les voyages, passés, en cours ou à venir. */
   window.meteoHTML = t => {
-    const f = info(t); if (!f.futur && !f.enCours) return '';
+    const f = info(t);
     const ll = coordsOf(t); if (!ll) return '';
     const k = ll.map(x => (+x).toFixed(2)).join(','), w = cacheGet(k);
     if (!w || Date.now() - w.at >= WTTL) loadWeather(ll).then(v => { const el = document.querySelector(`.meteo[data-trip="${t.id}"]`); if (v && el) el.innerHTML = meteoInner(t, v); });

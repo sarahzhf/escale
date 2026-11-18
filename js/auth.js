@@ -201,7 +201,11 @@ ACT.profile = () => { let ko = 0; try { ko = Math.round((localStorage.getItem(ca
     <button data-act="setNotifs">${SV.bell}Notifications</button>
     <button data-act="setTheme">${SV.spark}Apparence<span class="small" style="margin-left:auto">${{ auto: 'automatique', light: 'clair', dark: 'sombre' }[themePref()]}</span></button>
     <button data-act="setPrivacy">${SV.lock}Confidentialité</button>
-    <button data-act="setAI">${SV.spark}Assistant IA<span class="small" style="margin-left:auto">${SETTINGS.ai_enabled ? 'activé' : 'désactivé'}</span></button></div>
+    <button data-act="setAI">${SV.spark}Assistant IA<span class="small" style="margin-left:auto">${SETTINGS.ai_enabled ? 'activé' : 'désactivé'}</span></button>
+    <button data-act="homeSet">${SV.pin}Mon lieu de vie<span class="small" style="margin-left:auto">${esc(homeOf().n)}</span></button></div>
+   <p class="setsec">Ton avis</p><div class="menulist">
+    <button data-act="rateApp">${SV.star}Noter l'appli</button>
+    <button data-act="feedback">${SV.edit}Donner mon avis ou une idée d'amélioration</button></div>
    <p class="setsec">Sécurité</p><div class="menulist">
     <button data-act="setPassword">${SV.lock}Changer mon mot de passe</button>
     <button data-act="setMfa">${SV.check}Double authentification</button>

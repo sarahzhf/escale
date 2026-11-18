@@ -2,10 +2,14 @@
    - Pour toi : des pays proches de ce que tu aimes déjà (styles, régions, saison) ;
    - Dépaysement : des pays qui sortent de tes habitudes (nouveau continent, nouveaux styles) ;
    - Tous les pays : le monde entier, avec recherche et filtre par style.
+   - Mon budget : les pays et les villes qui rentrent dans un budget (simu.js) ;
+   - Près de chez moi : des villes de son propre pays, qui n'apparaît jamais dans les autres onglets ;
+   - Tous les pays : le monde entier, avec recherche et filtre par style.
+   Un filtre « Quand ? » choisit le mois du voyage : les conseils suivent la bonne saison de ce mois.
    Chaque carte s'ouvre en fiche : temps de vol depuis chez toi, meilleure période, incontournables,
-   monnaie, formalités. Tout est calculé sur le téléphone, sans budget affiché. */
+   monnaie, formalités, et le simulateur de voyage. Tout est calculé sur le téléphone. */
 'use strict';
-let cfStyle = null, cfTab = 'toi', cfQ = '';
+let cfStyle = null, cfTab = 'toi', cfQ = '', cfMonth = null;
 const POPULAR = new Set('IT ES PT GR HR MT CY MA TN TR EG JO AE OM JP KR TH VN ID KH LA PH MY SG LK MV IN NP CN TW US CA MX CU CR GT PE AR CL CO EC BR BO ZA KE TZ NA BW MU MG RE SC IS NO IE GB NL DE AT CH CZ HU PL SI ME AL BE DK SE FI AU NZ PF NC GP MQ'.split(' '));
 const STYLE_A = { culture: 'la culture', gastronomie: 'la gastronomie', plage: 'la plage', ville: 'les villes', nature: 'la nature', iles: 'les îles', desert: 'le désert', aventure: "l'aventure", roadtrip: 'les roadtrips', fete: 'les sorties' };
 const STYLE_ICO = { culture: '🏛️', gastronomie: '🍜', plage: '🏖️', ville: '🏙️', nature: '🌿', iles: '🏝️', desert: '🏜️', aventure: '🧗', roadtrip: '🚐', fete: '🎶' };
@@ -34,10 +38,10 @@ function travelProfile() {
 }
 /** Pays recommandés pour un onglet, avec les raisons, propres à l'historique. */
 function recommend(P, mode) {
-  const now = D(TODAY).getMonth() + 1, soon = [0, 1, 2, 3].map(i => (now - 1 + i) % 12 + 1), wish = new Set(S.envies.map(w => w.pays));
-  return Object.keys(DEST).filter(cc => COUNTRIES[cc] && !P.seen.has(cc) && !RISK.has(cc) && (!cfStyle || DEST[cc].st.includes(cfStyle))).map(cc => {
+  const now = cfMonth || D(TODAY).getMonth() + 1, soon = cfMonth ? [cfMonth] : [0, 1, 2, 3].map(i => (now - 1 + i) % 12 + 1), wish = new Set(S.envies.map(w => w.pays)), home = homeOf().cc;
+  return Object.keys(DEST).filter(cc => COUNTRIES[cc] && cc !== home && !P.seen.has(cc) && !RISK.has(cc) && (!cfStyle || DEST[cc].st.includes(cfStyle))).map(cc => {
     const d = DEST[cc], why = [], vol = flightH(cc); let sc = 0;
-    const ok = d.mois.filter(m => soon.includes(m)), season = ok.length ? (ok.includes(now) ? 'C\'est la bonne saison en ce moment' : `Idéal à partir de ${MOIS[ok[0] - 1]}`) : null;
+    const ok = d.mois.filter(m => soon.includes(m)), season = ok.length ? (cfMonth ? `Bonne saison en ${MOIS[cfMonth - 1]}` : ok.includes(now) ? 'C\'est la bonne saison en ce moment' : `Idéal à partir de ${MOIS[ok[0] - 1]}`) : null;
     if (mode === 'toi') {
       const common = d.st.filter(k => P.st[k]).sort((a, b) => P.st[b] - P.st[a]);
       sc += common.reduce((a, k) => a + P.st[k], 0) * 1.4;
@@ -51,7 +55,7 @@ function recommend(P, mode) {
       if (fresh.length) { sc += fresh.length * 1.5; why.push(`Nouveau pour toi : ${andList(fresh.slice(0, 2).map(k => STYLE_A[k]))}`); }
       sc -= d.st.filter(k => P.st[k]).length * .5;
     }
-    if (season) { sc += ok.includes(now) ? 3 : 2; why.push(season); } else sc -= 1.5;
+    if (season) { sc += ok.includes(now) ? 3 : 2; why.push(season); } else sc -= cfMonth ? 6 : 1.5;
     if (wish.has(cc)) { sc += 3; why.unshift('Dans tes envies'); }
     if (POPULAR.has(cc)) sc += 2; // destinations faciles à organiser un peu devant
     return { cc, d, sc, vol, why: why.slice(0, 3), wish: wish.has(cc) };
@@ -64,25 +68,34 @@ function cfCard(r, i, first) { const c = COUNTRIES[r.cc], inc = (INC[r.cc] || []
 function renderConseil() {
   const sc = $('s-conseil'), P = travelProfile(), y = sc.scrollTop;
   const chips = [[null, 'Tout'], ...['plage', 'culture', 'nature', 'gastronomie', 'ville', 'aventure', 'iles', 'desert', 'roadtrip', 'fete'].map(k => [k, `${STYLE_ICO[k]} ${STYLE_N[k][0].toUpperCase() + STYLE_N[k].slice(1)}`])];
-  const intro = cfTab === 'tous' ? `${Object.keys(DEST).length} pays. Touche un pays pour ses incontournables et la meilleure période.`
+  const home = homeOf(), M = cfMonth ? ` en ${MOIS[cfMonth - 1]}` : '';
+  const intro = cfTab === 'budget' ? `Donne ton budget et ta durée : Escale te propose les pays et les villes où il te mène${M}, vol compris.`
+    : cfTab === 'pres' ? `Des villes ${enPays(home.cc).replace(/^(en|au|aux|à) /, m => ({ 'en ': 'en ', 'au ': 'du ', 'aux ': 'des ', 'à ': 'de ' })[m] || m)}, sans prendre l'avion depuis ${home.n}.`
+    : cfTab === 'tous' ? `${Object.keys(DEST).length} pays. Touche un pays pour ses incontournables et la meilleure période.`
     : P.n ? (cfTab === 'toi' ? `D'après tes ${P.n} voyage${P.n > 1 ? 's' : ''}, tu aimes surtout ${andList(P.styles.slice(0, 2).map(k => STYLE_A[k]))}. Voici des pays où tu n'es pas encore allée et qui te ressemblent.` : 'Des pays qui sortent de tes habitudes : un autre continent, d\'autres paysages, d\'autres façons de voyager.')
     : 'Note tes voyages passés pour des conseils sur mesure. En attendant, voici les destinations de saison.';
   let body;
-  if (cfTab === 'tous') {
+  if (cfTab === 'budget') body = budgetHTML(cfMonth || (D(TODAY).getMonth() + 1) % 12 + 1);
+  else if (cfTab === 'pres') body = presHTML();
+  else if (cfTab === 'tous') {
     const q = norm(cfQ), L = Object.keys(DEST).filter(cc => COUNTRIES[cc] && (!cfStyle || DEST[cc].st.includes(cfStyle)) && (!q || norm(COUNTRIES[cc].n).includes(q))).sort((a, b) => COUNTRIES[a].n.localeCompare(COUNTRIES[b].n, 'fr'));
     let letter = ''; body = L.map(cc => { const l = norm(COUNTRIES[cc].n)[0].toUpperCase(), h = l !== letter ? `<p class="caps cf-letter">${letter = l}</p>` : '';
-      return `${h}<button class="cf-row" data-act="cfOpen" data-c="${cc}">${flag(cc)}<span><b>${esc(COUNTRIES[cc].n)}</b><em>${DEST[cc].st.slice(0, 3).map(k => STYLE_N[k]).join(', ')}</em></span>${P.seen.has(cc) ? '<i class="cf-seen">Visité</i>' : RISK.has(cc) ? '<i class="cf-risk">Prudence</i>' : ''}${SV.chev}</button>`; }).join('') || '<p class="small" style="padding:20px 4px">Aucun pays ne correspond.</p>';
+      return `${h}<button class="cf-row" data-act="cfOpen" data-c="${cc}">${flag(cc)}<span><b>${esc(COUNTRIES[cc].n)}</b><em>${DEST[cc].st.slice(0, 3).map(k => STYLE_N[k]).join(', ')}</em></span>${cc === home.cc ? '<i class="cf-seen">Chez toi</i>' : P.seen.has(cc) ? '<i class="cf-seen">Visité</i>' : RISK.has(cc) ? '<i class="cf-risk">Prudence</i>' : ''}${SV.chev}</button>`; }).join('') || '<p class="small" style="padding:20px 4px">Aucun pays ne correspond.</p>';
   } else {
     const L = recommend(P, cfTab).slice(0, 8);
     body = L.map((r, i) => cfCard(r, i, i === 0)).join('') || `<p class="small" style="padding:30px 4px">Aucune destination pour ce style. Essaie un autre filtre.</p>`;
   }
   sc.innerHTML = `<div class="vtop"><button class="iconbtn" data-act="back" aria-label="Retour">${SV.back}</button><h1>Conseils</h1><div class="r"></div></div>
-   <div class="seg wide cf-tabs">${[['toi', 'Pour toi'], ['decouverte', 'Dépaysement'], ['tous', 'Tous les pays']].map(([k, n]) => `<button class="${cfTab === k ? 'on' : ''}" data-act="cfTab" data-k="${k}">${n}</button>`).join('')}</div>
+   <div class="seg wide cf-tabs">${[['toi', 'Pour toi'], ['decouverte', 'Dépaysement'], ['budget', 'Mon budget'], ['pres', 'Près de chez moi'], ['tous', 'Tous les pays']].map(([k, n]) => `<button class="${cfTab === k ? 'on' : ''}" data-act="cfTab" data-k="${k}">${n}</button>`).join('')}</div>
    <div class="cf-intro"><i>${SV.spark}</i><p>${esc(intro)}</p></div>
+   ${simus().length ? `<button class="cf-simus" data-act="simuList">${SV.wallet || SV.star}<span><b>Mes simulations</b><em>${simus().length} voyage${simus().length > 1 ? 's' : ''} simulé${simus().length > 1 ? 's' : ''}</em></span>${SV.chev}</button>` : ''}
+   ${cfTab !== 'tous' && cfTab !== 'pres' ? `<label class="cf-when">${SV.clock || ''}<span>Quand ?</span><select id="cf-m" aria-label="Mois du voyage"><option value="">${cfTab === 'budget' ? 'Le mois prochain' : 'Maintenant'}</option>${MOIS.map((m, i) => `<option value="${i + 1}" ${cfMonth === i + 1 ? 'selected' : ''}>${m[0].toUpperCase() + m.slice(1)}</option>`).join('')}</select></label>` : ''}
    ${cfTab === 'tous' ? `<label class="cf-search">${SV.search}<input id="cf-q" type="search" placeholder="Chercher un pays" value="${esc(cfQ)}" autocomplete="off"></label>` : ''}
-   <div class="cf-chips">${chips.map(([k, n]) => `<button class="pill ${cfStyle === k ? 'on' : ''}" data-act="cfStyle" data-k="${k || ''}">${n}</button>`).join('')}</div>
-   <div class="cf-list">${body}</div>
+   ${cfTab === 'pres' ? '' : `<div class="cf-chips">${chips.map(([k, n]) => `<button class="pill ${cfStyle === k ? 'on' : ''}" data-act="cfStyle" data-k="${k || ''}">${n}</button>`).join('')}</div>`}
+   ${cfTab === 'budget' ? body : `<div class="cf-list">${body}</div>`}
    <p class="small cf-note">Temps de vol estimé depuis ${esc(homeOf().n)}. Les conseils se calculent sur ton téléphone à partir de tes carnets.</p>`;
+  const cm = $('cf-m'); if (cm) cm.onchange = () => { cfMonth = +cm.value || null; renderConseil(); };
+  if (cfTab === 'budget') budgetMount();
   const qi = $('cf-q'); if (qi) qi.oninput = () => { cfQ = qi.value; const pos = qi.selectionStart; renderConseil(); const n = $('cf-q'); n.focus(); n.setSelectionRange(pos, pos); };
   sc.scrollTop = y;
 }
@@ -106,5 +119,21 @@ ACT.cfOpen = d => { const cc = d.c, c = COUNTRIES[cc], D0 = DEST[cc], inc = INC[
     <div class="sec"><h2>Bon à savoir</h2></div>
     <div class="cf-facts"><div><span>Monnaie</span><b>${c.code === 'EUR' || c.rate === 1 ? 'Euro' : `${esc(c.code || c.cur)}, 1 € ≈ ${fmtRate(c.rate)} ${esc(c.cur)}`}</b></div><div><span>Papiers</span><b>${esc(papers)}</b></div></div>
     <p class="small cf-note">Les formalités changent : vérifie toujours sur diplomatie.gouv.fr avant de réserver.</p>
-    <div class="cf-sh-act"><button class="btn full" data-act="cfTrip" data-c="${cc}">Préparer ce voyage<i>${SV.arrow}</i></button>
+    <div class="sec"><h2>Combien ça coûterait</h2></div>
+    ${(() => { const sv = simFor(cc); return sv ? `<button class="cf-simus" data-act="simu" data-id="${sv.id}">${SV.wallet || SV.star}<span><b>Ta simulation : ${fmt(simCalc(sv).pp)} par personne</b><em>${esc(sv.city || c.n)}, ${fd(sv.du)} au ${fd(sv.au)}</em></span>${SV.chev}</button>`
+      : `<p class="small">Environ ${fmt(pjOf(cc))} par jour et par personne sur place, en milieu de gamme. ${PRIX_NOTE}.</p>`; })()}
+    <div class="cf-sh-act"><button class="btn full" data-act="simu" data-c="${cc}">Simuler ce voyage<i>${SV.arrow}</i></button>
+    <button class="btn2 wide" data-act="cfTrip" data-c="${cc}">Préparer ce voyage</button>
     ${wish ? `<span class="small cf-inwish">${SV.heart}Dans tes envies</span>` : `<button class="btn2 wide" data-act="cfWish" data-c="${cc}">${SV.heart}Ajouter à mes envies</button>`}</div></div>${CLOSE('Fermer')}`, null, { nofocus: true }); };
+
+/* ---------- près de chez moi : des villes de son propre pays ---------- */
+function presHTML() {
+  const H = homeOf(), keys = Object.keys(PLACES[H.cc] || {}).filter(k => !PLACE_DUP.has(k));
+  const L = keys.map(k => ({ n: placeName(k), km: kmBetween(H.ll, PLACES[H.cc][k]) })).filter(x => x.km >= 40 && norm(x.n) !== norm(H.n)).sort((a, b) => a.km - b.km).slice(0, 30);
+  const inc = (INC[H.cc] || []).slice(0, 6);
+  const hTxt = km => { const h = Math.max(.5, Math.round(km / 85 * 2) / 2); return `environ ${String(h).replace('.', ',')} h de train ou de voiture`; };
+  return `${inc.length ? `<div class="cf-inc pres-inc">${inc.map(([n]) => `<span>${esc(n)}</span>`).join('')}</div>` : ''}
+   ${L.map(x => `<button class="cf-row" data-act="simu" data-c="${H.cc}" data-v="${esc(x.n)}">${SV.pin || flag(H.cc)}<span><b>${esc(x.n)}</b><em>${Math.round(x.km).toLocaleString('fr-FR')} km, ${hTxt(x.km)}</em></span>${SV.chev}</button>`).join('')
+     || `<p class="small" style="padding:24px 4px">Pas encore de villes connues dans ton pays. Vérifie ton lieu de vie dans En chiffres.</p>`}
+   <button class="btn2 wide" data-act="homeSet" style="margin:14px 0 0">${SV.pin || ''}Tu habites à ${esc(H.n)} : modifier</button>`;
+}

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#EAF4F8">
+<title>Compte confirmé - Escale</title>
+<link rel="icon" href="icons/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/fonts.css">
+<style>
+  :root{--sky:#A9D5E8;--lav:#D9D4F5;--pink:#F28DA5;--pink2:#F7B8C8;--pink3:#FCE3EA;--aqua:#A9E4E5;--navy:#20243A;--pale:#EAF4F8;--lilac:#EFEDFA;--ink:#2A2D3E;--muted:#7C7F8C;--cream:#FFFBF5;--green:#2E5E3E}
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;overflow-x:hidden}
+  body{min-height:100vh;min-height:100dvh;background:linear-gradient(180deg,var(--sky) 0%,var(--pale) 48%,var(--lilac) 100%);color:var(--ink);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;align-items:center}
+  .lace{width:100%;height:46px;display:block;flex:none}
+  .lace.bottom{transform:scaleY(-1)}
+  .garland{width:min(560px,100%);height:64px;display:block;margin:6px auto 34px}
+  main{position:relative;width:min(440px,calc(100% - 36px));margin:auto auto;padding:58px 26px 30px;background:var(--cream);border-radius:30px;text-align:center;box-shadow:0 24px 60px rgba(32,36,58,.14),0 0 0 1px rgba(242,141,165,.18)}
+  main::before{content:"";position:absolute;inset:9px;border-radius:23px;border:1.5px dashed rgba(242,141,165,.45);pointer-events:none}
+  .bow{position:absolute;left:50%;top:-34px;width:96px;height:64px;transform:translateX(-50%);filter:drop-shadow(0 5px 6px rgba(201,71,106,.25))}
+  .hello{font-family:'Pinyon Script','Great Vibes',cursive;font-size:30px;color:#C9476A;margin:0;line-height:1}
+  h1{font-family:'Playfair Display',Georgia,serif;font-style:italic;font-weight:400;font-size:clamp(30px,8.4vw,40px);line-height:1.12;margin:10px 0 0;color:var(--navy)}
+  .txt{font-family:'Cormorant Garamond','Playfair Display',Georgia,serif;font-style:italic;font-size:20px;line-height:1.45;color:#4A4D60;margin:16px 0 0}
+  .pearls{display:block;width:210px;height:20px;margin:22px auto 4px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;margin-top:16px;padding:15px 30px;border-radius:99px;background:var(--green);color:#fff;text-decoration:none;font-family:'Playfair Display',Georgia,serif;font-style:italic;font-size:19px;box-shadow:0 10px 24px rgba(46,94,62,.28);transition:transform .2s}
+  .btn:active{transform:scale(.97)}
+  .btn svg{width:18px;height:18px}
+  .small{font-size:13px;color:var(--muted);margin:16px 0 0;line-height:1.5}
+  .floaty{position:fixed;pointer-events:none;opacity:.9;animation:fl 6s ease-in-out infinite}
+  .floaty.h1{left:7%;top:28%;width:22px}.floaty.h2{right:8%;top:20%;width:16px;animation-delay:-2s}.floaty.h3{left:12%;bottom:22%;width:14px;animation-delay:-4s}.floaty.s1{right:12%;bottom:30%;width:20px;animation-delay:-1s}.floaty.s2{left:46%;top:13%;width:14px;animation-delay:-3s}
+  @keyframes fl{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-12px) rotate(6deg)}}
+  @media (prefers-reduced-motion:reduce){.floaty{animation:none}}
+  .brand{font-family:'Playfair Display',Georgia,serif;font-size:15px;letter-spacing:.32em;text-transform:uppercase;color:var(--navy);opacity:.7;margin:14px 0 0}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+  <svg class="lace" viewBox="0 0 400 46" preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <pattern id="sc" width="40" height="46" patternUnits="userSpaceOnUse">
+        <rect width="40" height="22" fill="#F7B8C8"/>
+        <path d="M0 22 Q20 46 40 22 Z" fill="#F7B8C8" stroke="#E58AA3" stroke-width="1.2"/>
+        <path d="M20 13 c-2.4-3.2-6.6-.6-4 2.6L20 19l4-3.4c2.6-3.2-1.6-5.8-4-2.6z" fill="#fff" opacity=".9"/>
+        <circle cx="0" cy="37" r="1.4" fill="#fff"/><circle cx="40" cy="37" r="1.4" fill="#fff"/>
+      </pattern>
+    </defs>
+    <rect width="400" height="46" fill="url(#sc)"/>
+    <rect y="0" width="400" height="4" fill="#E58AA3" opacity=".5"/>
+  </svg>
+
+  <p class="brand">Escale</p>
+
+  <svg class="garland" viewBox="0 -6 560 64" aria-hidden="true">
+    <path d="M0 10 Q70 44 140 14 Q210 44 280 14 Q350 44 420 14 Q490 44 560 10" fill="none" stroke="#F28DA5" stroke-width="3" stroke-linecap="round"/>
+    <g fill="#F7B8C8" stroke="#E0708F" stroke-width="1.4" stroke-linejoin="round">
+      <g transform="translate(140 14) scale(1.35)"><path d="M0 0 C-10-9-20-6-18 2 C-16 9-6 6 0 0Z"/><path d="M0 0 C10-9 20-6 18 2 C16 9 6 6 0 0Z"/><path d="M-2 1 L-7 13 M2 1 L7 13" fill="none"/><circle r="3" fill="#F28DA5"/></g>
+      <g transform="translate(280 14) scale(1.35)"><path d="M0 0 C-10-9-20-6-18 2 C-16 9-6 6 0 0Z"/><path d="M0 0 C10-9 20-6 18 2 C16 9 6 6 0 0Z"/><path d="M-2 1 L-7 13 M2 1 L7 13" fill="none"/><circle r="3" fill="#F28DA5"/></g>
+      <g transform="translate(420 14) scale(1.35)"><path d="M0 0 C-10-9-20-6-18 2 C-16 9-6 6 0 0Z"/><path d="M0 0 C10-9 20-6 18 2 C16 9 6 6 0 0Z"/><path d="M-2 1 L-7 13 M2 1 L7 13" fill="none"/><circle r="3" fill="#F28DA5"/></g>
+    </g>
+  </svg>
+
+  <main>
+    <svg class="bow" viewBox="0 0 96 64" aria-hidden="true">
+      <g stroke="#C9476A" stroke-width="1.6" stroke-linejoin="round">
+        <path d="M48 28 C30 6 6 8 8 26 C10 42 32 38 48 28Z" fill="#F28DA5"/>
+        <path d="M48 28 C66 6 90 8 88 26 C86 42 64 38 48 28Z" fill="#F28DA5"/>
+        <path d="M44 31 L30 60 L38 55 L42 62 L47 33Z" fill="#F7B8C8"/>
+        <path d="M52 31 L66 60 L58 55 L54 62 L49 33Z" fill="#F7B8C8"/>
+        <ellipse cx="48" cy="29" rx="7" ry="8" fill="#F7B8C8"/>
+      </g>
+      <path d="M18 22 C24 16 32 17 38 22" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
+      <path d="M78 22 C72 16 64 17 58 22" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
+    </svg>
+
+    <section id="ok">
+      <p class="hello">Bienvenue</p>
+      <h1>C'est bon,<br>c'est confirmé !</h1>
+      <p class="txt">Ton compte Escale est activé. Tu peux te connecter et ouvrir ton premier carnet de voyage.</p>
+      <svg class="pearls" viewBox="0 0 210 20" aria-hidden="true">
+        <defs><radialGradient id="pe" cx=".35" cy=".35" r=".7"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#F3EEE8"/><stop offset="1" stop-color="#D8CFC6"/></radialGradient></defs>
+        <g fill="url(#pe)"><circle cx="10" cy="10" r="5"/><circle cx="24" cy="10" r="5"/><circle cx="38" cy="10" r="5"/><circle cx="52" cy="10" r="5"/><circle cx="66" cy="10" r="5"/><circle cx="80" cy="10" r="5"/><circle cx="130" cy="10" r="5"/><circle cx="144" cy="10" r="5"/><circle cx="158" cy="10" r="5"/><circle cx="172" cy="10" r="5"/><circle cx="186" cy="10" r="5"/><circle cx="200" cy="10" r="5"/></g>
+        <path d="M105 10 c-4-5.4-11-1-6.6 4.3L105 19l6.6-4.7c4.4-5.3-2.6-9.7-6.6-4.3z" fill="#F28DA5"/>
+      </svg>
+      <a class="btn" href="./">Me connecter<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      <p class="small">Si l'appli est déjà ouverte sur ce téléphone, tu peux fermer cette page et te connecter là-bas.</p>
+    </section>
+
+    <section id="ko" hidden>
+      <p class="hello">Oups</p>
+      <h1>Ce lien n'est plus valable</h1>
+      <p class="txt">Il a peut-être déjà servi, ou il a expiré. Essaie de te connecter : si ton compte est déjà confirmé, tout marchera.</p>
+      <a class="btn" href="./">Me connecter<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      <p class="small">Sinon, demande un nouveau lien depuis l'appli, avec « Renvoyer l'e-mail ».</p>
+    </section>
+  </main>
+
+  <svg class="floaty h1" viewBox="0 0 24 22" aria-hidden="true"><path d="M12 21 C-6 9 4-4 12 5 C20-4 30 9 12 21Z" fill="#F28DA5"/></svg>
+  <svg class="floaty h2" viewBox="0 0 24 22" aria-hidden="true"><path d="M12 21 C-6 9 4-4 12 5 C20-4 30 9 12 21Z" fill="#D9D4F5"/></svg>
+  <svg class="floaty h3" viewBox="0 0 24 22" aria-hidden="true"><path d="M12 21 C-6 9 4-4 12 5 C20-4 30 9 12 21Z" fill="#F7B8C8"/></svg>
+  <svg class="floaty s1" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10Z" fill="#fff"/></svg>
+  <svg class="floaty s2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0 L14 10 L24 12 L14 14 L12 24 L10 14 L0 12 L10 10Z" fill="#A9E4E5"/></svg>
+
+  <div style="height:30px;flex:none"></div>
+  <svg class="lace bottom" viewBox="0 0 400 46" preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <pattern id="sc2" width="40" height="46" patternUnits="userSpaceOnUse">
+        <rect width="40" height="22" fill="#A9D5E8"/>
+        <path d="M0 22 Q20 46 40 22 Z" fill="#A9D5E8" stroke="#86BCD3" stroke-width="1.2"/>
+        <path d="M14 9 q6 6 12 0" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="0" cy="37" r="1.4" fill="#fff"/><circle cx="40" cy="37" r="1.4" fill="#fff"/>
+      </pattern>
+    </defs>
+    <rect width="400" height="46" fill="url(#sc2)"/>
+  </svg>
+  <script src="js/confirme.js"></script>
+</body>
+</html>

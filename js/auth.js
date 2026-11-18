@@ -69,7 +69,7 @@ function signupForm(prefill = {}) {
       if (!g.querySelector('#su-cgu').checked) return err.textContent = "Tu dois accepter les conditions d'utilisation.";
       const btn = g.querySelector('#su-ok'); busy(btn, true);
       try { sessionStorage.setItem('escale:pending-terms', JSON.stringify({ v: TERMS, age: true })); } catch (_) { }
-      const { data, error } = await sb.auth.signUp({ email: e, password: pw, options: { data: { display_name: n, handle: h }, emailRedirectTo: CFG.siteUrl || location.origin } });
+      const { data, error } = await sb.auth.signUp({ email: e, password: pw, options: { data: { display_name: n, handle: h }, emailRedirectTo: CONFIRM_URL() } });
       busy(btn, false);
       if (error) return err.textContent = authError(error);
       if (!data.session) return checkEmail(e);
@@ -77,11 +77,13 @@ function signupForm(prefill = {}) {
     };
   });
 }
+/** Page jolie qui dit que le compte est confirmé (confirme.html). */
+const CONFIRM_URL = () => (CFG.siteUrl || location.origin).replace(/\/$/, '') + '/confirme.html';
 function checkEmail(email) {
   showGate(`<div class="gicon">${SV.send}</div><h2>Vérifie ta boîte mail</h2><p class="gtext">Nous avons envoyé un lien de confirmation à <b>${esc(email)}</b>. Ouvre-le pour activer ton compte, puis reviens ici.</p>
     <button class="gbtn primary" data-auth="login">J'ai confirmé, me connecter</button><button class="gbtn" id="ce-again">Renvoyer l'e-mail</button><p class="gerr" id="ce-msg" role="status"></p>`, g => {
     bindAuth(g);
-    g.querySelector('#ce-again').onclick = async () => { const { error } = await sb.auth.resend({ type: 'signup', email, options: { emailRedirectTo: CFG.siteUrl || location.origin } }); g.querySelector('#ce-msg').textContent = error ? authError(error) : 'E-mail renvoyé.'; };
+    g.querySelector('#ce-again').onclick = async () => { const { error } = await sb.auth.resend({ type: 'signup', email, options: { emailRedirectTo: CONFIRM_URL() } }); g.querySelector('#ce-msg').textContent = error ? authError(error) : 'E-mail renvoyé.'; };
   });
 }
 function loginForm() {

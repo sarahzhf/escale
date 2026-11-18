@@ -1,6 +1,6 @@
 /* Escale : fonctionnement hors connexion. Seuls les fichiers de l'appli sont mis en cache ;
  * les données personnelles et les photos ne passent jamais par ce cache. */
-const VERSION = 'escale-v2.9.3';
+const VERSION = 'escale-v2.9.4';
 const SHELL = ['./', 'index.html', 'css/app.css', 'css/fonts.css', 'css/dark.css', 'css/dark-extra.css', 'icons/logo.svg', 'js/theme.js', 'js/config.js', 'js/world.js', 'js/ref.js', 'js/countries-all.js', 'js/places.js', 'js/conseils.js', 'js/conseils-monde.js', 'js/combo.js', 'js/store.js', 'js/ui.js', 'js/conseil-ui.js', 'js/board.js', 'js/scan.js', 'js/missions.js', 'js/monde.js', 'js/prix.js', 'js/simu.js', 'js/comptes.js', 'js/stats.js', 'js/social.js', 'js/itineraire.js', 'js/defis-plus.js', 'js/deco.js', 'js/journal.js', 'js/shelf.js', 'js/gestes.js', 'js/plus.js', 'js/guide.js', 'js/avis.js', 'js/push.js', 'js/groupe.js', 'js/cout.js', 'js/passeport.js', 'js/invite.js', 'js/auth.js',
   'vendor/supabase.js', 'vendor/gsap.min.js', 'vendor/d3.min.js', 'vendor/topojson-client.min.js', 'vendor/jszip.min.js', 'manifest.webmanifest', 'icons/icon-192.png',
   'fonts/inter-latin-400-normal.woff2', 'fonts/inter-latin-500-normal.woff2', 'fonts/inter-latin-600-normal.woff2', 'fonts/inter-latin-700-normal.woff2', 'fonts/playfair-display-latin-500-normal.woff2'];
@@ -9,7 +9,8 @@ self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(k => Pro
 self.addEventListener('fetch', e => {
   const u = new URL(e.request.url);
   if (e.request.method !== 'GET' || u.origin !== location.origin) return; // API Supabase, photos : jamais en cache
-  if (e.request.mode === 'navigate') { e.respondWith(fetch(e.request).then(r => { const c = r.clone(); caches.open(VERSION).then(x => x.put('index.html', c)); return r; }).catch(() => caches.match('index.html'))); return; }
+  if (e.request.mode === 'navigate') { const app = u.pathname === '/' || u.pathname.endsWith('/index.html'); // seules les pages de l'appli remplacent la copie hors connexion
+    e.respondWith(fetch(e.request).then(r => { if (app && r.ok) { const c = r.clone(); caches.open(VERSION).then(x => x.put('index.html', c)); } return r; }).catch(() => app ? caches.match('index.html') : caches.match(e.request).then(m => m || caches.match('index.html')))); return; }
   e.respondWith(caches.match(e.request).then(hit => hit || fetch(e.request).then(r => { if (r.ok && !u.pathname.startsWith('/legal/')) { const c = r.clone(); caches.open(VERSION).then(x => x.put(e.request, c)); } return r; })));
 });
 

@@ -310,7 +310,16 @@ ACT.deleteAccount = () => { const hasPw = (ME.app_metadata && (ME.app_metadata.p
 /* ---------- démarrage ---------- */
 (async function boot() {
   if (!CFG.supabaseUrl || !CFG.supabaseAnonKey) { showGate('<h2>Configuration manquante</h2><p class="gtext">Renseigne js/config.js avec l’adresse et la clé publique de ton projet Supabase.</p>'); return; }
-  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => { });
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    // nouvelle version en ligne : elle prend la main et la page se recharge une fois, sans rien faire
+    const had = !!navigator.serviceWorker.controller; let reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (had && !reloaded && !document.querySelector('#panel.open textarea, #panel.open input:focus')) { reloaded = true; location.reload(); } });
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      const check = () => reg.update().catch(() => { });
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+      setInterval(check, 30 * 60e3);
+    }).catch(() => { });
+  }
   const isReset = new URLSearchParams(location.search).has('reset');
   const { data: { session } } = await sb.auth.getSession();
   setTimeout(() => $('splash') && $('splash').classList.add('out'), 300);

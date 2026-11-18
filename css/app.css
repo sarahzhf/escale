@@ -2762,3 +2762,5 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 .sm-st{margin-top:6px;width:100%}
 .sm-st button{flex:1 1 0;white-space:nowrap}
 .sm-price input{width:64px}
+.sm,.avis,.bud-form{max-width:100%;overflow-x:hidden}
+.sm-l input,.sm-l select{width:100%;min-width:0}

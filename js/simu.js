@@ -79,8 +79,8 @@ function simHTML(s) {
    <label class="sm-l">Ville ou étapes<input id="sm-city" list="sm-cities" value="${esc(s.city)}" placeholder="Ex : Lisbonne, Porto" autocomplete="off"></label>
    <datalist id="sm-cities">${placesOf(s.cc).slice(0, 80).map(n => `<option value="${esc(n)}">`).join('')}</datalist>
    <div class="sm-2"><label class="sm-l">Du<input type="date" id="sm-du" value="${s.du}"></label><label class="sm-l">Au<input type="date" id="sm-au" value="${s.au}"></label></div>
-   <div class="sm-2"><div class="sm-l">Voyageurs<div class="sm-step"><button type="button" data-n="-1" aria-label="Un voyageur de moins">${SV.minus || '-'}</button><b class="num" id="sm-n">${s.n}</b><button type="button" data-n="1" aria-label="Un voyageur de plus">${SV.plus}</button></div></div>
-     <div class="sm-l">Style<div class="seg sm" id="sm-st">${Object.entries(STYLES_SIMU).map(([k, x]) => `<button type="button" data-v="${k}" class="${s.style === k ? 'on' : ''}">${x.n}</button>`).join('')}</div></div></div>
+   <div class="sm-l">Voyageurs<div class="sm-step"><button type="button" data-n="-1" aria-label="Un voyageur de moins">${SV.minus || '-'}</button><b class="num" id="sm-n">${s.n}</b><button type="button" data-n="1" aria-label="Un voyageur de plus">${SV.plus}</button></div></div>
+   <div class="sm-l">Style<div class="seg wide sm-st" id="sm-st">${Object.entries(STYLES_SIMU).map(([k, x]) => `<button type="button" data-v="${k}" class="${s.style === k ? 'on' : ''}">${x.n}</button>`).join('')}</div></div>
    <div class="sec"><h2>Activités</h2></div>${simActsHTML(s)}
    <div class="sec"><h2>Repas</h2></div>${simMealsHTML(s)}
    <details class="sm-fix"><summary>Frais déjà connus (vol, logement)</summary>

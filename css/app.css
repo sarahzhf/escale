@@ -2748,3 +2748,17 @@ body.gated .scrim{z-index:85}body.gated .panel{z-index:90}
 .ip-up{display:flex!important;flex-direction:column;gap:4px}.ip-up svg{width:18px;height:18px}
 .mtoggle{max-width:calc(100% - 40px);overflow-x:auto;scrollbar-width:none}
 .mtoggle button{white-space:nowrap}
+/* ---------- écran fixe : jamais de décalage horizontal ---------- */
+/* sur téléphone, un champ en dessous de 16 px fait zoomer la page à la saisie et la décale : partout 16 px */
+@media (pointer:coarse){input,select,textarea{font-size:16px!important}}
+.panel,#s-conseil{overflow-x:hidden;overscroll-behavior-x:none}
+.panel{max-width:100%}
+.panel *{max-width:100%}
+.panel .sm-act,.panel .sm-add,.panel .sm-2,.panel .bud-form,.panel .ip-ph{min-width:0}
+.sm-2>*,.bud-form>*,.sm-add>*,.sm-act>*{min-width:0}
+input[type=date]{-webkit-appearance:none;appearance:none;min-width:0;max-width:100%;display:block;text-align:left}
+input[type=date]::-webkit-date-and-time-value{text-align:left}
+.sm-step{max-width:180px}
+.sm-st{margin-top:6px;width:100%}
+.sm-st button{flex:1 1 0;white-space:nowrap}
+.sm-price input{width:64px}

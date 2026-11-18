@@ -9,8 +9,8 @@
  *  - Carte > Itinéraire : tes voyages. L'itinéraire se complète petit à petit avec les lieux
  *    que tu ajoutes (recherche du lieu exact, jour, une photo du carnet).
  *  - Carte > Entre amis : les itinéraires de tes amis, ami par ami, voyage par voyage.
- *    Seuls les albums qu'ils partagent avec toi sont visibles (get_itinerary suit les mêmes
- *    règles que get_album). Les dépenses ne sont jamais montrées.
+ *    On ne voit que leur itinéraire (lieux et photo choisie pour chaque lieu), jamais leur album,
+ *    et seulement pour les voyages qu'ils partagent avec toi. Les dépenses ne sont jamais montrées.
  *
  * Les bibliothèques de carte ne sont chargées qu'à l'ouverture de l'écran.
  * Seuls la recherche de lieu et les tuiles de carte passent par MapTiler, jamais l'identité. */
@@ -41,17 +41,8 @@
     if (L.length) return { stops: L, draft: false };
     const P = tripPlaces(t); return { stops: (P.length ? P : [{ n: t.ville || C(t).n, ll: C(t).ll }]).map(p => ({ n: p.n, ll: p.ll, ph: null, city: 1 })), draft: true };
   }
-  /** Lieux du voyage d'un ami : son itinéraire, sinon les villes de son album. */
-  function albumStops(a, itin) {
-    const L = byOrder((Array.isArray(itin) ? itin : []).filter(s => okLL(s.ll)));
-    if (L.length) return { stops: L, draft: false };
-    const names = []; String(a.city || '').split(/\s*(?:,|;|\/|\+|→|->)\s*/).forEach(n => { n = n.trim(); if (n) names.push(n); }); (a.places || []).forEach(n => names.push(n));
-    const ph = (a.entries || []).slice().sort((x, y) => x.day - y.day).flatMap(e => (e.photos || []).filter(Boolean)), out = [], seen = new Set();
-    names.forEach(n => { const ll = placeLL(n, a.country_code); if (ll && !seen.has(ll.join())) { seen.add(ll.join()); out.push({ n, ll, city: 1 }); } });
-    if (!out.length && COUNTRIES[a.country_code]) out.push({ n: a.city || COUNTRIES[a.country_code].n, ll: COUNTRIES[a.country_code].ll, city: 1 });
-    out.forEach((s, i) => { s.ph = ph.length ? ph[Math.min(ph.length - 1, Math.round(i * (ph.length - 1) / Math.max(1, out.length - 1)))] : null; });
-    return { stops: out, draft: true };
-  }
+  /** Lieux du voyage d'un ami : uniquement son itinéraire (jamais le contenu de son album). */
+  const friendStops = itin => byOrder((Array.isArray(itin) ? itin : []).filter(s => okLL(s.ll)));
 
   /* ---------- l'écran ---------- */
   let IT = null; // { mode, trip, friends, friend, albums, album, meta, stops, draft, map, styled, markers, raf }
@@ -110,20 +101,20 @@
     $('itp-sel').querySelectorAll('[data-f]').forEach(b => b.onclick = async () => { IT.friend = b.dataset.f; IT.albums = null; friendSel(); await loadFriend(); });
     $('itp-sel').querySelectorAll('[data-a]').forEach(b => b.onclick = () => { IT.album = b.dataset.a; friendSel(); showAlbum(); });
   }
+  /* seuls les voyages dont l'ami a dessiné un itinéraire, et qu'il a choisi de partager avec toi */
   async function loadFriend() {
     const fid = IT.friend, f = IT.friends.find(x => x.id === fid); msg(true, '<p>Chargement…</p>');
-    let A = []; try { A = ((await rpc('get_albums', { p_user: fid })) || []).sort((a, b) => String(b.start_date).localeCompare(String(a.start_date))); } catch (_) { }
-    if (!IT || IT.friend !== fid) return; IT.albums = A;
-    if (!A.length) { IT.album = null; friendSel(); head(f ? f.display_name : '', ''); IT.stops = []; sheet(); draw(); msg(true, `<p>${esc(f ? f.display_name : 'Ton ami')} n'a pas encore partagé de voyage avec toi.</p>`); return; }
-    IT.album = A[0].id; friendSel(); await showAlbum();
+    let A = []; try { A = ((await rpc('get_albums', { p_user: fid })) || []).sort((a, b) => String(b.start_date).localeCompare(String(a.start_date))).slice(0, 20); } catch (_) { }
+    const I = await Promise.all(A.map(a => rpc('get_itinerary', { p_trip: a.id }).catch(() => null)));
+    if (!IT || IT.friend !== fid) return;
+    IT.itins = {}; A = A.filter((a, k) => { const L = friendStops(I[k]); if (L.length) IT.itins[a.id] = L; return L.length; }); IT.albums = A;
+    if (!A.length) { IT.album = null; friendSel(); head(f ? f.display_name : '', ''); IT.stops = []; sheet(); draw(); msg(true, `<p>${esc(f ? f.display_name : 'Ton ami')} n'a pas encore partagé d'itinéraire avec toi.</p>`); return; }
+    IT.album = A[0].id; friendSel(); showAlbum();
   }
-  async function showAlbum() {
-    const id = IT.album; msg(true, '<p>Chargement…</p>');
-    let a = null, itin = null; try { [a, itin] = await Promise.all([rpc('get_album', { p_trip: id }), rpc('get_itinerary', { p_trip: id }).catch(() => null)]); } catch (_) { }
-    if (!IT || IT.album !== id) return;
-    if (!a) { msg(true, '<p>Ce voyage n\'est plus partagé avec toi.</p>'); return; }
-    const r = albumStops(a, itin); IT.stops = r.stops; IT.draft = r.draft; IT.meta = a;
-    head(a.city, r.stops.map(s => s.n).slice(0, 5).join(' - ')); msg(false); sheet(); draw();
+  function showAlbum() {
+    const a = (IT.albums || []).find(x => x.id === IT.album); if (!a) return;
+    IT.stops = IT.itins[a.id] || []; IT.draft = false; IT.meta = a;
+    head(a.city, IT.stops.map(s => s.n).slice(0, 5).join(' - ')); msg(false); sheet(); draw();
   }
 
   /* ---------- bas de l'écran : les lieux, dans l'ordre ---------- */

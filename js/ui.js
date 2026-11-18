@@ -703,7 +703,7 @@ ACT.setJournal = d => { jId = d.trip; closePanel(); renderJournal(); };
 function cityDots() { const out = []; S.trips.forEach(t => tripPlaces(t).forEach((c, i) => { if (i > 0 || t.lieux && t.lieux.length || t.ville) out.push({ n: c.n, ll: c.ll, on: t.id === mapSel, main: i === 0 }); })); return out; }
 let mapSel = null, mapT = { x: 0, y: 0, k: 1 }, mapBuilt = false, mproj = null;
 let mapMode = (() => { try { return localStorage.getItem('escale:map') || 'globe'; } catch (e) { return 'globe'; } })();
-const mapToggle = () => `<div class="mtoggle" role="tablist"><button class="${mapMode === 'globe' ? 'on' : ''}" data-act="mapMode" data-v="globe">${SV.globe}Globe 3D</button><button class="${mapMode === 'plan' ? 'on' : ''}" data-act="mapMode" data-v="plan">${SV.flatmap}Plan</button></div>`;
+const mapToggle = () => `<div class="mtoggle" role="tablist"><button class="${mapMode === 'globe' ? 'on' : ''}" data-act="mapMode" data-v="globe">${SV.globe}Globe 3D</button><button class="${mapMode === 'plan' ? 'on' : ''}" data-act="mapMode" data-v="plan">${SV.flatmap}Plan</button><button data-act="itinOpen">${SV.pin}Itinéraire</button></div>`;
 ACT.mapMode = d => { if (d.v === mapMode) return; mapMode = d.v; try { localStorage.setItem('escale:map', d.v); } catch (e) { } mapBuilt = false; renderCarte(); };
 // légende lisible : couleurs franches et nombre de pays dans chaque groupe
 const mapLegend = () => { const cur = currentTrip(), vis = new Set(S.trips.filter(t => !info(t).futur && t !== cur).map(t => t.pays)), wi = new Set(S.envies.map(w => w.pays));

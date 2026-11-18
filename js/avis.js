@@ -14,7 +14,7 @@
   const MAIL = 'hello.escale.app@gmail.com';
 
   async function send(row) {
-    try { const { error } = await sb.from('feedback').insert({ user_id: ME.id, app_version: 'v2.8', ...row }); if (error) throw error; return true; }
+    try { const { error } = await sb.from('feedback').insert({ user_id: ME.id, app_version: 'v2.9', ...row }); if (error) throw error; return true; }
     catch (_) { return false; }
   }
   const mailto = (subj, body) => `mailto:${MAIL}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;

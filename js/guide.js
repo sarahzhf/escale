@@ -28,11 +28,12 @@
       ['page', 'Ton passeport Escale', 'À chaque nouveau pays, un tampon tombe dans ton passeport. Tu le retrouves sur ton profil, à côté de ton prénom.', ['Tourne ses pages au doigt', 'Choisis sa couleur, ta photo et qui peut le voir']],
       ['spark', 'Assistant et idées de voyage', 'L’assistant répond à tes questions sur tes dépenses et t’aide à choisir ta prochaine destination. L’écran Où partir ensuite ? propose des pays selon tes goûts et ton budget.', ['Pose une question comme à un ami : « Combien il me reste par jour ? »', 'L’assistant ne lit jamais tes notes, tes photos ni tes amis']],
       ['star', 'Où partir, quand et avec quel budget', 'Dans Conseils, l’onglet Mon budget propose des pays et des villes qui rentrent dans ton budget, vol compris. Le filtre Quand ? suit la bonne saison du mois choisi. Près de chez moi propose des villes de ton propre pays, qui n’apparaît plus dans les autres suggestions.', ['Ton lieu de vie se règle dans les réglages', 'Touche une ville pour sa simulation détaillée']],
+      ['pin', 'Ton itinéraire en 3D', 'Dans Carte, puis Itinéraire : ton voyage sur une vraie carte en relief. Ajoute chaque endroit visité avec une photo : le trajet se dessine petit à petit, avec un pin et un polaroïd sur chaque lieu.', ['Cherche le lieu exact : musée, café, plage', 'Une photo par lieu, choisie dans ton carnet ou ajoutée', 'Tourne, incline et zoome au doigt']],
     ]],
     ['Avec tes amis', '#C9476A', [
       ['comment', 'Partage tes souvenirs', 'Dans Posts, publie des photos et partage tes albums. Tes amis réagissent avec des émojis et laissent des commentaires, et leurs albums s’ouvrent dans le même carnet, en lecture seule.', ['Ajoute des amis depuis ton profil', 'Signale un contenu ou bloque quelqu’un depuis ses trois points']],
       ['target', 'Défis et missions', 'Lance un défi photo à un ami, avec un temps limité pour le relever. Pendant un voyage, une mission surprise arrive chaque jour : deux heures pour la relever. Les points remplissent ton bocal.', ['Points, badges, séries et classement entre amis', 'Choisis tes notifications dans Profil, Réglages']],
-      ['globe', 'Leurs itinéraires en carte', 'Dans Carte, puis Entre amis : les voyages de tes amis dessinés en carte, avec le trajet, un pin sur chaque lieu et une mini photo en polaroïd à côté.', ['Seuls les albums qu’ils partagent avec toi apparaissent', 'Touche un voyage pour son itinéraire, puis Ouvrir l’album']],
+      ['globe', 'Leurs itinéraires en carte', 'Dans Carte, le bouton Entre amis ouvre les itinéraires de tes amis : choisis un ami, puis un de ses voyages, et suis son trajet en 3D avec ses photos.', ['Seuls les voyages qu’ils partagent avec toi apparaissent', 'Touche un lieu en bas pour t’y envoler']],
     ]],
     ['Tout reste à toi', '#20243A', [
       ['lock', 'Privé par défaut', 'Tout est privé au départ. Pour chaque album ou publication, tu choisis : toi seule, tes amis ou tout le monde. Tes dépenses et tes documents ne sont jamais montrés.', ['Même sans réseau, tu peux tout noter : c’est envoyé au retour de la connexion', 'Profil, Réglages : télécharge ou supprime toutes tes données quand tu veux']],
@@ -40,8 +41,8 @@
     ]],
   ];
   const STEPS = CH.flatMap(([n, c, L], ci) => L.map(([ic, t, d, tips, ill]) => ({ ci, n, c, ic, t, d, tips, ill })));
-  // nouveautés de la version 2.8 : montrées une fois aux comptes qui ont déjà vu le guide
-  const NEWS = new Set(['Simule ton voyage', 'Où partir, quand et avec quel budget', 'Leurs itinéraires en carte', 'Ton avis compte']), NEWS_V = 'v2.8';
+  // nouveautés des versions 2.8 et 2.9 : montrées une fois aux comptes qui ont déjà vu le guide
+  const NEWS = new Set(['Simule ton voyage', 'Où partir, quand et avec quel budget', 'Ton itinéraire en 3D', 'Leurs itinéraires en carte', 'Ton avis compte']), NEWS_V = 'v2.9';
   let LIST = STEPS, newsMode = false;
   const key = () => `escale:guide2:${(typeof ME !== 'undefined' && ME && ME.id) || 'x'}`;
   const seen = () => { try { return localStorage.getItem(key()) === '1' || localStorage.getItem('escale-guide-seen') === '1'; } catch (_) { return true; } };

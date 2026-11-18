@@ -8,5 +8,6 @@ window.ESCALE_CONFIG = Object.freeze({
   "contactEmail": "hello.escale.app@gmail.com",
   "termsVersion": "2026-11",
   "googleEnabled": false,
+  "maptilerKey": "tOrbN0JMaD9Kq2fcmrwO",
   "vapidPublicKey": "BJiueE7fylp1WdiVPFfYzE12nvWW0qbHPrbmoV3rULx5Ew4jlVdNTCcSjhlVPnMJwrcA4I2cypvAbTSGXjG2wvQ"
 });

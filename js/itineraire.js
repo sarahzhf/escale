@@ -37,9 +37,14 @@
   const okLL = ll => Array.isArray(ll) && ll.length === 2 && isFinite(ll[0]) && isFinite(ll[1]) && Math.abs(ll[1]) <= 90;
   /** Lieux d'un de tes voyages. Sans lieu ajouté : ses villes, pour commencer le trajet. */
   function myStops(t) {
-    const L = byOrder((t.itin || []).filter(s => okLL(s.ll)));
-    if (L.length) return { stops: L, draft: false };
-    const P = tripPlaces(t); return { stops: (P.length ? P : [{ n: t.ville || C(t).n, ll: C(t).ll }]).map(p => ({ n: p.n, ll: p.ll, ph: null, city: 1 })), draft: true };
+    // sans photo choisie pour un lieu, on prend une photo de la page du même jour dans le carnet (sans l'enregistrer)
+    const used = new Set(), dayPh = j => { const e = t.entrees.find(x => x.j === j), p = e && (e.photos || []).find(x => x && !used.has(x)); if (p) used.add(p); return p || null; };
+    const L = byOrder((t.itin || []).filter(s => okLL(s.ll))).map(s => ({ ...s }));
+    if (L.length) { L.forEach(s => { if (s.ph) used.add(s.ph); }); L.forEach(s => { if (!s.ph) { s.ph = dayPh(s.j || 1); s.auto = !!s.ph; } }); return { stops: L, draft: false }; }
+    const P = tripPlaces(t), all = [...new Set(t.entrees.slice().sort((a, b) => a.j - b.j).flatMap(e => e.photos || []).filter(Boolean))].concat(t.cover && !t.entrees.some(e => (e.photos || []).includes(t.cover)) ? [t.cover] : []);
+    const st = (P.length ? P : [{ n: t.ville || C(t).n, ll: C(t).ll }]).map(p => ({ n: p.n, ll: p.ll, ph: null, city: 1 }));
+    st.forEach((x, i) => { x.ph = all.length ? all[Math.min(all.length - 1, Math.round(i * (all.length - 1) / Math.max(1, st.length - 1)))] : null; });
+    return { stops: st, draft: true };
   }
   /** Lieux du voyage d'un ami : uniquement son itinéraire (jamais le contenu de son album). */
   const friendStops = itin => byOrder((Array.isArray(itin) ? itin : []).filter(s => okLL(s.ll)));
@@ -165,7 +170,7 @@
     const cc = IT.mode === 'moi' ? (trip(IT.trip) || {}).pays : (IT.meta || {}).country_code;
     L.forEach((s, i) => { const el = document.createElement('div'); el.className = 'itp-mk';
       el.style.setProperty('--r', `${((i * 37) % 11) - 5}deg`);
-      el.innerHTML = `${s.ph || !s.city ? `<figure class="itp-pola">${s.ph ? IMG(s.ph, s.n) : `<span class="itp-noph">${flag(cc)}</span>`}</figure>` : ''}<span class="itp-name"><b>${esc(s.n)}</b>${s.sub ? `<i>${esc(s.sub)}</i>` : ''}</span>`;
+      el.innerHTML = `${s.ph || !s.city ? `<figure class="itp-pola">${s.ph ? IMG(s.ph, s.n).replace('loading="lazy"', 'loading="eager"') : `<span class="itp-noph">${flag(cc)}</span>`}</figure>` : ''}<span class="itp-name"><b>${esc(s.n)}</b>${s.sub ? `<i>${esc(s.sub)}</i>` : ''}</span>`;
       el.onclick = e => { e.stopPropagation(); flyTo(i); };
       IT.markers.push(new maplibregl.Marker({ element: el, anchor: 'bottom-left', offset: [14, -20] }).setLngLat(s.ll).addTo(m)); });
     intro(pts); placeLabels();

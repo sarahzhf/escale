@@ -2771,3 +2771,8 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 .sm-price input{width:64px}
 .sm,.avis,.bud-form{max-width:100%;overflow-x:hidden}
 .sm-l input,.sm-l select{width:100%;min-width:0}
+
+.balert{position:absolute;left:14px;right:14px;top:calc(env(safe-area-inset-top,0px) + 14px);z-index:90;background:#FFF7E6;border:1px solid #E8C77A;color:#5a4310;border-radius:16px;padding:12px 14px;box-shadow:0 12px 30px -12px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:2px;font-size:.85rem;animation:balin .35s ease;transition:opacity .5s,transform .5s;cursor:pointer}
+.balert b{font-size:.92rem}.balert.over{background:#FCEBE6;border-color:#E3A08F;color:#7a2a17}.balert.out{opacity:0;transform:translateY(-10px)}
+@keyframes balin{from{opacity:0;transform:translateY(-12px)}}
+html[data-theme="dark"] .balert{background:#3a3220;color:#F4E6C4;border-color:#6b5a2a}html[data-theme="dark"] .balert.over{background:#3d241d;color:#F6D5CB;border-color:#7a3b2b}

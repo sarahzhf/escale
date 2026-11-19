@@ -13,6 +13,19 @@ const currentTrip = () => S.trips.find(t => info(t).enCours) || null;
 function budgetsOf(t) { if (t.budgets) return t.budgets; const b = {}; Object.keys(CATS).forEach(k => b[k] = Math.round(t.budget * CATS[k].pct)); return b; }
 function catsOf(t) { const c = {}; Object.keys(CATS).forEach(k => c[k] = 0); t.depenses.forEach(d => c[d.c] += myPart(d)); return c; }
 const spentOf = t => Object.values(catsOf(t)).reduce((a, b) => a + b, 0);
+/* Alerte budget : un message à 80 % du budget, un autre au dépassement, une seule fois par seuil et par voyage.
+   Réglable dans Notifications (« Alerte budget »). Si le budget remonte ou si des dépenses sont retirées, l'alerte se réarme. */
+function budgetCheck(t) { try {
+  if (!t || !(Number(t.budget) > 0)) return; const p = (SETTINGS && SETTINGS.push_prefs) || {}; if (p.budget === false) return;
+  const k = 'escale:ba:' + t.id, r = spentOf(t) / Number(t.budget), lvl = r >= 1 ? 2 : r >= .8 ? 1 : 0;
+  let was = 0; try { was = +localStorage.getItem(k) || 0; } catch (_) { }
+  try { localStorage.setItem(k, String(lvl)); } catch (_) { }
+  if (lvl <= was) return; const nom = t.ville || ((typeof COUNTRIES !== 'undefined' && COUNTRIES[t.pays] && COUNTRIES[t.pays].n) || 'ce voyage');
+  const msg = lvl === 2 ? `${nom} : ${fmt(spentOf(t))} dépensés sur ${fmt(+t.budget)} prévus` : `Tu as utilisé ${Math.round(r * 100)} % du budget de ${nom}, il reste ${fmt(+t.budget - spentOf(t))}`;
+  setTimeout(() => { const d = document.createElement('div'); d.className = 'balert' + (lvl === 2 ? ' over' : ''); d.setAttribute('role', 'alert');
+    d.innerHTML = `<b>${lvl === 2 ? 'Budget dépassé' : 'Attention au budget'}</b><span>${esc(msg)}</span>`; d.onclick = () => d.remove();
+    $('phone').appendChild(d); setTimeout(() => d.classList.add('out'), 5200); setTimeout(() => d.remove(), 5800); }, 900);
+} catch (_) { } }
 function daysOf(t) { const n = Math.max(1, info(t).jour || info(t).jours), a = Array(n).fill(0); t.depenses.forEach(d => { if (d.c !== 'logement' && d.j <= n) a[d.j - 1] += myPart(d); }); return a; }
 function projection(t) { const f = info(t); if (!f.enCours) return {}; const c = catsOf(t), b = budgetsOf(t); let worst = null;
   const once = {}; t.depenses.forEach(d => { if (d.c === 'transport' && ['avion', 'train', 'voiture', 'bateau'].includes(d.s)) once[d.c] = (once[d.c] || 0) + myPart(d); });
@@ -256,7 +269,7 @@ function expSheet(tid, eid, lock, pre) {
       const j1 = +p.querySelector('#e-day').value, j2 = MULTI[cat] && stay !== '1' && +p.querySelector('#e-day2').value > j1 ? +p.querySelector('#e-day2').value : null;
       if (MULTI[cat] && stay === 'n' && !j2) { toast(cat === 'logement' ? 'Choisis une dernière nuit après la première' : 'Choisis un dernier jour après le premier'); return; }
       const rec = { j: j1, j2, s: sub, l: p.querySelector('#e-lbl').value.trim().slice(0, 80) || (sub ? SUBS[cat][sub] : CATS[cat].n), c: cat, m: cleanMerchant(p.querySelector('#e-mer').value), v: cur === 'E' ? null : v, cur: cur === 'X' ? xcur : null, eur, by: M.length ? by : 'me', split: shared ? split : null };
-      if (d) { Object.assign(d, rec); save(); closePanel(); refresh(); toast(navigator.onLine ? 'Dépense mise à jour' : 'Dépense mise à jour sur ton téléphone'); return; }
+      if (d) { Object.assign(d, rec); save(); closePanel(); refresh(); toast(navigator.onLine ? 'Dépense mise à jour' : 'Dépense mise à jour sur ton téléphone'); budgetCheck(t); return; }
       t.depenses.push({ id: uid(), ...rec, at: new Date().toISOString() }); save(); flyAndDone(rec, t);
     };
     const del = p.querySelector('#e-del'); if (del) del.onclick = () => confirmIn(p, 'Supprimer cette dépense ?', () => { t.depenses = t.depenses.filter(x => x.id !== d.id); save(); closePanel(); refresh(); toast('Dépense supprimée'); });
@@ -266,7 +279,7 @@ function flyAndDone(rec, t) {
   const ph = $('phone').getBoundingClientRect(), from = $('e-ok').getBoundingClientRect(), nb = document.querySelector('nav [data-go=depenses]'), to = nb.getBoundingClientRect();
   const f = document.createElement('div'); f.className = 'flyer num'; f.textContent = (rec.v != null ? fmtD(rec, t) : fmt(rec.eur)) + '  ' + rec.l; $('phone').appendChild(f);
   f.style.left = (from.left - ph.left + from.width / 2 - 70) + 'px'; f.style.top = (from.top - ph.top - 40) + 'px'; closePanel();
-  const done = () => { f.remove(); nb.classList.remove('ping'); void nb.offsetWidth; nb.classList.add('ping'); depId = t.id; if (current === 'carnet' && openId === t.id) openTrip(t.id, true); else if (current === 'depenses') renderDepenses(true); else go('depenses'); toast(navigator.onLine ? 'Dépense ajoutée' : 'Dépense notée, elle partira au retour du réseau'); };
+  const done = () => { f.remove(); nb.classList.remove('ping'); void nb.offsetWidth; nb.classList.add('ping'); depId = t.id; if (current === 'carnet' && openId === t.id) openTrip(t.id, true); else if (current === 'depenses') renderDepenses(true); else go('depenses'); toast(navigator.onLine ? 'Dépense ajoutée' : 'Dépense notée, elle partira au retour du réseau'); budgetCheck(t); };
   if (window.gsap && !REDUCED && !document.querySelector('nav').hidden) gsap.timeline({ onComplete: done }).to(f, { y: -60, rotation: -5, scale: 1.08, duration: .35, ease: 'power2.out' }).to(f, { x: to.left - from.left + to.width / 2 - from.width / 2, y: to.top - from.top + 40, scale: .2, opacity: 0, duration: .6, ease: 'power2.in' });
   else done();
 }

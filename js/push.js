@@ -19,8 +19,8 @@
   window.pushReady = async () => supported() && Notification.permission === 'granted' && !!(await subscription());
   window.pushCanAsk = () => supported() && Notification.permission === 'default';
 
-  const CATS = [['defis', 'Défis', 'Un ami te lance un défi ou relève le tien'], ['social', 'Réactions et commentaires', 'Sur tes publications'], ['amis', 'Amis', 'Demandes d’ami et acceptations']];
-  const prefs = () => Object.assign({ defis: true, social: true, amis: true }, (typeof SETTINGS !== 'undefined' && SETTINGS && SETTINGS.push_prefs) || {});
+  const CATS = [['defis', 'Défis', 'Un ami te lance un défi ou relève le tien'], ['social', 'Réactions et commentaires', 'Sur tes publications'], ['amis', 'Amis', 'Demandes d’ami et acceptations'], ['budget', 'Alerte budget', 'À 80 % du budget d’un voyage, puis s’il est dépassé']];
+  const prefs = () => Object.assign({ defis: true, social: true, amis: true, budget: true }, (typeof SETTINGS !== 'undefined' && SETTINGS && SETTINGS.push_prefs) || {});
   ACT.setNotifs = async () => {
     const on = await window.pushReady(), p = prefs();
     let head;

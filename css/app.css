@@ -2776,3 +2776,4 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 .balert b{font-size:.92rem}.balert.over{background:#FCEBE6;border-color:#E3A08F;color:#7a2a17}.balert.out{opacity:0;transform:translateY(-10px)}
 @keyframes balin{from{opacity:0;transform:translateY(-12px)}}
 html[data-theme="dark"] .balert{background:#3a3220;color:#F4E6C4;border-color:#6b5a2a}html[data-theme="dark"] .balert.over{background:#3d241d;color:#F6D5CB;border-color:#7a3b2b}
+.bp-code.real{background:#fff}.bp-code .bp-real{display:flex;justify-content:center;padding:6px 4px 0}.bp-code .bp-real svg{width:100%;max-width:300px;height:auto;max-height:180px;background:#fff}.bp-code .bp-real em{font-size:.75rem;color:#8a8478;padding:10px 0}

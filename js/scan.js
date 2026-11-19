@@ -25,6 +25,35 @@ async function pdfText(file) { await loadScript('vendor/pdf/pdf.min.js'); const 
     tc.items.forEach(it => { const y = Math.round(it.transform[5]); out += (lastY !== null && Math.abs(y - lastY) > 3 ? '\n' : ' ') + it.str; lastY = y; }); out += '\n'; }
   return out; }
 
+/* ---------- vrai code-barres du billet (zxing-wasm, sur le téléphone, rien n'est envoyé) ----------
+   On lit le code (PDF417 des cartes d'embarquement, Aztec des billets de train, QR) dans le PDF ou la photo,
+   on garde seulement son texte dans le billet (privé, comme le reste du voyage), et on le redessine pour l'embarquement. */
+let ZX = null;
+async function zx() { if (ZX) return ZX; await loadScript('vendor/zxing/zxing.js');
+  ZXingWASM.prepareZXingModule({ overrides: { locateFile: (f, pre) => f.endsWith('.wasm') ? 'vendor/zxing/zxing_full.wasm' : pre + f }, fireImmediately: true });
+  return (ZX = ZXingWASM); }
+const BC_FORMATS = ['PDF417', 'Aztec', 'QRCode', 'DataMatrix'];
+async function pdfCanvases(file) { await loadScript('vendor/pdf/pdf.min.js'); const lib = window.pdfjsLib; lib.GlobalWorkerOptions.workerSrc = 'vendor/pdf/pdf.worker.min.js';
+  const doc = await lib.getDocument({ data: await file.arrayBuffer(), isEvalSupported: false }).promise, out = [];
+  for (let i = 1; i <= Math.min(doc.numPages, 3); i++) { const pg = await doc.getPage(i), vp = pg.getViewport({ scale: 3 }); const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
+    await pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise; out.push(c); } return out; }
+async function readCode(file) { try { const Z = await zx(), opts = { formats: BC_FORMATS, tryHarder: true, maxNumberOfSymbols: 1 };
+    const srcs = /pdf/.test(file.type) || /\.pdf$/i.test(file.name) ? (await pdfCanvases(file)).map(c => c.getContext('2d').getImageData(0, 0, c.width, c.height)) : [file];
+    for (const src of srcs) { const r = (await Z.readBarcodes(src, opts)).find(x => x.isValid && x.text); if (r) return { f: r.format, t: String(r.text).slice(0, 2000) }; }
+  } catch (_) { } return null; }
+/** Carte d'embarquement (norme IATA BCBP) : remplit les cases vides du billet avec ce que dit le code. */
+function bcbpFill(k, txt) { if (!/^M[1-4]/.test(txt) || txt.length < 58) return k; const g = (a, b) => txt.slice(a, b).trim();
+  const nm = g(2, 22).split('/'), set = (f, v) => { if (v && !k[f]) k[f] = v; };
+  set('pax', nm.length > 1 ? (nm[1].replace(/\s+(MR|MRS|MS|MISS|MSTR)$/, '') + ' ' + nm[0]).trim() : nm[0]); set('ref', g(23, 30)); set('from', g(30, 33)); set('to', g(33, 36));
+  set('num', (g(36, 39) + ' ' + String(+g(39, 44) || '')).trim()); set('seat', g(48, 52).replace(/^0+/, '')); return k; }
+const bcCacheKey = k => 'escale:bc:' + k.id + ':' + (k.bc && k.bc.t.length);
+async function bcHydrate(root) { const els = (root || document).querySelectorAll('.bp-code[data-bc]:not(.done)'); if (!els.length) return;
+  for (const el of els) { el.classList.add('done'); const k = { id: el.dataset.id, bc: { f: el.dataset.f, t: el.dataset.bc } }; let svg = null;
+    try { svg = localStorage.getItem(bcCacheKey(k)); } catch (_) { }
+    if (!svg) try { const Z = await zx(), w = await Z.writeBarcode(k.bc.t, { format: k.bc.f, scale: k.bc.f === 'PDF417' ? 2 : 4, addQuietZones: true }); svg = w.svg || null;
+      if (svg) try { localStorage.setItem(bcCacheKey(k), svg); } catch (_) { } } catch (_) { }
+    const box = el.querySelector('.bp-real'); if (box) box.innerHTML = svg || '<em>Code indisponible hors connexion, ouvre ton billet d’origine</em>'; } }
+
 /* ---------- analyse d'un ticket de caisse ---------- */
 const MONTHS = { janv: 1, jan: 1, fevr: 2, fev: 2, feb: 2, mars: 3, mar: 3, avr: 4, apr: 4, mai: 5, may: 5, juin: 6, jun: 6, juil: 7, jul: 7, aout: 8, aug: 8, sept: 9, sep: 9, oct: 10, nov: 11, dec: 12 };
 function findDate(txt) {
@@ -95,9 +124,9 @@ function ticketHTML(k, t, edit) { const big = (c, n) => `<b>${esc(c || (n ? n.sl
    <div class="bp-route"><div class="bp-a">${big(k.from, k.fromN)}<em>${esc(k.dep || '')}</em></div><div class="bp-line"><i></i><span>${KIND_IC[k.kind] || '✈'}</span><i></i></div><div class="bp-b">${big(k.to, k.toN)}<em>${esc(k.arr || '')}</em></div></div>
    <div class="bp-band">${(k.kind === 'train' ? [['Train', k.num], ['Voiture', k.coach], ['Place', k.seat], ['Réf.', k.ref]] : [['Vol', k.num], ['Terminal', k.term], ['Porte', k.gate], ['Siège', k.seat]]).map(([l, v]) => `<div><span>${l}</span><b>${esc(v || '–')}</b></div>`).join('')}</div>
    <div class="bp-pax"><div><span>Passager</span><b>${esc(k.pax || '–')}</b></div><div><span>${k.kind === 'train' ? 'Classe' : 'Classe'}</span><b>${esc(k.cls || '–')}</b></div>${k.kind !== 'train' ? `<div><span>Réf.</span><b>${esc(k.ref || '–')}</b></div>` : ''}</div>
-   <div class="bp-cut"></div><div class="bp-code">${barcodeSVG(k.ref || k.num || k.id)}<p>Décoratif : garde ton vrai billet pour l'embarquement</p></div></article>`; }
+   <div class="bp-cut"></div>${k.bc && k.bc.t ? `<div class="bp-code real" data-bc="${esc(k.bc.t)}" data-f="${esc(k.bc.f)}" data-id="${esc(k.id)}"><div class="bp-real"></div><p>Code de ton billet. Pense à monter la luminosité. Garde aussi ton billet d'origine.</p></div>` : `<div class="bp-code">${barcodeSVG(k.ref || k.num || k.id)}<p>Décoratif : ajoute le PDF ou une photo de ton billet pour avoir le vrai code</p></div>`}</article>`; }
 const ticketsOf = t => (t.tickets = Array.isArray(t.tickets) ? t.tickets : []);
-function ticketsHTML(t) { const L = ticketsOf(t); if (!L.length && !info(t).futur && !info(t).enCours) return '';
+function ticketsHTML(t) { setTimeout(() => bcHydrate(), 60); const L = ticketsOf(t); if (!L.length && !info(t).futur && !info(t).enCours) return '';
   return `<div class="sec"><h2>Billets</h2><button class="more" data-act="ticketAdd" data-trip="${t.id}">Ajouter</button></div>
    ${L.length ? `<div class="bpasses">${L.slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.dep || '').localeCompare(String(b.dep || ''))).map(k => ticketHTML(k, t)).join('')}</div>` : `<button class="prep-cta" data-act="ticketAdd" data-trip="${t.id}"><i>✈</i><span><b>Ajoute ton billet</b><em>Un PDF ou une photo : Eskalys le met au format billet</em></span>${SV.right}</button>`}`; }
 ACT.ticketAdd = d => { const t = trip(d.trip); if (!t) return;
@@ -112,7 +141,7 @@ ACT.ticketAdd = d => { const t = trip(d.trip); if (!t) return;
       i.onchange = async () => { const f = i.files && i.files[0]; if (!f) return; if (f.size > 15e6) { toast('Fichier trop lourd (15 Mo max)'); return; }
         const btn = p.querySelector('#tk-file'); btn.disabled = true; btn.firstChild.textContent = 'Lecture du billet…';
         try { const txt = /pdf/.test(f.type) || /\.pdf$/i.test(f.name) ? await pdfText(f) : await ocrText(f, (s, pr) => { btn.firstChild.textContent = s === 'recognizing text' ? `Lecture… ${Math.round(pr * 100)} %` : 'Chargement du module de lecture…'; });
-          const k = { id: uid(), ...parseTicket(txt, kind) }; closePanel(); setTimeout(() => ticketEdit(t.id, k, true), 360);
+          btn.firstChild.textContent = 'Recherche du code du billet…'; const bc = await readCode(f); let k = { id: uid(), ...parseTicket(txt, kind) }; if (bc) { k.bc = bc; k = bcbpFill(k, bc.t); } closePanel(); setTimeout(() => ticketEdit(t.id, k, true), 360);
         } catch (e) { btn.disabled = false; btn.firstChild.textContent = 'Choisir un PDF ou une photo'; toast('Lecture impossible, remplis le billet à la main'); } };
       i.click(); };
   }, { nofocus: true }); };
@@ -122,10 +151,20 @@ function ticketEdit(tid, k, fromScan) { const t = trip(tid), L = ticketsOf(t), e
   openPanel(`<h2>${fromScan ? 'Vérifie ton billet' : ex ? 'Modifier le billet' : 'Nouveau billet'}</h2>${fromScan ? '<p class="small">Voici ce qui a été lu. Corrige ce qui manque ou ce qui est faux.</p>' : ''}
    <div id="tk-prev">${ticketHTML(k, t, true)}</div>
    <div class="tk-grid">${F.map(([f, l, ty]) => `<label class="fld"><span>${l}</span><input data-f="${f}" ${ty ? `type="${ty}"` : ''} maxlength="40" value="${esc(k[f] || '')}"></label>`).join('')}</div>
+   <button class="btn2 wide" id="tk-code" style="margin-top:4px">${k.bc ? 'Remplacer le code du billet' : 'Ajouter le vrai code (PDF ou photo du billet)'}</button>${k.bc ? '<button class="ghostbtn" id="tk-nocode">Retirer le code</button>' : ''}
    <button class="btn full" id="tk-ok">Enregistrer le billet<i>${SV.arrow}</i></button>${ex ? '<button class="danger" id="tk-del">Supprimer ce billet</button>' : ''}${CLOSE()}`, p => {
-    const upd = () => { p.querySelectorAll('[data-f]').forEach(i => { let v = i.value.trim(); if (i.dataset.f === 'from' || i.dataset.f === 'to') { v = v.toUpperCase().slice(0, 4); const n = AIRPORTS[v]; const nf = p.querySelector(`[data-f="${i.dataset.f}N"]`); if (n && nf && !nf.value) nf.value = k[i.dataset.f + 'N'] = n; } k[i.dataset.f] = v; }); p.querySelector('#tk-prev').innerHTML = ticketHTML(k, t, true); };
+    setTimeout(() => bcHydrate(p), 60);
+    const prev = () => { const box = p.querySelector('#tk-prev'); if (box) { box.innerHTML = ticketHTML(k, t, true); bcHydrate(box); } };
+    p.querySelector('#tk-code').onclick = () => { const i = document.createElement('input'); i.type = 'file'; i.accept = 'application/pdf,image/*';
+      i.onchange = async () => { const f = i.files && i.files[0]; if (!f) return; const b = p.querySelector('#tk-code'); b.disabled = true; b.textContent = 'Recherche du code…';
+        const bc = await readCode(f); b.disabled = false;
+        if (!bc) { b.textContent = 'Ajouter le vrai code (PDF ou photo du billet)'; toast('Aucun code trouvé. Essaie le PDF d’origine ou une photo nette et bien cadrée'); return; }
+        k.bc = bc; bcbpFill(k, bc.t); p.querySelectorAll('[data-f]').forEach(x => { if (!x.value && k[x.dataset.f]) x.value = k[x.dataset.f]; }); b.textContent = 'Code trouvé ✓'; prev(); toast('Code du billet ajouté'); };
+      i.click(); };
+    const nc = p.querySelector('#tk-nocode'); if (nc) nc.onclick = () => { delete k.bc; nc.remove(); prev(); toast('Code retiré'); };
+    const upd = () => { p.querySelectorAll('[data-f]').forEach(i => { let v = i.value.trim(); if (i.dataset.f === 'from' || i.dataset.f === 'to') { v = v.toUpperCase().slice(0, 4); const n = AIRPORTS[v]; const nf = p.querySelector(`[data-f="${i.dataset.f}N"]`); if (n && nf && !nf.value) nf.value = k[i.dataset.f + 'N'] = n; } k[i.dataset.f] = v; }); p.querySelector('#tk-prev').innerHTML = ticketHTML(k, t, true); bcHydrate(p.querySelector('#tk-prev')); };
     p.querySelectorAll('[data-f]').forEach(i => i.addEventListener('input', upd));
-    p.querySelector('#tk-ok').onclick = () => { upd(); const clean = { id: k.id, kind: k.kind }; F.forEach(([f]) => { if (k[f]) clean[f] = String(k[f]).slice(0, 40); });
+    p.querySelector('#tk-ok').onclick = () => { upd(); const clean = { id: k.id, kind: k.kind }; F.forEach(([f]) => { if (k[f]) clean[f] = String(k[f]).slice(0, 40); }); if (k.bc && k.bc.t) clean.bc = { f: String(k.bc.f).slice(0, 20), t: String(k.bc.t).slice(0, 2000) };
       if (ex) Object.keys(ex).forEach(x => delete ex[x]), Object.assign(ex, clean); else { if (L.length >= 20) { toast('20 billets au maximum'); return; } L.push(clean); }
       save(); closePanel(); setTimeout(refresh, 320); toast('Billet enregistré'); };
     const del = p.querySelector('#tk-del'); if (del) del.onclick = () => { t.tickets = L.filter(x => x.id !== k.id); save(); closePanel(); setTimeout(refresh, 320); toast('Billet supprimé'); };

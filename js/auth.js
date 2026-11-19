@@ -336,7 +336,10 @@ ACT.deleteAccount = () => { const hasPw = (ME.app_metadata && (ME.app_metadata.p
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     // nouvelle version en ligne : elle prend la main et la page se recharge une fois, sans rien faire
     const had = !!navigator.serviceWorker.controller; let reloaded = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => { if (had && !reloaded && !document.querySelector('#panel.open textarea, #panel.open input:focus')) { reloaded = true; location.reload(); } });
+    // la mise à jour attend que l'appli passe en arrière-plan : plus de rechargement (ni d'animation d'ouverture) en pleine utilisation
+    const swReload = () => { if (reloaded) return; reloaded = true; try { sessionStorage.setItem('eskalys:quiet', '1'); } catch (_) { } location.reload(); };
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had || reloaded) return;
+      if (document.visibilityState === 'hidden') swReload(); else document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') swReload(); }); });
     navigator.serviceWorker.register('sw.js').then(reg => {
       const check = () => reg.update().catch(() => { });
       document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });

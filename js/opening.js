@@ -8,6 +8,9 @@
   if (!splash) return finish();
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   let webgl = false; try { const c = document.createElement('canvas'); webgl = !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (_) { }
+  // rechargement discret (mise à jour en arrière-plan) : pas d'animation, l'appli revient directement
+  let quiet = false; try { quiet = sessionStorage.getItem('eskalys:quiet') === '1'; sessionStorage.removeItem('eskalys:quiet'); } catch (_) { }
+  if (quiet) { splash.style.transition = 'none'; return finish(); }
   if (reduce || !webgl) return finish();
   setTimeout(finish, 6000); // garde-fou : l'appli ne reste jamais bloquée derrière l'animation
 

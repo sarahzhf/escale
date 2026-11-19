@@ -207,8 +207,14 @@ async function ppFriend(uid) { let r = null; try { r = await rpc('friend_passpor
   return h; }; }
 
 /* ---------- un voyage commence dans un nouveau pays : le passeport s'ouvre et le tampon tombe ---------- */
+// Ouverture automatique : une seule fois par nouveau pays, seulement sur l'accueil, et jamais par-dessus une autre fenêtre.
+// (avant : si le tampon n'avait pas fini de tomber, le passeport se rouvrait à chaque retour sur l'accueil)
+const ppSeenKey = () => ME ? 'escale:pps:' + ME.id : null;
 function ppCheckNew() { try { if (!ME || document.querySelector('.pp-ov')) return; const L = ppLanded(); if (!L.size) return;   // jamais ouvert : les tampons tomberont à la première ouverture
-  if (ppVisas().some(v => !L.has(v.cc))) setTimeout(() => ppOpen(), 900); } catch (_) { } }
+  let seen; try { seen = new Set(JSON.parse(localStorage.getItem(ppSeenKey()) || '[]')); } catch (_) { seen = new Set(); }
+  const fresh = ppVisas().filter(v => !L.has(v.cc) && !seen.has(v.cc)); if (!fresh.length) return;
+  fresh.forEach(v => seen.add(v.cc)); try { localStorage.setItem(ppSeenKey(), JSON.stringify([...seen])); } catch (_) { }
+  setTimeout(() => { if (current === 'home' && !document.querySelector('.pp-ov, #panel.open, .book.open') && document.visibilityState === 'visible') ppOpen(); }, 900); } catch (_) { } }
 { const rh = SCREENS.home; SCREENS.home = (...a) => { const r = rh(...a); ppCheckNew(); return r; }; }
 
 document.body.insertAdjacentHTML('beforeend', `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="ppink" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="3" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.5 1.55" result="m"/><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="8" result="big"/><feColorMatrix in="big" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1 1.5" result="bm"/><feComposite in="m" in2="bm" operator="in" result="mask"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6" result="d"/><feComposite in="d" in2="mask" operator="in"/></filter></svg>`);

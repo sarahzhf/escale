@@ -46,7 +46,7 @@ function welcome() {
       <li>${SV.lock}<span><b>Privé par défaut</b>Pour chaque album ou publication, tu choisis : toi seule, tes amis ou tout le monde.</span></li>
       <li>${SV.wallet}<span><b>Tes dépenses ne sont jamais montrées</b>Sauf si tu joins toi-même un bilan à une publication.</span></li>
       <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span><b>Tout récupérer, tout effacer</b>Télécharge toutes tes données ou supprime ton compte quand tu veux. Ni publicité, ni traceur.</span></li></ul></section>
-    <section class="lp-inst"><h2>Comme une appli, sans store</h2><p>Sur iPhone, ouvre Eskalys dans Safari, touche le bouton Partager puis « Sur l’écran d’accueil ». Sur Android, choisis « Installer l’application » dans le menu de Chrome.</p></section>
+    <section class="lp-inst"><h2>Avec toi, même sans réseau</h2><p>Tes carnets restent sur ton téléphone : tu écris, tu ajoutes tes photos et tes dépenses même en plein vol ou au fond d’une vallée. Tout se synchronise dès que le réseau revient.</p></section>
     <section class="lp-end"><h2>Prête pour ta prochaine escale ?</h2>${cta}</section></div>`, bindAuth);
 }
 function signupForm(prefill = {}) {
@@ -255,7 +255,7 @@ const FAQ = [
   ['Qui peut voir mes photos et mes dépenses ?', 'Tout est privé par défaut. Pour chaque album ou publication, tu choisis : toi seule, tes amis ou tout le monde. Tes dépenses et ton budget ne sont jamais montrés, sauf si tu joins toi-même le bilan à une publication.'],
   ['Comment écrire dans mon carnet ?', 'Ouvre le carnet, touche une page pour l’ouvrir en grand, puis touche un endroit vide pour écrire. Les boutons Style, Photo et Sticker décorent la page.'],
   ['Eskalys fonctionne-t-elle sans réseau ?', 'Oui. Tes carnets restent sur ton téléphone et tes nouvelles dépenses sont envoyées dès que le réseau revient. Tire l’écran vers le bas pour recharger.'],
-  ['Comment installer Eskalys sur mon iPhone ?', 'Dans Safari, touche le bouton Partager puis « Sur l’écran d’accueil ». Eskalys s’ouvre ensuite en plein écran comme une appli.'],
+  ['Sur quels appareils utiliser Eskalys ?', 'Eskalys se télécharge sur l’App Store pour iPhone et sur Google Play pour Android. Connecte-toi avec le même compte sur plusieurs téléphones : tes carnets suivent partout.'],
   ['Comment fonctionne l’assistant ?', 'En mode simple, il répond directement sur ton téléphone. Si tu actives l’assistant IA dans le profil, il peut comparer des destinations et estimer un budget à partir des totaux de tes voyages.'],
   ['Comment marchent les défis ?', 'Défie un ou plusieurs amis : un lieu à photographier avant la fin du délai. À plusieurs, chacun publie sa photo et le groupe vote pour la plus belle. Tu gagnes 10 points par défi relevé, 5 de plus en moins de 24 h, 15 si ta photo est élue, et des badges en chemin.'],
   ['Mes amis savent-ils quand je voyage ?', 'Seulement si tu partages l\u2019album du voyage avec eux : pendant ses dates, ils voient que tu es en voyage dans ce pays et peuvent te lancer un défi. Un album privé n\u2019est jamais signalé.'],

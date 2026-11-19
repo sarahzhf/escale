@@ -1,4 +1,4 @@
-/* Escale : météo et heure locale, compte à rebours avant le départ, coffre à documents du voyage.
+/* Eskalys : météo et heure locale, compte à rebours avant le départ, coffre à documents du voyage.
  *
  * Météo : Open-Meteo (api.open-meteo.com), service public et gratuit, sans compte ni clé.
  *   Seules les coordonnées de la ville du voyage sont envoyées (jamais l'identité ni les données
@@ -154,7 +154,7 @@
     const groups = Object.keys(DOC_CATS).map(k => [k, Dc.filter(x => (x.cat || 'autre') === k)]).filter(([, L]) => L.length);
     openPanel(`<h2>Documents du voyage</h2><p class="small coffre-priv">${W_IC.lock}Ce dossier reste privé, même si l'album du voyage est partagé. Personne d'autre que toi ne peut l'ouvrir.</p>
       <div class="sec"><h2>Billets</h2><button class="more" data-act="ticketAdd" data-trip="${t.id}">Ajouter</button></div>
-      ${P.length ? `<div class="bpasses">${P.slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.dep || '').localeCompare(String(b.dep || ''))).map(k => ticketHTML(k, t)).join('')}</div>` : `<p class="small">Avion, train ou bus : importe le PDF ou une photo, Escale le met au format billet.</p>`}
+      ${P.length ? `<div class="bpasses">${P.slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.dep || '').localeCompare(String(b.dep || ''))).map(k => ticketHTML(k, t)).join('')}</div>` : `<p class="small">Avion, train ou bus : importe le PDF ou une photo, Eskalys le met au format billet.</p>`}
       <div class="sec"><h2>Fichiers</h2><button class="more" data-act="docAdd" data-trip="${t.id}">Ajouter</button></div>
       ${groups.length ? groups.map(([k, L]) => `<p class="caps">${DOC_CATS[k]}</p><div class="docs">${L.map(x => docRow(t, x)).join('')}</div>`).join('') : `<button class="prep-cta" data-act="docAdd" data-trip="${t.id}"><i>${W_IC.file}</i><span><b>Ajoute un document</b><em>Confirmation d'hôtel, attestation d'assurance, visa… en photo ou en PDF</em></span>${SV.right}</button>`}
       ${CLOSE('Fermer')}`, null, { nofocus: true });

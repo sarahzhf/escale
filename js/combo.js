@@ -1,4 +1,4 @@
-/* Escale : liste déroulante de suggestions (pays, villes), la même sur iPhone et Android.
+/* Eskalys : liste déroulante de suggestions (pays, villes), la même sur iPhone et Android.
    Remplace le <datalist> natif, mal affiché sur iOS. L'utilisateur peut toujours taper librement. */
 'use strict';
 /**

@@ -1,4 +1,4 @@
-/* Escale : interface principale (voyages, dépenses, journal, carte, assistant). */
+/* Eskalys : interface principale (voyages, dépenses, journal, carte, assistant). */
 'use strict';
 
 /* ---------- calculs ---------- */
@@ -227,7 +227,7 @@ function expSheet(tid, eid, lock, pre) {
       p.querySelector('.amount input').setAttribute('aria-label', lg && stay !== '1' ? M.tot : 'Montant'); perNight(); };
     const nights = () => { if (!MULTI[cat] || stay === '1') return 1; const a = +p.querySelector('#e-day').value, b = +p.querySelector('#e-day2').value; return b > a ? b - a + 1 : 1; };
     const perNight = () => { const el = p.querySelector('#e-pernight'), v = +p.querySelector('#e-amt').value / rate(), n = nights();
-      const M = MULTI[cat]; el.textContent = M && stay !== '1' ? (n > 1 ? (v ? `${M.tot} : ${n} ${M.units}, soit ${fmt(v / n)} par ${M.unit}, réparti automatiquement jour par jour.` : `Indique le prix total pour les ${n} ${M.units} : Escale le répartit par ${M.unit}.`) : (M.unit === 'nuit' ? 'Choisis une dernière nuit après la première.' : 'Choisis un dernier jour après le premier.')) : ''; };
+      const M = MULTI[cat]; el.textContent = M && stay !== '1' ? (n > 1 ? (v ? `${M.tot} : ${n} ${M.units}, soit ${fmt(v / n)} par ${M.unit}, réparti automatiquement jour par jour.` : `Indique le prix total pour les ${n} ${M.units} : Eskalys le répartit par ${M.unit}.`) : (M.unit === 'nuit' ? 'Choisis une dernière nuit après la première.' : 'Choisis un dernier jour après le premier.')) : ''; };
     const conv = () => { const v = +p.querySelector('#e-amt').value, r = rate(); const out = p.querySelector('#e-conv');
       if (!v) { out.textContent = cur === 'E' ? '' : `1 € = ${fmtRate(r)} ${curName()}, ${rateNote()}`; return; }
       if (same() && Math.abs(r0 - todayRate()) / r0 > .0005) { const e = n => (v / n).toFixed(2).replace('.', ',');
@@ -539,7 +539,7 @@ function renderHome() {
   const first = !S.trips.length;
   $('s-home').innerHTML = `
    <div class="hhero ${heroT && heroT.cover ? '' : 'nophoto'}">${heroT && heroT.cover ? phHTML(heroT.cover, `${heroT.id}|cover`, 'Ajouter une photo') : ''}<span class="hshade"></span>
-     <div class="htop"><span class="logo">${SV.planeO}Escale</span><div class="r"><button class="ghost-ic" data-act="go" data-to="carte" aria-label="Carte">${SV.globe}</button><button class="ghost-ic" data-act="go" data-to="ia" aria-label="Assistant">${SV.spark}</button><button class="ghost-ic bellbtn" data-act="notifs" aria-label="Notifications">${SV.bell}<span class="bdg" id="notifBadge" hidden></span></button><button class="avatar" data-act="go" data-to="profil" aria-label="Mon profil">${PROFILE && PROFILE.avatar_path ? IMG(PROFILE.avatar_path) : esc((S.user[0] || 'E').toUpperCase())}</button></div></div>
+     <div class="htop"><span class="logo">${SV.planeO}Eskalys</span><div class="r"><button class="ghost-ic" data-act="go" data-to="carte" aria-label="Carte">${SV.globe}</button><button class="ghost-ic" data-act="go" data-to="ia" aria-label="Assistant">${SV.spark}</button><button class="ghost-ic bellbtn" data-act="notifs" aria-label="Notifications">${SV.bell}<span class="bdg" id="notifBadge" hidden></span></button><button class="avatar" data-act="go" data-to="profil" aria-label="Mon profil">${PROFILE && PROFILE.avatar_path ? IMG(PROFILE.avatar_path) : esc((S.user[0] || 'E').toUpperCase())}</button></div></div>
      <div class="htext"><h1>${first ? `Bienvenue,<br>${esc(S.user)}.` : 'Tes voyages,<br>ton histoire.'}</h1><p>${first ? 'Crée ton premier carnet : photos, souvenirs et dépenses au même endroit.' : 'Carnets, photos et dépenses de chacune de tes escales.'}</p>
        ${first ? `<button class="hcta" data-act="newTrip">${SV.plus}Créer mon premier voyage</button>` : `<label class="hsearch" for="q">${SV.search}<input id="q" placeholder="Chercher un voyage, un lieu" autocomplete="off" maxlength="60"><button type="button" data-act="go" data-to="carnets" aria-label="Voir mes voyages">${SV.right}</button></label>`}</div></div>
    <div class="hsheet">

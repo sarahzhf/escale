@@ -1,4 +1,4 @@
-/* Escale : tous les autres pays du monde (en plus des 64 de ref.js).
+/* Eskalys : tous les autres pays du monde (en plus des 64 de ref.js).
    Format : code|nom|code numérique ISO (carte)|longitude|latitude de la capitale|devise ISO|symbole|taux indicatif pour 1 €.
    Les taux sont remplacés par les taux du jour dès que l'appli est en ligne (comptes.js). */
 'use strict';

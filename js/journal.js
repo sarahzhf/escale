@@ -1,4 +1,4 @@
-/* Escale : le journal en carnets de cuir.
+/* Eskalys : le journal en carnets de cuir.
  *
  * Écran Journal : une bibliothèque en bois où chaque voyage est un carnet rangé debout.
  * On fait défiler (molette, glisser ou flèches) pour choisir un carnet, on clique pour l'ouvrir.

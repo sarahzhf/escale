@@ -1,4 +1,4 @@
-/* Escale : rejoindre un voyage par un lien, sans compte.
+/* Eskalys : rejoindre un voyage par un lien, sans compte.
  * Le propriétaire crée un lien depuis « Qui part avec toi ? ». L'invité qui l'ouvre (…?j=JETON)
  * choisit son prénom, voit le budget et les dépenses du voyage et ajoute les siennes, en euros.
  * Pour ajouter des photos, il doit créer un compte. Tout passe par les fonctions guest_* de la base.
@@ -17,8 +17,8 @@ async function inviteSheet(tid) {
     <button class="btn full" id="inv-share">Partager le lien<i>${SV.arrow}</i></button>
     <button class="link small" id="inv-off" style="margin-top:12px">Désactiver ce lien</button>${CLOSE()}`, p => {
     p.querySelector('#inv-share').onclick = async () => {
-      const txt = `Rejoins notre voyage ${place(t)} sur Escale pour noter tes dépenses : ${url}`;
-      try { if (navigator.share) { await navigator.share({ title: 'Escale', text: txt, url }); return; } } catch (_) { return; }
+      const txt = `Rejoins notre voyage ${place(t)} sur Eskalys pour noter tes dépenses : ${url}`;
+      try { if (navigator.share) { await navigator.share({ title: 'Eskalys', text: txt, url }); return; } } catch (_) { return; }
       try { await navigator.clipboard.writeText(url); toast('Lien copié'); } catch (_) { const r = document.createRange(); r.selectNodeContents(p.querySelector('#inv-url')); getSelection().removeAllRanges(); getSelection().addRange(r); toast('Lien sélectionné, copie-le'); }
     };
     p.querySelector('#inv-off').onclick = async () => { try { await rpc('invite_revoke', { p_trip: tid }); closePanel(); toast('Lien désactivé : il ne fonctionne plus'); } catch (_) { toast('Réessaie dans un instant'); } };
@@ -35,7 +35,7 @@ let GT = null;
 async function guestLoad() { const { data, error } = await sb.rpc('guest_trip', { p_token: INV_TOKEN }); if (error) throw error; GT = data; return data; }
 
 function guestShell(inner) {
-  showGate(`<div class="gst">${inner}<p class="gst-foot">Escale, le carnet de voyage qui garde tes souvenirs et ton budget.<br><button class="link small" id="gst-acc">Créer mon compte Escale</button></p></div>`, g => {
+  showGate(`<div class="gst">${inner}<p class="gst-foot">Eskalys, le carnet de voyage qui garde tes souvenirs et ton budget.<br><button class="link small" id="gst-acc">Créer mon compte Eskalys</button></p></div>`, g => {
     g.querySelector('#gst-acc').onclick = guestToAccount; });
 }
 function guestToAccount() { history.replaceState(null, '', location.pathname); welcome(); }
@@ -51,7 +51,7 @@ function guestTitle() { const c = COUNTRIES[GT.country] || {}; return `${flag(GT
 
 function guestWho() {
   const M = GT.members || [];
-  guestShell(`<p class="gst-k">On t'invite sur Escale</p><h2>${guestTitle()}</h2><p class="gtext">Qui es-tu ? Choisis ton prénom ou ajoute-le pour noter tes dépenses du voyage.</p>
+  guestShell(`<p class="gst-k">On t'invite sur Eskalys</p><h2>${guestTitle()}</h2><p class="gtext">Qui es-tu ? Choisis ton prénom ou ajoute-le pour noter tes dépenses du voyage.</p>
     <div class="gst-who">${M.map(m => `<button class="pill" data-m="${esc(m.id)}">${esc(m.n)}</button>`).join('')}</div>
     <form id="gst-new" class="madd"><input id="gst-n" maxlength="30" placeholder="Ton prénom" autocomplete="given-name"><button class="pill dark" type="submit">${SV.plus}C'est moi</button></form>`);
   document.querySelectorAll('.gst-who [data-m]').forEach(b => b.onclick = () => { gSet({ id: b.dataset.m }); guestHome(); });
@@ -69,7 +69,7 @@ function guestHome() {
     <div class="gst-act"><button class="btn" id="gst-add">Ajouter une dépense</button><button class="btn ghost" id="gst-ph">Ajouter une photo</button></div>
     <div class="group">${E.slice().reverse().map(d => `<div class="exp"><span class="ic">${CATS[d.category] ? ico(d.category) : ''}</span><span class="m"><b>${esc(d.label)}</b><span>Jour ${d.day} · ${esc(gName(d.by || 'me'))} a payé</span></span><span class="p num">${fmt(Number(d.eur))}${d.by === me ? `<button class="link small" data-del="${d.id}">Supprimer</button>` : ''}</span></div>`).join('') || '<p class="small" style="padding:14px">Aucune dépense pour l\'instant.</p>'}</div>`);
   $('gst-sw').onclick = () => { gSet({}); guestWho(); };
-  $('gst-ph').onclick = () => openPanel(`<h2>Crée ton compte pour ajouter des photos</h2><p class="small">Les photos restent dans le carnet du voyage et dans ton propre Escale. C'est gratuit et ça prend une minute.</p><button class="btn full" id="gst-go">Créer mon compte<i>${SV.arrow}</i></button>${CLOSE()}`, p => p.querySelector('#gst-go').onclick = () => { closePanel(); guestToAccount(); });
+  $('gst-ph').onclick = () => openPanel(`<h2>Crée ton compte pour ajouter des photos</h2><p class="small">Les photos restent dans le carnet du voyage et dans ton propre Eskalys. C'est gratuit et ça prend une minute.</p><button class="btn full" id="gst-go">Créer mon compte<i>${SV.arrow}</i></button>${CLOSE()}`, p => p.querySelector('#gst-go').onclick = () => { closePanel(); guestToAccount(); });
   $('gst-add').onclick = () => guestExp(days);
   document.querySelectorAll('[data-del]').forEach(x => x.onclick = async () => { try { await sb.rpc('guest_del_expense', { p_token: INV_TOKEN, p_member: me, p_id: x.dataset.del }); await guestLoad(); guestHome(); toast('Dépense supprimée'); } catch (_) { toast('Réessaie'); } });
 }

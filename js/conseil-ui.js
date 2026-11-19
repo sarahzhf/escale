@@ -1,4 +1,4 @@
-/* Escale : écran Conseils. Trois onglets :
+/* Eskalys : écran Conseils. Trois onglets :
    - Pour toi : des pays proches de ce que tu aimes déjà (styles, régions, saison) ;
    - Dépaysement : des pays qui sortent de tes habitudes (nouveau continent, nouveaux styles) ;
    - Tous les pays : le monde entier, avec recherche et filtre par style.
@@ -69,7 +69,7 @@ function renderConseil() {
   const sc = $('s-conseil'), P = travelProfile(), y = sc.scrollTop;
   const chips = [[null, 'Tout'], ...['plage', 'culture', 'nature', 'gastronomie', 'ville', 'aventure', 'iles', 'desert', 'roadtrip', 'fete'].map(k => [k, `${STYLE_ICO[k]} ${STYLE_N[k][0].toUpperCase() + STYLE_N[k].slice(1)}`])];
   const home = homeOf(), M = cfMonth ? ` en ${MOIS[cfMonth - 1]}` : '';
-  const intro = cfTab === 'budget' ? `Donne ton budget et ta durée : Escale te propose les pays et les villes où il te mène${M}, vol compris.`
+  const intro = cfTab === 'budget' ? `Donne ton budget et ta durée : Eskalys te propose les pays et les villes où il te mène${M}, vol compris.`
     : cfTab === 'pres' ? `Des villes ${enPays(home.cc).replace(/^(en|au|aux|à) /, m => ({ 'en ': 'en ', 'au ': 'du ', 'aux ': 'des ', 'à ': 'de ' })[m] || m)}, sans prendre l'avion depuis ${home.n}.`
     : cfTab === 'tous' ? `${Object.keys(DEST).length} pays. Touche un pays pour ses incontournables et la meilleure période.`
     : P.n ? (cfTab === 'toi' ? `D'après tes ${P.n} voyage${P.n > 1 ? 's' : ''}, tu aimes surtout ${andList(P.styles.slice(0, 2).map(k => STYLE_A[k]))}. Voici des pays où tu n'es pas encore allée et qui te ressemblent.` : 'Des pays qui sortent de tes habitudes : un autre continent, d\'autres paysages, d\'autres façons de voyager.')

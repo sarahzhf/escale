@@ -1,4 +1,4 @@
-/* Escale : connexion à Supabase, données de l'utilisateur, synchronisation et photos.
+/* Eskalys : connexion à Supabase, données de l'utilisateur, synchronisation et photos.
  *
  * Fonctionnement :
  *  - S contient les voyages, dépenses, pages et envies de la personne connectée.

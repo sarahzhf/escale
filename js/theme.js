@@ -1,4 +1,4 @@
-/* Escale : apparence (clair par défaut, sombre ou automatique). Chargé dans <head> pour éviter un flash au démarrage. */
+/* Eskalys : apparence (clair par défaut, sombre ou automatique). Chargé dans <head> pour éviter un flash au démarrage. */
 (() => {
   const mq = matchMedia('(prefers-color-scheme: dark)');
   const pref = () => { try { return localStorage.getItem('escale-theme') || 'light'; } catch (_) { return 'light'; } };

@@ -1,4 +1,4 @@
-/* Escale : l'itinéraire d'un voyage, sur une vraie carte en 3D.
+/* Eskalys : l'itinéraire d'un voyage, sur une vraie carte en 3D.
  *
  * Carte satellite réaliste avec le relief, la brume et le ciel (MapLibre et MapTiler),
  * un trajet blanc qui se dessine, des pins animés en 3D (three.js), une petite lumière qui

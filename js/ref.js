@@ -1,4 +1,4 @@
-/* Escale : référentiels (pays, devises, catégories, icônes) et outils communs */
+/* Eskalys : référentiels (pays, devises, catégories, icônes) et outils communs */
 'use strict';
 const $=id=>document.getElementById(id);
 const REDUCED=matchMedia("(prefers-reduced-motion: reduce)").matches;

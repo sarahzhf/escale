@@ -1,4 +1,4 @@
-/* Escale : statistiques de l'écran Budget, et comparaison de voyages entre amis (écran Carte).
+/* Eskalys : statistiques de l'écran Budget, et comparaison de voyages entre amis (écran Carte).
  *
  * Ordre de lecture, du plus général au plus détaillé :
  *   filtres (ce voyage ou tous, période)  >  chiffres clés  >  à retenir (conseils)

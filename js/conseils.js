@@ -1,4 +1,4 @@
-/* Escale : incontournables par pays et profils de destinations (onglet Conseil).
+/* Eskalys : incontournables par pays et profils de destinations (onglet Conseil).
    Contenu rédigé dans l'appli : gratuit, hors connexion. Les prix sont des ordres de grandeur pour un voyage
    en milieu de gamme depuis la France, par personne et par jour, logement compris, sans le vol.
    Chaque incontournable : [nom, une phrase, à réserver à l'avance (1) ou non (0)]. */

@@ -1,4 +1,4 @@
-/* Escale : villes et régions connues, pour placer les voyages au bon endroit sur le globe et le plan.
+/* Eskalys : villes et régions connues, pour placer les voyages au bon endroit sur le globe et le plan.
    Coordonnées [longitude, latitude]. Les noms sont comparés sans accents ni majuscules. */
 'use strict';
 const PLACES = {

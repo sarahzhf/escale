@@ -1,4 +1,4 @@
-/* Escale : la checklist « À préparer » en tableau.
+/* Eskalys : la checklist « À préparer » en tableau.
    À gauche (ou en haut sur téléphone) un tableau blanc écrit au feutre : une main tient le feutre et écrit
    la ligne. À droite un panneau en liège avec des post-it punaisés, pour ceux qui préfèrent taper vite.
    Toucher un point le coche (trait de feutre ou tampon « Fait » sur le post-it).

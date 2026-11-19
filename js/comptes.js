@@ -1,4 +1,4 @@
-/* Escale : taux de change à jour, statistiques par catégorie et comptes entre amis.
+/* Eskalys : taux de change à jour, statistiques par catégorie et comptes entre amis.
  *
  * Taux de change : récupérés une fois toutes les 12 h (source open.er-api.com, données publiques,
  * aucune donnée personnelle envoyée) et gardés sur l'appareil pour fonctionner hors connexion.
@@ -69,7 +69,7 @@ function transfers(bal) {
 }
 function comptesHTML(t) {
   const M = t.membres || [];
-  if (!M.length) return `<div class="emptycard ec"><b>Voyage entre amis ?</b><p>Ajoute les personnes qui partent avec toi. Tu noteras qui a payé quoi et pour qui, et Escale calcule qui doit combien à qui.</p><button class="btn2 g wide" data-act="members" data-trip="${t.id}">${SV.userPlus}Ajouter des amis</button></div>`;
+  if (!M.length) return `<div class="emptycard ec"><b>Voyage entre amis ?</b><p>Ajoute les personnes qui partent avec toi. Tu noteras qui a payé quoi et pour qui, et Eskalys calcule qui doit combien à qui.</p><button class="btn2 g wide" data-act="members" data-trip="${t.id}">${SV.userPlus}Ajouter des amis</button></div>`;
   const { bal, group } = balances(t), tr = transfers(bal), shared = t.depenses.filter(d => d.split || (d.by && d.by !== 'me')).slice().sort((a, b) => b.j - a.j);
   return `<div class="sec"><h2>Participants</h2><button class="more" data-act="members" data-trip="${t.id}">Gérer</button></div>
    <div class="tc-who">${['me', ...M.map(m => m.id)].map(id => { const v = bal[id] || 0; return `<div class="tc-wb"><span class="av">${esc(memberName(t, id).slice(0, 1).toUpperCase())}</span><b>${esc(memberName(t, id))}</b><em class="num ${v > 0.005 ? 'pos' : v < -0.005 ? 'neg' : ''}">${v > 0.005 ? '+ ' : v < -0.005 ? '− ' : ''}${fmt(Math.abs(v))}</em></div>`; }).join('')}</div>
@@ -87,11 +87,11 @@ function membersSheet(tid) {
       return `<div class="mrow"><span class="av">${esc(m.n.slice(0, 1).toUpperCase())}</span><input value="${esc(m.n)}" maxlength="30" data-id="${m.id}" aria-label="Prénom"><button type="button" class="x" data-rm="${m.id}" ${used ? 'disabled title="Utilisé dans des dépenses"' : ''} aria-label="Retirer">${SV.x}</button></div>`; }).join('') || '<p class="small">Personne pour l\'instant.</p>';
     p.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { t.membres = t.membres.filter(m => m.id !== b.dataset.rm); draw(p); });
     p.querySelectorAll('#m-list input').forEach(i => i.oninput = () => { const m = t.membres.find(x => x.id === i.dataset.id); if (m) m.n = i.value.trim().slice(0, 30) || m.n; }); };
-  openPanel(`<h2>Qui part avec toi ?</h2><p class="small">${esc(place(t))}. Ajoute juste un prénom : tes amis n'ont pas besoin d'avoir Escale. Leurs noms restent dans ton carnet privé.</p>
+  openPanel(`<h2>Qui part avec toi ?</h2><p class="small">${esc(place(t))}. Ajoute juste un prénom : tes amis n'ont pas besoin d'avoir Eskalys. Leurs noms restent dans ton carnet privé.</p>
    <div id="m-list" class="mlist"></div>
    <form class="madd" id="m-form"><input id="m-new" maxlength="30" placeholder="Prénom, ex. Léa" autocomplete="off"><button class="pill dark" type="submit">${SV.plus}Ajouter</button></form>
    <button type="button" class="link small" data-act="inviteLink" data-trip="${t.id}" style="margin:10px 0">${SV.userPlus}Inviter par un lien, sans compte</button>
-   <button type="button" class="link small" data-act="crewSet" data-trip="${t.id}" style="margin:0 0 10px">${SV.users}Missions de groupe avec tes amis Escale</button>
+   <button type="button" class="link small" data-act="crewSet" data-trip="${t.id}" style="margin:0 0 10px">${SV.users}Missions de groupe avec tes amis Eskalys</button>
    <button class="btn full" id="m-ok">Enregistrer<i>${SV.arrow}</i></button>${CLOSE()}`, p => {
     draw(p);
     p.querySelector('#m-form').onsubmit = e => { e.preventDefault(); const i = p.querySelector('#m-new'), n = i.value.trim().slice(0, 30); if (!n) return;

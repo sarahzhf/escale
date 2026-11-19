@@ -1,4 +1,4 @@
-// Escale : fonction « prix » (Supabase Edge Function).
+// Eskalys : fonction « prix » (Supabase Edge Function).
 // Cherche sur internet, avec l'IA, les vrais lieux à visiter d'une ville avec leur tarif d'entrée,
 // et le prix moyen d'un repas dans le pays (street food, restaurant moyen, bon restaurant).
 // Le résultat est gardé 30 jours par ville dans price_cache : tout le monde voit les mêmes prix,

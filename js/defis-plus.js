@@ -1,4 +1,4 @@
-/* Escale : défis, suite.
+/* Eskalys : défis, suite.
    - Le bocal en grand : on le touche, il s'agrandit en 3D et on le fait tourner du doigt (avec élan).
    - Badges de lieux : chaque défi relevé donne le tampon de son pays, et des badges selon l'endroit
      (café, coucher de soleil, plage, musée, marché, sommet...). Calculés à partir de tes défis relevés. */

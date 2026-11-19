@@ -1,8 +1,8 @@
-/* Escale : simulateur de voyage, avant même de décider de partir.
+/* Eskalys : simulateur de voyage, avant même de décider de partir.
  *
  * On choisit un pays, une ou plusieurs villes, des dates, le nombre de voyageurs et un style.
  * On coche les vraies activités qui font envie (avec leur tarif), on choisit sa façon de manger,
- * et Escale calcule une estimation complète : vol, logement, repas, transports sur place,
+ * et Eskalys calcule une estimation complète : vol, logement, repas, transports sur place,
  * trajets entre les villes, activités et une marge pour les imprévus.
  * Haute et basse saison sont prises en compte selon les dates.
  *

@@ -1,5 +1,5 @@
-/* Escale : missions de groupe.
-   L'organisatrice ajoute ses amis Escale au voyage (l'équipage). Chaque jour du voyage, en plus de la mission perso,
+/* Eskalys : missions de groupe.
+   L'organisatrice ajoute ses amis Eskalys au voyage (l'équipage). Chaque jour du voyage, en plus de la mission perso,
    tout l'équipage reçoit la même mission : 3 heures pour la relever, puis vote pour la plus belle photo (24 h).
    Points : 10 à l'heure, 5 en retard, 15 de plus pour la photo élue. */
 'use strict';
@@ -55,7 +55,7 @@ ACT.missionsSet = (d = {}) => {
     return `${m ? missionCardOnly(m) : '<p class="small gm-empty">Pas de mission perso en attente. Pendant un voyage, elle arrive à une heure surprise entre 10 h et 20 h.</p>'}
       <div class="seg wide" id="ms-on"><button type="button" data-v="1" class="${on ? 'on' : ''}">Activées</button><button type="button" data-v="0" class="${on ? '' : 'on'}">Désactivées</button></div>
       ${done.length ? `<div class="sec"><h2>Relevées</h2><span class="small">${done.length}</span></div><div class="ms-list">${done.slice(0, 12).map(x => `<p><b>${fd(x.day)}</b> ${esc(x.txt)} <em>${x.late ? '+5' : '+10'}</em></p>`).join('')}</div>` : ''}`; };
-  const groupe = () => GMS.length ? GMS.map(g => gmCard(g)).join('') : `<p class="small gm-empty">Ajoute tes amis Escale à un voyage (dans « Qui part avec toi ? ») : chaque jour, vous recevrez la même mission, puis vous voterez pour la plus belle photo.</p>`;
+  const groupe = () => GMS.length ? GMS.map(g => gmCard(g)).join('') : `<p class="small gm-empty">Ajoute tes amis Eskalys à un voyage (dans « Qui part avec toi ? ») : chaque jour, vous recevrez la même mission, puis vous voterez pour la plus belle photo.</p>`;
   openPanel(`<h2>Missions</h2><div class="seg wide" id="ms-tabs" role="tablist"><button type="button" role="tab" data-t="perso" class="${tab === 'perso' ? 'on' : ''}">Perso</button><button type="button" role="tab" data-t="groupe" class="${tab === 'groupe' ? 'on' : ''}">Groupe${GMS.filter(g => !g.closed).length ? ` <span class="ms-dot">${GMS.filter(g => !g.closed).length}</span>` : ''}</button></div>
     <div id="ms-body">${tab === 'perso' ? perso() : groupe()}</div>${CLOSE()}`, p => {
     p.querySelectorAll('#ms-tabs button').forEach(b => b.onclick = () => ACT.missionsSet({ tab: b.dataset.t }));
@@ -66,12 +66,12 @@ const missionCardOnly = m => `<section class="mission"><div class="ms-h"><span c
 
 setInterval(() => document.querySelectorAll('[data-gdue]').forEach(el => { el.textContent = gmLeft({ due_at: el.dataset.gdue }); }), 30000);
 
-/* l'équipage : choisir ses amis Escale qui partent aussi */
+/* l'équipage : choisir ses amis Eskalys qui partent aussi */
 ACT.crewSet = async d => { const t = trip(d.trip); let fr = [], cur = [];
   try { [fr, cur] = await Promise.all([rpc('my_friends'), rpc('crew_of', { p_trip: t.id })]); } catch (_) { toast('Réessaie dans un instant'); return; }
   fr = fr.filter(f => f.relation === 'friend'); const sel = new Set((cur || []).map(x => typeof x === 'string' ? x : x.crew_of || x.user_id));
-  openPanel(`<h2>Missions de groupe</h2><p class="small">Choisis tes amis Escale qui partent avec toi à ${esc(place(t))}. Chaque jour du voyage, vous recevrez la même mission, puis vous voterez pour la plus belle photo. Ils ne voient pas ton journal ni tes dépenses.</p>
-    <div class="crew">${fr.map(f => `<button type="button" class="crew-r ${sel.has(f.id) ? 'on' : ''}" data-u="${f.id}" aria-pressed="${sel.has(f.id)}">${avatar(f)}<b>${esc(f.display_name)}</b><i>${SV.check}</i></button>`).join('') || '<p class="small">Tu n\'as pas encore d\'amis sur Escale. Ajoute-les depuis ton profil.</p>'}</div>
+  openPanel(`<h2>Missions de groupe</h2><p class="small">Choisis tes amis Eskalys qui partent avec toi à ${esc(place(t))}. Chaque jour du voyage, vous recevrez la même mission, puis vous voterez pour la plus belle photo. Ils ne voient pas ton journal ni tes dépenses.</p>
+    <div class="crew">${fr.map(f => `<button type="button" class="crew-r ${sel.has(f.id) ? 'on' : ''}" data-u="${f.id}" aria-pressed="${sel.has(f.id)}">${avatar(f)}<b>${esc(f.display_name)}</b><i>${SV.check}</i></button>`).join('') || '<p class="small">Tu n\'as pas encore d\'amis sur Eskalys. Ajoute-les depuis ton profil.</p>'}</div>
     <button class="btn full" id="crew-ok">Enregistrer<i>${SV.arrow}</i></button>${CLOSE()}`, p => {
     p.querySelectorAll('.crew-r').forEach(b => b.onclick = () => { const u = b.dataset.u, on = !sel.has(u); on ? sel.add(u) : sel.delete(u); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
     p.querySelector('#crew-ok').onclick = async () => { try { await rpc('crew_set', { p_trip: t.id, p_users: [...sel] }); closePanel(); toast(sel.size ? `${sel.size} ami${sel.size > 1 ? 's' : ''} dans les missions de groupe` : 'Missions de groupe désactivées pour ce voyage'); } catch (e) { toast(errMsg(e)); } };

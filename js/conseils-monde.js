@@ -1,4 +1,4 @@
-/* Escale : fiches conseils pour le reste du monde (en plus des 24 pays détaillés de conseils.js).
+/* Eskalys : fiches conseils pour le reste du monde (en plus des 24 pays détaillés de conseils.js).
    Format : code|styles|meilleurs mois|incontournables (« ! » = à réserver à l'avance).
    Le temps de vol est estimé depuis le lieu de vie (distance), pas besoin de l'écrire ici. */
 'use strict';

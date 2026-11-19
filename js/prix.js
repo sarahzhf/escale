@@ -1,4 +1,4 @@
-/* Escale : prix indicatifs pour simuler un voyage avant de le prévoir.
+/* Eskalys : prix indicatifs pour simuler un voyage avant de le prévoir.
  *
  * Deux sources, dans cet ordre :
  *  1. La recherche IA (fonction « prix » du serveur), si l'assistant IA est activé dans les réglages :

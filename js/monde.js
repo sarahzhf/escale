@@ -1,4 +1,4 @@
-/* Escale : écran « Mes voyages en chiffres ». Pays visités, jours, kilomètres, voyage le plus loin
+/* Eskalys : écran « Mes voyages en chiffres ». Pays visités, jours, kilomètres, voyage le plus loin
    de chez soi, continents, et les drapeaux collectés : des balles qu'on lance du doigt et qui roulent
    quand on penche le téléphone. Tout est calculé sur le téléphone. */
 'use strict';

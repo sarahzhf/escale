@@ -1,6 +1,6 @@
-/* Escale : fonctionnement hors connexion. Seuls les fichiers de l'appli sont mis en cache ;
+/* Eskalys : fonctionnement hors connexion. Seuls les fichiers de l'appli sont mis en cache ;
  * les données personnelles et les photos ne passent jamais par ce cache. */
-const VERSION = 'escale-v2.9.4';
+const VERSION = 'escale-v2.9.5';
 const SHELL = ['./', 'index.html', 'css/app.css', 'css/fonts.css', 'css/dark.css', 'css/dark-extra.css', 'icons/logo.svg', 'js/theme.js', 'js/config.js', 'js/world.js', 'js/ref.js', 'js/countries-all.js', 'js/places.js', 'js/conseils.js', 'js/conseils-monde.js', 'js/combo.js', 'js/store.js', 'js/ui.js', 'js/conseil-ui.js', 'js/board.js', 'js/scan.js', 'js/missions.js', 'js/monde.js', 'js/prix.js', 'js/simu.js', 'js/comptes.js', 'js/stats.js', 'js/social.js', 'js/itineraire.js', 'js/defis-plus.js', 'js/deco.js', 'js/journal.js', 'js/shelf.js', 'js/gestes.js', 'js/plus.js', 'js/guide.js', 'js/avis.js', 'js/push.js', 'js/groupe.js', 'js/cout.js', 'js/passeport.js', 'js/invite.js', 'js/auth.js',
   'vendor/supabase.js', 'vendor/gsap.min.js', 'vendor/d3.min.js', 'vendor/topojson-client.min.js', 'vendor/jszip.min.js', 'manifest.webmanifest', 'icons/icon-192.png',
   'fonts/inter-latin-400-normal.woff2', 'fonts/inter-latin-500-normal.woff2', 'fonts/inter-latin-600-normal.woff2', 'fonts/inter-latin-700-normal.woff2', 'fonts/playfair-display-latin-500-normal.woff2'];
@@ -17,7 +17,7 @@ self.addEventListener('fetch', e => {
 /* notifications sur le téléphone : le message arrive chiffré, seul ce téléphone peut le lire */
 self.addEventListener('push', e => {
   let d = {}; try { d = e.data ? e.data.json() : {}; } catch (_) { d = { body: e.data && e.data.text() }; }
-  e.waitUntil(self.registration.showNotification(d.title || 'Escale', { body: d.body || '', icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: d.tag, renotify: !!d.tag, data: { url: d.url || '/' } }));
+  e.waitUntil(self.registration.showNotification(d.title || 'Eskalys', { body: d.body || '', icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: d.tag, renotify: !!d.tag, data: { url: d.url || '/' } }));
 });
 self.addEventListener('notificationclick', e => {
   e.notification.close(); const url = new URL((e.notification.data && e.notification.data.url) || '/', self.location.origin).href;

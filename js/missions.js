@@ -1,4 +1,4 @@
-/* Escale : mission surprise du jour pendant un voyage (façon BeReal).
+/* Eskalys : mission surprise du jour pendant un voyage (façon BeReal).
    La base choisit chaque jour une heure au hasard entre 10 h et 20 h (heure du téléphone) et envoie une mission.
    On a 2 heures pour la relever : la photo va dans le journal du jour et des billes tombent dans le bocal
    (10 points à l'heure, 5 en retard). Rien n'est publié aux amis. */

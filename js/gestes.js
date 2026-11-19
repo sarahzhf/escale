@@ -1,4 +1,4 @@
-/* Escale : gestes du téléphone.
+/* Eskalys : gestes du téléphone.
  *  - glisser depuis le bord gauche vers la droite = retour (ferme aussi un carnet ou une feuille ouverte), sans aucun signe à l'écran ;
  *  - tirer vers le bas tout en haut d'un écran = recharger ses données, sans aucun signe à l'écran ;
  *  - bouton « retour en haut » sur les écrans longs. */

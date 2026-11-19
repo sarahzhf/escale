@@ -1,4 +1,4 @@
-/* Escale : réseau social (fil, publications, réactions, commentaires, amis, défis, notifications).
+/* Eskalys : réseau social (fil, publications, réactions, commentaires, amis, défis, notifications).
  * Toutes les règles de visibilité sont appliquées par la base de données : l'appli
  * n'affiche que ce que le serveur accepte de lui donner. Tout texte venant d'un autre
  * membre est échappé avant affichage. */
@@ -67,7 +67,7 @@ ACT.savePost = async d => { const p = POSTS.get(d.p), on = !p.saved;
   const { error } = on ? await sb.from('saved_posts').insert({ post_id: p.id }) : await sb.from('saved_posts').delete().eq('post_id', p.id).eq('user_id', ME.id);
   if (error) { toast('Action impossible'); return; } POSTS.set(p.id, { ...p, saved: on }); rerenderPost(p.id); toast(on ? 'Enregistré dans ton profil' : 'Retiré des enregistrements'); };
 ACT.sharePost = d => { const p = POSTS.get(d.p); if (p.author_id === ME.id && p.visibility === 'private') { toast('Cette publication est privée : rends-la publique ou visible par tes amis pour la partager'); return; }
-  copyText(`${p.author.display_name} sur Escale : ${p.place}. ${p.caption}`.slice(0, 500), 'Texte de la publication copié'); };
+  copyText(`${p.author.display_name} sur Eskalys : ${p.place}. ${p.caption}`.slice(0, 500), 'Texte de la publication copié'); };
 let CMTS = [], cmtPost = null, lpT = null;
 const CRX = ['❤️', '😂', '😍', '🙌', '🔥'];
 const HEART = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>';
@@ -263,7 +263,7 @@ async function friendsTab() {
    ${rec.length ? `<div class="sec"><h2>Demandes reçues (${rec.length})</h2></div><div class="flist">${rec.map(friendRow).join('')}</div>` : ''}
    <div class="sec"><h2>Mes amis (${fr.length})</h2></div><div class="flist">${fr.map(friendRow).join('') || '<p class="small">Cherche tes amis par leur nom ou leur @identifiant.</p>'}</div>
    ${sent.length ? `<div class="sec"><h2>Demandes envoyées</h2></div><div class="flist">${sent.map(friendRow).join('')}</div>` : ''}
-   <button class="btn2 wide" data-act="inviteFriend" style="margin-top:16px">${SV.send}Inviter un ami sur Escale</button>`;
+   <button class="btn2 wide" data-act="inviteFriend" style="margin-top:16px">${SV.send}Inviter un ami sur Eskalys</button>`;
 }
 function friendRow(x) {
   const btn = x.relation === 'friend' ? `<button class="btn2" data-act="unfriend" data-u="${x.id}">Retirer</button>`
@@ -294,7 +294,7 @@ ACT.declineReq = d => relAct(() => rpc('respond_friend', { p_requester: d.u, p_a
 ACT.cancelReq = d => relAct(() => rpc('remove_friend', { p_other: d.u }), 'Demande annulée');
 ACT.unfriend = d => openPanel(`<h2>Retirer de tes amis ?</h2><p class="small" style="line-height:1.5">Cette personne ne verra plus tes publications réservées aux amis, et tu ne verras plus les siennes. Les défis en cours entre vous seront annulés.</p><button class="danger" data-act="unfriendOk" data-u="${d.u}" style="margin-top:16px">Retirer de mes amis</button>${CLOSE()}`, null, { nofocus: true });
 ACT.unfriendOk = d => { closePanel(); relAct(() => rpc('remove_friend', { p_other: d.u }), 'Retiré de tes amis'); };
-ACT.inviteFriend = () => { const txt = `Je tiens mes carnets de voyage sur Escale. Rejoins-moi : ${CFG.siteUrl || location.origin} (mon identifiant : @${PROFILE.handle})`; if (navigator.share) navigator.share({ title: 'Escale', text: txt }).catch(() => { }); else copyText(txt, 'Invitation copiée, colle-la dans un message'); };
+ACT.inviteFriend = () => { const txt = `Je tiens mes carnets de voyage sur Eskalys. Rejoins-moi : ${CFG.siteUrl || location.origin} (mon identifiant : @${PROFILE.handle})`; if (navigator.share) navigator.share({ title: 'Eskalys', text: txt }).catch(() => { }); else copyText(txt, 'Invitation copiée, colle-la dans un message'); };
 ACT.userMenu = d => openPanel(`<h2>Options</h2><div class="menulist"><button data-act="report" data-kind="user" data-id="${d.u}">${SV.warn}Signaler ce profil</button><button data-act="blockUser" data-u="${d.u}" class="red">${SV.lock}Bloquer</button></div>${CLOSE('Fermer')}`, null, { nofocus: true });
 ACT.blockUser = d => openPanel(`<h2>Bloquer ce membre ?</h2><p class="small" style="line-height:1.5">Vous ne verrez plus vos profils, publications et commentaires respectifs, et cette personne ne pourra plus te contacter. Votre amitié et vos défis seront supprimés. Tu peux débloquer depuis tes réglages.</p><button class="danger" data-act="blockOk" data-u="${d.u}" style="margin-top:16px">Bloquer</button>${CLOSE()}`, null, { nofocus: true });
 ACT.blockOk = async d => { closePanel(); try { await rpc('block_user', { p_target: d.u }); toast('Membre bloqué'); if (current === 'ami') go('fil'); else refreshSocial(); } catch (e) { toast(errMsg(e)); } };

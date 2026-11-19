@@ -1,4 +1,4 @@
-/* Escale : objets de la bibliothèque. Chaque objet posé sur l'étagère se touche pour le changer,
+/* Eskalys : objets de la bibliothèque. Chaque objet posé sur l'étagère se touche pour le changer,
    le déplacer, changer sa couleur ou le retirer ; le répertoire permet d'en ajouter (6 au maximum).
    Dessins originaux. Les choix sont enregistrés dans les réglages du compte (colonne shelf). */
 'use strict';

@@ -1,10 +1,10 @@
-/* Escale : inscription, connexion, double authentification, conditions d'utilisation,
+/* Eskalys : inscription, connexion, double authentification, conditions d'utilisation,
  * accueil guidé, réglages (confidentialité, sécurité, données) et démarrage de l'appli. */
 'use strict';
 const TERMS = CFG.termsVersion || '2026-11';
 SV.eye = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
 const gate = () => $('gate');
-function showGate(html, mount) { const g = gate(); g.innerHTML = `<div class="gwrapx"><div class="gbrand"><img src="icons/logo.svg" alt="" width="20" height="26"><span>Escale</span></div>${html}<p class="glegal"><a href="legal/cgu.html" target="_blank" rel="noopener">Conditions</a> · <a href="legal/confidentialite.html" target="_blank" rel="noopener">Confidentialité</a> · <a href="legal/mentions-legales.html" target="_blank" rel="noopener">Mentions légales</a></p></div>`; g.hidden = false; document.body.classList.add('gated'); mount && mount(g); const f = g.querySelector('input:not([type=checkbox])'); f && setTimeout(() => f.focus(), 50); }
+function showGate(html, mount) { const g = gate(); g.innerHTML = `<div class="gwrapx"><div class="gbrand"><img src="icons/logo.svg" alt="" width="20" height="26"><span>Eskalys</span></div>${html}<p class="glegal"><a href="legal/cgu.html" target="_blank" rel="noopener">Conditions</a> · <a href="legal/confidentialite.html" target="_blank" rel="noopener">Confidentialité</a> · <a href="legal/mentions-legales.html" target="_blank" rel="noopener">Mentions légales</a></p></div>`; g.hidden = false; document.body.classList.add('gated'); mount && mount(g); const f = g.querySelector('input:not([type=checkbox])'); f && setTimeout(() => f.focus(), 50); }
 function hideGate() { gate().hidden = true; gate().innerHTML = ''; document.body.classList.remove('gated'); }
 const busy = (btn, on) => { if (!btn) return; btn.disabled = on; btn.classList.toggle('busy', on); };
 const pwRules = p => [[p.length >= 10, '10 caractères minimum'], [/[a-z]/.test(p), 'une minuscule'], [/[A-Z]/.test(p), 'une majuscule'], [/[0-9]/.test(p), 'un chiffre']];
@@ -28,16 +28,16 @@ function welcome() {
   const cta = `<div class="lp-cta"><button class="gbtn primary" data-auth="signup">Commencer gratuitement</button><button class="gbtn" data-auth="login">J'ai déjà un compte</button>${CFG.googleEnabled ? googleBtn().replace('<div class="gor"><span>ou</span></div>', '') : ''}</div>`;
   const feat = (n, k, t, d, alt) => `<section class="lp-f ${k}"><div class="lp-tx"><h2>${t}</h2><p>${d}</p></div>${shot(n, alt)}</section>`;
   showGate(`<div class="lp">
-    <section class="lp-hero"><h1>Tes voyages,<br>ton histoire.</h1><p>Le carnet de voyage qui garde tes souvenirs, tes photos et ton budget au même endroit. Privé par défaut, à partager avec tes amis si tu veux.</p>${cta}${shot('home', "L'accueil d'Escale avec tes voyages")}</section>
-    ${feat('carnet', '', 'Un carnet qui se feuillette', 'Chaque voyage devient un carnet en cuir. Écris ta journée où tu veux sur la page, colle tes photos, choisis typographies, cadres, stickers et décos, puis tourne les pages comme du papier.', 'Un carnet de voyage ouvert dans Escale')}
-    ${feat('budget', 'r', 'Ton budget, sans prise de tête', 'Note une dépense en deux secondes, en euros ou en monnaie locale. Escale convertit, répartit les nuits d’hôtel et te dit combien il te reste par jour, avec des statistiques claires.', 'Le suivi du budget de voyage')}
+    <section class="lp-hero"><h1>Tes voyages,<br>ton histoire.</h1><p>Le carnet de voyage qui garde tes souvenirs, tes photos et ton budget au même endroit. Privé par défaut, à partager avec tes amis si tu veux.</p>${cta}${shot('home', "L'accueil d'Eskalys avec tes voyages")}</section>
+    ${feat('carnet', '', 'Un carnet qui se feuillette', 'Chaque voyage devient un carnet en cuir. Écris ta journée où tu veux sur la page, colle tes photos, choisis typographies, cadres, stickers et décos, puis tourne les pages comme du papier.', 'Un carnet de voyage ouvert dans Eskalys')}
+    ${feat('budget', 'r', 'Ton budget, sans prise de tête', 'Note une dépense en deux secondes, en euros ou en monnaie locale. Eskalys convertit, répartit les nuits d’hôtel et te dit combien il te reste par jour, avec des statistiques claires.', 'Le suivi du budget de voyage')}
     ${feat('carte', '', 'Ta carte du monde', 'Tous tes voyages sur un globe en 3D ou une carte à plat : les pays visités, ceux qui te font envie, et ce que chaque voyage t’a coûté.', 'La carte du monde des voyages')}
     ${feat('defis', 'r', 'Entre amis, et un peu de défi', 'Partage tes albums, réagis aux souvenirs de tes amis et lance-leur des défis photo : à plusieurs, on vote pour la plus belle. Points, badges et classement entre amis.', 'Les défis photo entre amis')}
     <section class="lp-priv"><h2>Tes données restent à toi</h2><ul>
       <li>${SV.lock}<span><b>Privé par défaut</b>Pour chaque album ou publication, tu choisis : toi seule, tes amis ou tout le monde.</span></li>
       <li>${SV.wallet}<span><b>Tes dépenses ne sont jamais montrées</b>Sauf si tu joins toi-même un bilan à une publication.</span></li>
       <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span><b>Tout récupérer, tout effacer</b>Télécharge toutes tes données ou supprime ton compte quand tu veux. Ni publicité, ni traceur.</span></li></ul></section>
-    <section class="lp-inst"><h2>Comme une appli, sans store</h2><p>Sur iPhone, ouvre Escale dans Safari, touche le bouton Partager puis « Sur l’écran d’accueil ». Sur Android, choisis « Installer l’application » dans le menu de Chrome.</p></section>
+    <section class="lp-inst"><h2>Comme une appli, sans store</h2><p>Sur iPhone, ouvre Eskalys dans Safari, touche le bouton Partager puis « Sur l’écran d’accueil ». Sur Android, choisis « Installer l’application » dans le menu de Chrome.</p></section>
     <section class="lp-end"><h2>Prête pour ta prochaine escale ?</h2>${cta}</section></div>`, bindAuth);
 }
 function signupForm(prefill = {}) {
@@ -65,7 +65,7 @@ function signupForm(prefill = {}) {
       if (!/^[a-z0-9._]{3,24}$/.test(h)) return err.textContent = 'Identifiant : 3 à 24 caractères, lettres minuscules, chiffres, point ou tiret bas.';
       if (!emailOk(e)) return err.textContent = 'Adresse e-mail invalide.';
       if (!pwOk(pw)) return err.textContent = 'Le mot de passe ne respecte pas les règles.';
-      if (!g.querySelector('#su-age').checked) return err.textContent = 'Escale est réservée aux personnes de 15 ans ou plus.';
+      if (!g.querySelector('#su-age').checked) return err.textContent = 'Eskalys est réservée aux personnes de 15 ans ou plus.';
       if (!g.querySelector('#su-cgu').checked) return err.textContent = "Tu dois accepter les conditions d'utilisation.";
       const btn = g.querySelector('#su-ok'); busy(btn, true);
       try { sessionStorage.setItem('escale:pending-terms', JSON.stringify({ v: TERMS, age: true })); } catch (_) { }
@@ -139,7 +139,7 @@ function termsScreen() {
     <p class="gerr" id="tm-err" role="alert"></p><button class="gbtn primary" id="tm-ok">Continuer</button><p class="gswitch"><button data-auth="logout" class="lnk">Se déconnecter</button></p>`, g => {
     bindAuth(g);
     g.querySelector('#tm-ok').onclick = async () => { const err = g.querySelector('#tm-err');
-      if (!g.querySelector('#tm-age').checked) return err.textContent = 'Escale est réservée aux personnes de 15 ans ou plus.';
+      if (!g.querySelector('#tm-age').checked) return err.textContent = 'Eskalys est réservée aux personnes de 15 ans ou plus.';
       if (!g.querySelector('#tm-cgu').checked) return err.textContent = "Tu dois accepter les conditions d'utilisation pour continuer.";
       try { await rpc('accept_terms', { p_version: TERMS, p_age_ok: true, p_discoverable: g.querySelector('#tm-disc').checked }); try { sessionStorage.removeItem('escale:pending-terms'); } catch (_) { }
         await loadProfile(); await afterLogin(true); } catch (e) { err.textContent = errMsg(e); } };
@@ -147,7 +147,7 @@ function termsScreen() {
 }
 const SLIDES = [
   ['Tes carnets de voyage', 'Un carnet par voyage : pages de souvenirs, photos et lieux, jour après jour.', SV.book],
-  ['Ton budget, en direct', 'Note une dépense en deux secondes, en euros ou en monnaie locale. Escale te dit combien il te reste par jour.', SV.wallet],
+  ['Ton budget, en direct', 'Note une dépense en deux secondes, en euros ou en monnaie locale. Eskalys te dit combien il te reste par jour.', SV.wallet],
   ['Partage, à ta façon', 'Publie tes souvenirs pour tes amis ou pour tout le monde, lance-leur des défis photo. Rien n’est public sans ton choix.', SV.users],
 ];
 function onboarding(i = 0) {
@@ -226,16 +226,16 @@ ACT.profile = () => { let ko = 0; try { ko = Math.round((localStorage.getItem(ca
    <button class="danger" data-act="logout">Se déconnecter</button>${CLOSE('Fermer')}`, null, { nofocus: true }); };
 ACT.logout = () => logout();
 ACT.setTheme = () => { const cur = themePref();
-  openPanel(`<h2>Apparence</h2><p class="small">Escale est en clair par défaut. « Automatique » suit le réglage de ton téléphone. Ton carnet garde toujours son papier.</p>
+  openPanel(`<h2>Apparence</h2><p class="small">Eskalys est en clair par défaut. « Automatique » suit le réglage de ton téléphone. Ton carnet garde toujours son papier.</p>
     <div class="theme-opts">${[['light', 'l', 'Clair'], ['dark', 'd', 'Sombre'], ['auto', 'a', 'Automatique']].map(([k, c, n]) => `<button class="${c} ${cur === k ? 'on' : ''}" data-act="pickTheme" data-v="${k}"><span class="sw2"></span>${n}</button>`).join('')}</div>${CLOSE('Fermer')}`, null, { nofocus: true }); };
 ACT.pickTheme = d => { setTheme(d.v); document.querySelectorAll('.theme-opts button').forEach(b => b.classList.toggle('on', b.dataset.v === d.v)); };
 const FAQ = [
   ['Comment créer un voyage ?', 'Touche le bouton + vert, puis « Un nouveau voyage ». Choisis le pays, les dates et ton budget : un carnet est créé avec son journal, ses photos et ses dépenses.'],
-  ['Comment noter une dépense dans une autre monnaie ?', 'Dans « Ajouter une dépense », choisis la monnaie du pays : Escale convertit en euros avec le taux du jour. Tu peux aussi répartir un hôtel sur plusieurs nuits ou sur tout le séjour.'],
+  ['Comment noter une dépense dans une autre monnaie ?', 'Dans « Ajouter une dépense », choisis la monnaie du pays : Eskalys convertit en euros avec le taux du jour. Tu peux aussi répartir un hôtel sur plusieurs nuits ou sur tout le séjour.'],
   ['Qui peut voir mes photos et mes dépenses ?', 'Tout est privé par défaut. Pour chaque album ou publication, tu choisis : toi seule, tes amis ou tout le monde. Tes dépenses et ton budget ne sont jamais montrés, sauf si tu joins toi-même le bilan à une publication.'],
   ['Comment écrire dans mon carnet ?', 'Ouvre le carnet, touche une page pour l’ouvrir en grand, puis touche un endroit vide pour écrire. Les boutons Style, Photo et Sticker décorent la page.'],
-  ['Escale fonctionne-t-elle sans réseau ?', 'Oui. Tes carnets restent sur ton téléphone et tes nouvelles dépenses sont envoyées dès que le réseau revient. Tire l’écran vers le bas pour recharger.'],
-  ['Comment installer Escale sur mon iPhone ?', 'Dans Safari, touche le bouton Partager puis « Sur l’écran d’accueil ». Escale s’ouvre ensuite en plein écran comme une appli.'],
+  ['Eskalys fonctionne-t-elle sans réseau ?', 'Oui. Tes carnets restent sur ton téléphone et tes nouvelles dépenses sont envoyées dès que le réseau revient. Tire l’écran vers le bas pour recharger.'],
+  ['Comment installer Eskalys sur mon iPhone ?', 'Dans Safari, touche le bouton Partager puis « Sur l’écran d’accueil ». Eskalys s’ouvre ensuite en plein écran comme une appli.'],
   ['Comment fonctionne l’assistant ?', 'En mode simple, il répond directement sur ton téléphone. Si tu actives l’assistant IA dans le profil, il peut comparer des destinations et estimer un budget à partir des totaux de tes voyages.'],
   ['Comment marchent les défis ?', 'Défie un ou plusieurs amis : un lieu à photographier avant la fin du délai. À plusieurs, chacun publie sa photo et le groupe vote pour la plus belle. Tu gagnes 10 points par défi relevé, 5 de plus en moins de 24 h, 15 si ta photo est élue, et des badges en chemin.'],
   ['Mes amis savent-ils quand je voyage ?', 'Seulement si tu partages l\u2019album du voyage avec eux : pendant ses dates, ils voient que tu es en voyage dans ce pays et peuvent te lancer un défi. Un album privé n\u2019est jamais signalé.'],
@@ -274,7 +274,7 @@ ACT.setMfa = async () => { const { data } = await sb.auth.mfa.listFactors(); con
   if (f) return openPanel(`<h2>Double authentification</h2><p class="small" style="line-height:1.5">Elle est activée : un code de ton application d'authentification t'est demandé à chaque connexion.</p><button class="danger" id="mfa-off" style="margin-top:16px">Désactiver</button>${CLOSE('Fermer')}`, p => {
     p.querySelector('#mfa-off').onclick = () => confirmIn(p, 'Désactiver la double authentification ?', async () => { const { error } = await sb.auth.mfa.unenroll({ factorId: f.id }); if (error) { toast('Pour désactiver, reconnecte-toi avec ton code puis réessaie'); return; } closePanel(); toast('Double authentification désactivée'); }, 'Désactiver'); }, { nofocus: true });
   for (const x of (data && data.all || []).filter(x => x.status !== 'verified')) await sb.auth.mfa.unenroll({ factorId: x.id });
-  const { data: en, error } = await sb.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Escale ' + new Date().toISOString().slice(0, 10) });
+  const { data: en, error } = await sb.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Eskalys ' + new Date().toISOString().slice(0, 10) });
   if (error) { toast('Activation impossible pour le moment'); return; }
   openPanel(`<h2>Activer la double authentification</h2><p class="small" style="line-height:1.5">1. Scanne ce code avec une application comme Google Authenticator, 1Password ou Authy.<br>2. Saisis le code à 6 chiffres qu'elle affiche.</p>
    <div class="qr"><img alt="Code QR de configuration" src="${esc(en.totp.qr_code)}"></div><p class="small center">Ou saisis cette clé : <code class="secret">${esc(en.totp.secret)}</code></p>
@@ -285,13 +285,13 @@ ACT.setMfa = async () => { const { data } = await sb.auth.mfa.listFactors(); con
 ACT.exportData = () => openPanel(`<h2>Télécharger mes données</h2><p class="small" style="line-height:1.55">Tu reçois un fichier ZIP avec toutes tes données au format JSON (compte, profil, consentements, voyages, dépenses, journal, envies, publications, commentaires, réactions, amis, défis) et toutes tes photos.</p><p class="small" id="ex-st" role="status"></p><button class="btn full" id="ex-ok">Préparer le fichier<i>${SV.down}</i></button>${CLOSE()}`, p => {
   p.querySelector('#ex-ok').onclick = async () => { const st = p.querySelector('#ex-st'), btn = p.querySelector('#ex-ok'); busy(btn, true);
     try { st.textContent = 'Lecture de tes données…'; const data = await rpc('export_my_data'); const zip = new JSZip();
-      zip.file('escale-donnees.json', JSON.stringify(data, null, 2));
-      zip.file('LISEZMOI.txt', `Export Escale du ${new Date().toLocaleString('fr-FR')}\n\nescale-donnees.json : toutes tes données, au format JSON.\nphotos/ : tes photos originales telles qu'elles sont stockées.\n\nPour toute question : ${CFG.contactEmail || ''}\n`);
+      zip.file('eskalys-donnees.json', JSON.stringify(data, null, 2));
+      zip.file('LISEZMOI.txt', `Export Eskalys du ${new Date().toLocaleString('fr-FR')}\n\neskalys-donnees.json : toutes tes données, au format JSON.\nphotos/ : tes photos originales telles qu'elles sont stockées.\n\nPour toute question : ${CFG.contactEmail || ''}\n`);
       const files = data.media_files || []; let n = 0;
       for (let i = 0; i < files.length; i += 50) { const part = files.slice(i, i + 50); const { data: urls } = await sb.storage.from('media').createSignedUrls(part, 600);
         for (const u of (urls || [])) { if (!u.signedUrl) continue; const r = await fetch(u.signedUrl); if (r.ok) { zip.file('photos/' + u.path.split('/').slice(1).join('/'), await r.blob()); } n++; st.textContent = `Photos : ${n} sur ${files.length}`; } }
       st.textContent = 'Création du fichier…'; const blob = await zip.generateAsync({ type: 'blob' });
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `escale-mes-donnees-${new Date().toISOString().slice(0, 10)}.zip`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `eskalys-mes-donnees-${new Date().toISOString().slice(0, 10)}.zip`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
       st.textContent = 'Fichier téléchargé.'; toast('Tes données sont téléchargées'); }
     catch (e) { st.textContent = 'Export impossible : ' + errMsg(e); }
     busy(btn, false); };
@@ -306,7 +306,7 @@ ACT.deleteAccount = () => { const hasPw = (ME.app_metadata && (ME.app_metadata.p
       if (hasPw) { const { error } = await sb.auth.signInWithPassword({ email: ME.email, password: p.querySelector('#da-p').value }); if (error) { toast('Mot de passe incorrect'); return; } }
       busy(btn, true); const { data, error } = await sb.functions.invoke('delete-account', { body: { confirm: 'SUPPRIMER' } }); busy(btn, false);
       if (error || !data || !data.deleted) { toast('La suppression a échoué, réessaie ou contacte-nous'); return; }
-      wipeLocal(); try { await sb.auth.signOut({ scope: 'local' }); } catch (_) { } started = false; closePanel(); showGate(`<div class="gicon">${SV.check}</div><h2>Compte supprimé</h2><p class="gtext">Ton compte et toutes tes données ont été effacés de nos serveurs. Merci d'avoir voyagé avec Escale.</p><button class="gbtn primary" id="bye">Fermer</button>`, g => g.querySelector('#bye').onclick = () => location.replace(location.pathname)); };
+      wipeLocal(); try { await sb.auth.signOut({ scope: 'local' }); } catch (_) { } started = false; closePanel(); showGate(`<div class="gicon">${SV.check}</div><h2>Compte supprimé</h2><p class="gtext">Ton compte et toutes tes données ont été effacés de nos serveurs. Merci d'avoir voyagé avec Eskalys.</p><button class="gbtn primary" id="bye">Fermer</button>`, g => g.querySelector('#bye').onclick = () => location.replace(location.pathname)); };
   }); };
 
 /* ---------- démarrage ---------- */

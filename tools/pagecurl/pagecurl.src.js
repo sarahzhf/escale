@@ -1,4 +1,4 @@
-/* Escale : pages souples du carnet, rendues en WebGL (three.js).
+/* Eskalys : pages souples du carnet, rendues en WebGL (three.js).
  * Le carnet reste en HTML ; seul le moment où la page tourne passe en 3D :
  * la double page est photographiée (html-to-image), puis une feuille maillée
  * se courbe comme du papier, éclairée selon son angle, avant de rendre la main au HTML. */

@@ -1,10 +1,10 @@
-/* Escale : le guide complet de l'appli, montré une fois aux nouveaux comptes (sans voyage) sur l'appareil,
+/* Eskalys : le guide complet de l'appli, montré une fois aux nouveaux comptes (sans voyage) sur l'appareil,
  * relançable depuis l'aide. Organisé en chapitres : on peut passer d'un chapitre à l'autre, revenir, ou tout passer.
  * Chaque étape dit ce que fait la fonction et le geste pour s'en servir. */
 (() => {
   const CH = [
     ['Bienvenue', '#2E5E3E', [
-      ['plane', 'Bienvenue dans Escale', 'Un carnet par voyage pour garder au même endroit tes souvenirs, tes photos et ce que tu as dépensé. Ce guide te montre tout en deux minutes.', ['Balaye vers la gauche ou touche Suivant pour avancer', 'Touche un chapitre en haut pour y aller directement']],
+      ['plane', 'Bienvenue dans Eskalys', 'Un carnet par voyage pour garder au même endroit tes souvenirs, tes photos et ce que tu as dépensé. Ce guide te montre tout en deux minutes.', ['Balaye vers la gauche ou touche Suivant pour avancer', 'Touche un chapitre en haut pour y aller directement']],
       ['menu', 'Se repérer', 'En bas, cinq onglets : Accueil, Voyages, Posts, Budget et Profil. Le bouton rond + ajoute ce dont tu as besoin, où que tu sois.', ['+ : une dépense, une page, une photo, un voyage', 'Balaye depuis le bord gauche pour revenir en arrière']],
     ]],
     ['Tes carnets', '#8B6B4A', [
@@ -14,18 +14,18 @@
       ['star', 'Un carnet à ton style', 'Choisis la couleur du cuir de chaque carnet, le modèle de pages (crème lignées ou blanches à pinces dorées), la typographie, le papier et les cadres des photos.', ['Dans le carnet, en mode modification : le bouton Aa', 'Dans l’aperçu du voyage : la couverture se change avec l’appareil photo']],
     ]],
     ['Ton budget', '#B8452C', [
-      ['wallet', 'Tes dépenses en deux secondes', 'Note une dépense en euros ou en monnaie locale : Escale convertit au taux du jour, répartit les nuits d’hôtel sur leurs jours et te dit combien il te reste par jour.', ['+ puis Dépense, ou le bouton du bas dans un voyage', 'Photographie un ticket : il est lu sur ton téléphone, rien n’est envoyé']],
+      ['wallet', 'Tes dépenses en deux secondes', 'Note une dépense en euros ou en monnaie locale : Eskalys convertit au taux du jour, répartit les nuits d’hôtel sur leurs jours et te dit combien il te reste par jour.', ['+ puis Dépense, ou le bouton du bas dans un voyage', 'Photographie un ticket : il est lu sur ton téléphone, rien n’est envoyé']],
       ['target', 'Où part ton argent', 'L’onglet Budget montre la jauge de chaque voyage, les catégories qui risquent de dépasser, tes plus grosses dépenses et l’évolution d’un voyage à l’autre.', ['Touche une catégorie pour voir le détail', 'Change le budget par catégorie dans Modifier']],
-      ['users', 'Entre amis', 'Dans l’onglet Entre amis d’un voyage, ajoute tes compagnons. Pour chaque dépense, indique qui a payé et pour qui : Escale calcule qui doit combien à qui, en un minimum de remboursements.', ['Invite par un lien, même quelqu’un sans compte', 'Coche un remboursement quand il est fait']],
+      ['users', 'Entre amis', 'Dans l’onglet Entre amis d’un voyage, ajoute tes compagnons. Pour chaque dépense, indique qui a payé et pour qui : Eskalys calcule qui doit combien à qui, en un minimum de remboursements.', ['Invite par un lien, même quelqu’un sans compte', 'Coche un remboursement quand il est fait']],
     ]],
     ['Avant de partir', '#3F4E8C', [
       ['clock', 'Prépare ton voyage', 'Dans l’aperçu d’un voyage à venir : le compte à rebours avant le départ, l’heure sur place, la météo des jours du voyage, les incontournables du pays et ta checklist.', ['La météo apparaît environ deux semaines avant le départ', 'Coche chaque élément de la checklist quand il est prêt']],
-      ['lock', 'Tes documents au même endroit', 'Le dossier Documents du voyage range tes billets d’avion ou de train, et tes fichiers : réservations, assurance, visa. Il reste toujours privé, même si l’album est partagé.', ['Importe un PDF ou une photo de billet : Escale le met au format carte d’embarquement', 'Garde toujours tes papiers originaux sur toi']],
-      ['wallet', 'Simule ton voyage', 'Avant même de décider : choisis un pays, tes villes et tes dates, coche les vraies activités qui te tentent avec leur tarif, et ta façon de manger. Escale estime tout : transport, logement, repas, trajets entre les villes et imprévus, haute ou basse saison comprise.', ['Conseils, fiche d’un pays, puis Simuler ce voyage', 'Enregistre-la dans tes envies : elle reste à toi, jamais partagée', 'Le jour où tu réserves, elle devient un carnet en un geste', 'Prix indicatifs, à vérifier']],
+      ['lock', 'Tes documents au même endroit', 'Le dossier Documents du voyage range tes billets d’avion ou de train, et tes fichiers : réservations, assurance, visa. Il reste toujours privé, même si l’album est partagé.', ['Importe un PDF ou une photo de billet : Eskalys le met au format carte d’embarquement', 'Garde toujours tes papiers originaux sur toi']],
+      ['wallet', 'Simule ton voyage', 'Avant même de décider : choisis un pays, tes villes et tes dates, coche les vraies activités qui te tentent avec leur tarif, et ta façon de manger. Eskalys estime tout : transport, logement, repas, trajets entre les villes et imprévus, haute ou basse saison comprise.', ['Conseils, fiche d’un pays, puis Simuler ce voyage', 'Enregistre-la dans tes envies : elle reste à toi, jamais partagée', 'Le jour où tu réserves, elle devient un carnet en un geste', 'Prix indicatifs, à vérifier']],
     ]],
     ['Ton monde', '#1E8C8E', [
       ['globe', 'Ta carte du monde', 'Tous tes voyages s’affichent sur un globe en 3D ou sur une carte à plat : les pays visités, ceux qui te font envie, et tes voyages en chiffres (pays, jours, kilomètres).', ['Fais tourner le globe du doigt', 'Ajoute un pays à tes envies avec une petite note']],
-      ['page', 'Ton passeport Escale', 'À chaque nouveau pays, un tampon tombe dans ton passeport. Tu le retrouves sur ton profil, à côté de ton prénom.', ['Tourne ses pages au doigt', 'Choisis sa couleur, ta photo et qui peut le voir']],
+      ['page', 'Ton passeport Eskalys', 'À chaque nouveau pays, un tampon tombe dans ton passeport. Tu le retrouves sur ton profil, à côté de ton prénom.', ['Tourne ses pages au doigt', 'Choisis sa couleur, ta photo et qui peut le voir']],
       ['spark', 'Assistant et idées de voyage', 'L’assistant répond à tes questions sur tes dépenses et t’aide à choisir ta prochaine destination. L’écran Où partir ensuite ? propose des pays selon tes goûts et ton budget.', ['Pose une question comme à un ami : « Combien il me reste par jour ? »', 'L’assistant ne lit jamais tes notes, tes photos ni tes amis']],
       ['star', 'Où partir, quand et avec quel budget', 'Dans Conseils, l’onglet Mon budget propose des pays et des villes qui rentrent dans ton budget, vol compris. Le filtre Quand ? suit la bonne saison du mois choisi. Près de chez moi propose des villes de ton propre pays, qui n’apparaît plus dans les autres suggestions.', ['Ton lieu de vie se règle dans les réglages', 'Touche une ville pour sa simulation détaillée']],
       ['pin', 'Ton itinéraire en 3D', 'Dans Carte, puis Itinéraire : ton voyage sur une vraie carte en relief. Ajoute chaque endroit visité avec une photo : le trajet se dessine petit à petit, avec un pin et un polaroïd sur chaque lieu.', ['Cherche le lieu exact : musée, café, plage', 'Une photo par lieu, choisie dans ton carnet ou ajoutée', 'Tourne, incline et zoome au doigt']],
@@ -37,7 +37,7 @@
     ]],
     ['Tout reste à toi', '#20243A', [
       ['lock', 'Privé par défaut', 'Tout est privé au départ. Pour chaque album ou publication, tu choisis : toi seule, tes amis ou tout le monde. Tes dépenses et tes documents ne sont jamais montrés.', ['Même sans réseau, tu peux tout noter : c’est envoyé au retour de la connexion', 'Profil, Réglages : télécharge ou supprime toutes tes données quand tu veux']],
-      ['star', 'Ton avis compte', 'Dans les réglages, note l’appli ou envoie une idée d’amélioration, un bug ou une remarque : tout arrive directement à l’équipe d’Escale.', ['Réglages, puis Ton avis']],
+      ['star', 'Ton avis compte', 'Dans les réglages, note l’appli ou envoie une idée d’amélioration, un bug ou une remarque : tout arrive directement à l’équipe d’Eskalys.', ['Réglages, puis Ton avis']],
     ]],
   ];
   const STEPS = CH.flatMap(([n, c, L], ci) => L.map(([ic, t, d, tips, ill]) => ({ ci, n, c, ic, t, d, tips, ill })));

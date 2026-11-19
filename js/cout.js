@@ -1,4 +1,4 @@
-/* Escale : « Combien ça coûte vraiment ».
+/* Eskalys : « Combien ça coûte vraiment ».
    Sur un voyage à venir ou en cours : ce que le même pays a coûté à tes amis (total, nombre de personnes, durée).
    Jamais le détail des dépenses, et seulement pour les amis qui ont choisi de partager leurs totaux. */
 'use strict';

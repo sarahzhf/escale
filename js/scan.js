@@ -1,4 +1,4 @@
-/* Escale : lecture de documents sur le téléphone (gratuit, rien n'est envoyé).
+/* Eskalys : lecture de documents sur le téléphone (gratuit, rien n'est envoyé).
    - Ticket de caisse : photo > lecture du texte (Tesseract, module de 5 Mo chargé au premier scan puis gardé)
      > montant, date, commerçant > le ticket sort d'une fente > on remplit la dépense.
    - Billet de voyage : PDF (texte lu par pdf.js) ou photo > aéroports, vol, heures, siège... > carte d'embarquement.
@@ -54,7 +54,7 @@ function receiptHTML(r, t) { const money = v => v == null ? '?' : v.toFixed(2).r
    <p class="rc-t"><span>TOTAL</span><span class="num">${money(r.total)} ${r.cur && r.cur !== 'EUR' ? esc(r.cur) : '€'}</span></p><p class="rc-thx">Lu sur ton téléphone</p><div class="rc-bar"></div></div>`; }
 async function scanReceipt(tid, file) {
   const t = trip(tid); let pct = 0;
-  openPanel(`<h2>Lecture du ticket</h2><div id="sc-box"><p class="small" id="sc-st">Préparation…</p><div class="sc-prog"><i id="sc-bar"></i></div><p class="small sc-note">La première fois, Escale télécharge le module de lecture (environ 5 Mo). Ensuite, tout se fait sur ton téléphone, même hors connexion.</p></div>${CLOSE('Annuler')}`, null, { nofocus: true });
+  openPanel(`<h2>Lecture du ticket</h2><div id="sc-box"><p class="small" id="sc-st">Préparation…</p><div class="sc-prog"><i id="sc-bar"></i></div><p class="small sc-note">La première fois, Eskalys télécharge le module de lecture (environ 5 Mo). Ensuite, tout se fait sur ton téléphone, même hors connexion.</p></div>${CLOSE('Annuler')}`, null, { nofocus: true });
   const st = (s, p) => { const b = $('sc-bar'), e = $('sc-st'); if (!b) return; pct = s === 'recognizing text' ? 50 + p * 50 : Math.max(pct, p * 45); b.style.width = pct + '%'; e.textContent = s === 'recognizing text' ? 'Lecture du texte…' : 'Chargement du module de lecture…'; };
   try { const txt = await ocrText(file, st), r = parseReceipt(txt); const box = $('sc-box'); if (!box) return;
     let day = null; if (r.date && t) { const j = Math.round((D(r.date) - D(t.du)) / 864e5) + 1; if (j >= 1 && j <= info(t).jours) day = j; }
@@ -99,7 +99,7 @@ function ticketHTML(k, t, edit) { const big = (c, n) => `<b>${esc(c || (n ? n.sl
 const ticketsOf = t => (t.tickets = Array.isArray(t.tickets) ? t.tickets : []);
 function ticketsHTML(t) { const L = ticketsOf(t); if (!L.length && !info(t).futur && !info(t).enCours) return '';
   return `<div class="sec"><h2>Billets</h2><button class="more" data-act="ticketAdd" data-trip="${t.id}">Ajouter</button></div>
-   ${L.length ? `<div class="bpasses">${L.slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.dep || '').localeCompare(String(b.dep || ''))).map(k => ticketHTML(k, t)).join('')}</div>` : `<button class="prep-cta" data-act="ticketAdd" data-trip="${t.id}"><i>✈</i><span><b>Ajoute ton billet</b><em>Un PDF ou une photo : Escale le met au format billet</em></span>${SV.right}</button>`}`; }
+   ${L.length ? `<div class="bpasses">${L.slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.dep || '').localeCompare(String(b.dep || ''))).map(k => ticketHTML(k, t)).join('')}</div>` : `<button class="prep-cta" data-act="ticketAdd" data-trip="${t.id}"><i>✈</i><span><b>Ajoute ton billet</b><em>Un PDF ou une photo : Eskalys le met au format billet</em></span>${SV.right}</button>`}`; }
 ACT.ticketAdd = d => { const t = trip(d.trip); if (!t) return;
   openPanel(`<h2>Ajouter un billet</h2><p class="small">Importe le PDF de ta réservation ou une photo de ta carte d'embarquement. La lecture se fait sur ton téléphone ; le fichier n'est pas envoyé, seules les infos du billet sont gardées.</p>
    <div class="seg wide" id="tk-k">${Object.entries(KIND_N).map(([k, n], i) => `<button type="button" data-k="${k}" class="${i ? '' : 'on'}">${KIND_IC[k]} ${n}</button>`).join('')}</div>

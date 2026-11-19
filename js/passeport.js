@@ -1,4 +1,4 @@
-/* Escale : le passeport.
+/* Eskalys : le passeport.
    Un livret qui s'ouvre et se feuillette, une page d'identité (photo, nom, pays tamponnés) et un tampon par pays visité.
    Le tampon tombe en direct (son, secousse, encre) le jour où un voyage commence dans un nouveau pays.
    Les tampons sont dessinés par l'appli : forme, encre et motif propres à chaque pays, sans emblème officiel. */
@@ -82,16 +82,16 @@ function ppOpen(o) {
   const ov = document.createElement('div'); ov.className = 'pp-ov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', own ? 'Mon passeport' : 'Passeport de ' + fn);
   ov.style.setProperty('--cover', col[0]); ov.style.setProperty('--foil', col[1]);
   const mrz = () => { const c = s => ppNorm(s || 'X').replace(/[^A-Z]/g, ''), pad = (s, n) => (s + '<'.repeat(n)).slice(0, n); return pad(`P<ESC${c(ln || fn)}<<${c(fn)}`, 32) + '\n' + pad(`ESC<<${V.length}PAYS<<${V[0] ? V[0].du.slice(0, 4) : ''}`, 32); };
-  const identity = () => `${ppGuil(1)}<div class="pp-ph pp-id"><h2>Escale</h2><div class="pp-hd"><span>Passeport</span><span>N° ESC-${String(V.length).padStart(3, '0')}</span></div>
+  const identity = () => `${ppGuil(1)}<div class="pp-ph pp-id"><h2>Eskalys</h2><div class="pp-hd"><span>Passeport</span><span>N° ESC-${String(V.length).padStart(3, '0')}</span></div>
     <div class="pp-grid"><div class="pp-photo">${photo ? IMG(photo, 'Photo') : '<svg viewBox="0 0 30 40" aria-hidden="true"><circle cx="15" cy="15" r="7" fill="#B9B09D"/><path d="M3 40q2-14 12-14t12 14z" fill="#B9B09D"/></svg>'}</div>
-    <dl><div><dt>Nom</dt><dd>${esc(ln || '·')}</dd></div><div><dt>Prénom</dt><dd>${esc(fn || '·')}</dd></div><div><dt>Pays tamponnés</dt><dd>${V.length} / 207</dd></div><div><dt>Premier voyage</dt><dd>${V[0] ? ppDate(V[0].du) : '·'}</dd></div><div><dt>Délivré par</dt><dd>Escale</dd></div></dl></div>
+    <dl><div><dt>Nom</dt><dd>${esc(ln || '·')}</dd></div><div><dt>Prénom</dt><dd>${esc(fn || '·')}</dd></div><div><dt>Pays tamponnés</dt><dd>${V.length} / 207</dd></div><div><dt>Premier voyage</dt><dd>${V[0] ? ppDate(V[0].du) : '·'}</dd></div><div><dt>Délivré par</dt><dd>Eskalys</dd></div></dl></div>
     <div class="pp-sign">${esc(fn || '')} ${ln ? esc(ln[0]) + '.' : ''}</div><div class="pp-holo"></div><div class="pp-mrz">${esc(mrz())}</div></div><div class="pp-no">1</div>`;
   const visa = k => { let h = `${ppGuil(k % 3)}<div class="pp-ph"><h2>Visas</h2><div class="pp-hd"><span>Entrées</span><span>Arrivées</span></div></div>`;
     V.forEach((v, n) => { if (Math.floor(n / PP_PER) !== k) return; const [x, y] = PP_POS[n % PP_PER];
       h += `<div class="pp-slot${hidden.has(n) ? ' wait' : ''}" data-n="${n}" style="left:${x}%;top:${y}%">${ppStamp(v, n, false)}</div>`; });
     return h + `<div class="pp-no">${k + 2}</div>`; };
   const face = (i, side) => {
-    if (i === 0 && side === 0) return `<div class="pp-cover"><div class="pp-rep pp-foil">Escale<br>République des voyageurs</div><h1 class="pp-foil">Passeport</h1><div class="pp-sub pp-foil">Carnet de voyage</div><svg class="pp-foil" viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="60" cy="60" r="54"/><circle cx="60" cy="60" r="48" stroke-dasharray="1 3"/><circle cx="60" cy="60" r="28"/><ellipse cx="60" cy="60" rx="12" ry="28"/><path d="M32 60h56M36 46h48M36 74h48"/><path d="M60 4l4 10h-8zM60 116l4-10h-8zM4 60l10 4v-8zM116 60l-10 4v-8z" fill="currentColor"/></svg><div class="pp-sub pp-foil">Titulaire</div><div class="pp-who pp-foil">${esc(name.toUpperCase())}</div><div class="pp-bio"></div></div>`;
+    if (i === 0 && side === 0) return `<div class="pp-cover"><div class="pp-rep pp-foil">Eskalys<br>République des voyageurs</div><h1 class="pp-foil">Passeport</h1><div class="pp-sub pp-foil">Carnet de voyage</div><svg class="pp-foil" viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="60" cy="60" r="54"/><circle cx="60" cy="60" r="48" stroke-dasharray="1 3"/><circle cx="60" cy="60" r="28"/><ellipse cx="60" cy="60" rx="12" ry="28"/><path d="M32 60h56M36 46h48M36 74h48"/><path d="M60 4l4 10h-8zM60 116l4-10h-8zM4 60l10 4v-8zM116 60l-10 4v-8z" fill="currentColor"/></svg><div class="pp-sub pp-foil">Titulaire</div><div class="pp-who pp-foil">${esc(name.toUpperCase())}</div><div class="pp-bio"></div></div>`;
     if (i === 0) return `${ppGuil(2)}<div class="pp-ph pp-inside"><p>Chaque tampon est un pays foulé, chaque page une histoire à raconter.</p><div class="pp-sig">bon voyage</div></div>`;
     if (i === 1 && side === 0) return identity();
     const k = side === 1 ? (i - 1) * 2 : (i - 1) * 2 - 1;

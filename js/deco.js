@@ -1,4 +1,4 @@
-/* Escale : décorations du carnet, dessinées pour Escale (traits SVG, couleur au choix).
+/* Eskalys : décorations du carnet, dessinées pour Eskalys (traits SVG, couleur au choix).
  * Doodles, nœuds, dentelles, fleurons, cadres de photos, typographies et papiers. */
 'use strict';
 const D_STROKE = 'fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"';

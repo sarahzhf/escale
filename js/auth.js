@@ -7,6 +7,11 @@ const gate = () => $('gate');
 function showGate(html, mount) { const g = gate(); g.innerHTML = `<div class="gwrapx"><div class="gbrand"><img src="icons/logo.svg" alt="" width="20" height="26"><span>Eskalys</span></div>${html}<p class="glegal"><a href="legal/cgu.html" target="_blank" rel="noopener">Conditions</a> · <a href="legal/confidentialite.html" target="_blank" rel="noopener">Confidentialité</a> · <a href="legal/mentions-legales.html" target="_blank" rel="noopener">Mentions légales</a></p></div>`; g.hidden = false; document.body.classList.add('gated'); mount && mount(g); const f = g.querySelector('input:not([type=checkbox])'); f && setTimeout(() => f.focus(), 50); }
 function hideGate() { gate().hidden = true; gate().innerHTML = ''; document.body.classList.remove('gated'); }
 const busy = (btn, on) => { if (!btn) return; btn.disabled = on; btn.classList.toggle('busy', on); };
+/** Supabase répond « you can only request this after 42 seconds » : on récupère le nombre. */
+const waitSecs = e => { const r = /after (\d+) seconds?/i.exec((e && e.message) || ''); return r ? +r[1] : 0; };
+/** Bloque un bouton d'envoi d'e-mail pendant s secondes, avec le temps restant affiché dessus. */
+function cooldown(btn, s) { if (!btn || !(s > 0)) return; const txt = btn.dataset.txt || (btn.dataset.txt = btn.textContent); let n = Math.ceil(s); btn.disabled = true;
+  const tick = () => { if (!btn.isConnected) return; if (n <= 0) { btn.disabled = false; btn.textContent = txt; return; } btn.textContent = `${txt} (${n} s)`; n--; setTimeout(tick, 1000); }; tick(); }
 const pwRules = p => [[p.length >= 10, '10 caractères minimum'], [/[a-z]/.test(p), 'une minuscule'], [/[A-Z]/.test(p), 'une majuscule'], [/[0-9]/.test(p), 'un chiffre']];
 const pwOk = p => pwRules(p).every(r => r[0]);
 const emailOk = e => /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/.test(e);
@@ -15,7 +20,11 @@ function authError(e) {
   if (m.includes('invalid login')) return 'E-mail ou mot de passe incorrect.';
   if (m.includes('email not confirmed')) return "Ton adresse n'est pas encore confirmée : ouvre le lien reçu par e-mail.";
   if (m.includes('already registered') || m.includes('already been registered')) return 'Impossible de créer ce compte. Si tu en as déjà un, connecte-toi.';
+  const w = waitSecs(e); if (w) return `Pour ta sécurité, attends ${w} secondes avant de redemander un e-mail.`;
+  if (m.includes('email rate limit')) return "Beaucoup d'e-mails sont partis en peu de temps. Réessaie dans un moment, ou utilise le dernier lien reçu.";
   if (m.includes('rate limit') || m.includes('too many') || (e && e.status === 429)) return 'Trop de tentatives. Patiente quelques minutes avant de réessayer.';
+  if (m.includes('expired') || m.includes('invalid') && m.includes('link') || m.includes('session missing')) return "Ce lien n'est plus valable : il a déjà servi ou il a expiré. Demande un nouveau lien.";
+  if (m.includes('different from the old') || m.includes('same password')) return "Choisis un mot de passe différent de l'ancien.";
   if (m.includes('weak') || m.includes('password should')) return 'Mot de passe trop faible : 10 caractères avec majuscule, minuscule et chiffre.';
   if (isNetwork(e)) return 'Pas de connexion internet.';
   return 'Une erreur est survenue, réessaie.';
@@ -83,7 +92,10 @@ function checkEmail(email) {
   showGate(`<div class="gicon">${SV.send}</div><h2>Vérifie ta boîte mail</h2><p class="gtext">Nous avons envoyé un lien de confirmation à <b>${esc(email)}</b>. Ouvre-le pour activer ton compte, puis reviens ici.</p>
     <button class="gbtn primary" data-auth="login">J'ai confirmé, me connecter</button><button class="gbtn" id="ce-again">Renvoyer l'e-mail</button><p class="gerr" id="ce-msg" role="status"></p>`, g => {
     bindAuth(g);
-    g.querySelector('#ce-again').onclick = async () => { const { error } = await sb.auth.resend({ type: 'signup', email, options: { emailRedirectTo: CONFIRM_URL() } }); g.querySelector('#ce-msg').textContent = error ? authError(error) : 'E-mail renvoyé.'; };
+    const again = g.querySelector('#ce-again'); cooldown(again, 60);
+    again.onclick = async () => { busy(again, true); const { error } = await sb.auth.resend({ type: 'signup', email, options: { emailRedirectTo: CONFIRM_URL() } }); busy(again, false);
+      g.querySelector('#ce-msg').textContent = error ? authError(error) : "E-mail renvoyé. Il peut mettre une minute à arriver : utilise le plus récent, l'ancien ne marche plus.";
+      cooldown(again, error ? waitSecs(error) : 60); };
   });
 }
 function loginForm() {
@@ -107,8 +119,16 @@ function forgotForm() {
     bindAuth(g);
     g.querySelector('#fo').onsubmit = async ev => { ev.preventDefault(); const e = g.querySelector('#fo-e').value.trim().toLowerCase(), m = g.querySelector('#fo-err'); if (!emailOk(e)) return m.textContent = 'Adresse e-mail invalide.';
       const btn = g.querySelector('#fo-ok'); busy(btn, true); const { error } = await sb.auth.resetPasswordForEmail(e, { redirectTo: (CFG.siteUrl || location.origin) + '/?reset=1' }); busy(btn, false);
-      m.textContent = error && (error.status === 429) ? authError(error) : 'Si un compte existe pour cette adresse, un e-mail vient de partir. Pense à regarder dans les indésirables.'; };
+      // pour ne pas révéler qui a un compte, on n'affiche une erreur que si l'envoi a été bloqué ou s'il n'y a pas de réseau
+      if (error && (error.status === 429 || isNetwork(error))) { m.textContent = authError(error); cooldown(btn, waitSecs(error)); return; }
+      m.textContent = "Si un compte existe pour cette adresse, un e-mail vient de partir. Il peut mettre une minute à arriver, pense à regarder dans les indésirables. Inutile d'en redemander un : ouvre le lien reçu.";
+      cooldown(btn, 60); };
   });
+}
+/** Lien reçu par e-mail qui ne marche plus (déjà servi, expiré, ou ouvert dans un autre navigateur). */
+function linkProblem(otherBrowser) {
+  showGate(`<div class="gicon">${SV.lock}</div><h2>Ce lien n'est plus valable</h2><p class="gtext">${otherBrowser ? "Ce lien a été ouvert dans un autre navigateur que celui où tu l'as demandé. Demande un nouveau lien depuis ce téléphone." : "Il a peut-être déjà servi, ou il a expiré. Demande un nouveau lien, ou connecte-toi si tu connais ton mot de passe."}</p>
+    <button class="gbtn primary" data-auth="forgot">Recevoir un nouveau lien</button><button class="gbtn" data-auth="login">Me connecter</button>`, bindAuth);
 }
 function newPasswordForm() {
   showGate(`<h2>Nouveau mot de passe</h2><form id="np" novalidate><label class="fld"><span>Nouveau mot de passe</span><div class="pw"><input id="np-p" type="password" maxlength="72" autocomplete="new-password"><button type="button" class="eye" data-auth="eye" aria-label="Afficher le mot de passe">${SV.eye}</button></div></label><ul class="pwrules" id="np-r"></ul><p class="gerr" id="np-err" role="alert"></p><button class="gbtn primary" id="np-ok">Enregistrer</button></form>`, g => {
@@ -239,6 +259,7 @@ const FAQ = [
   ['Comment fonctionne l’assistant ?', 'En mode simple, il répond directement sur ton téléphone. Si tu actives l’assistant IA dans le profil, il peut comparer des destinations et estimer un budget à partir des totaux de tes voyages.'],
   ['Comment marchent les défis ?', 'Défie un ou plusieurs amis : un lieu à photographier avant la fin du délai. À plusieurs, chacun publie sa photo et le groupe vote pour la plus belle. Tu gagnes 10 points par défi relevé, 5 de plus en moins de 24 h, 15 si ta photo est élue, et des badges en chemin.'],
   ['Mes amis savent-ils quand je voyage ?', 'Seulement si tu partages l\u2019album du voyage avec eux : pendant ses dates, ils voient que tu es en voyage dans ce pays et peuvent te lancer un défi. Un album privé n\u2019est jamais signalé.'],
+  ['J’ai oublié mon mot de passe, comment faire ?', 'Sur l’écran de connexion, touche « Mot de passe oublié ? » et indique ton e-mail. Ouvre le lien reçu (un seul suffit, inutile d’en redemander) et choisis ton nouveau mot de passe. Si le lien ne marche plus, l’appli te propose d’en recevoir un nouveau.'],
   ['Comment récupérer ou supprimer mes données ?', 'Profil, puis « Télécharger toutes mes données » pour une copie complète, ou « Supprimer mon compte » pour tout effacer définitivement.']
 ];
 ACT.faq = () => openPanel(`<h2>Aide</h2><p class="small">Les réponses aux questions les plus fréquentes.</p><div class="faq">${FAQ.map(([q, r]) => `<details><summary>${esc(q)}</summary><p>${esc(r)}</p></details>`).join('')}</div>
@@ -322,9 +343,22 @@ ACT.deleteAccount = () => { const hasPw = (ME.app_metadata && (ME.app_metadata.p
       setInterval(check, 30 * 60e3);
     }).catch(() => { });
   }
-  const isReset = new URLSearchParams(location.search).has('reset');
-  const { data: { session } } = await sb.auth.getSession();
+  const q = new URLSearchParams(location.search), h = new URLSearchParams(location.hash.replace(/^#/, ''));
+  let { data: { session } } = await sb.auth.getSession();
   Promise.all([window.SPLASH || Promise.resolve(), new Promise(r => setTimeout(r, 300))]).then(() => $('splash') && $('splash').classList.add('out'));
+  // Liens reçus par e-mail. Le mode « token_hash » marche dans n'importe quel navigateur (appli Gmail, autre téléphone) ;
+  // les liens envoyés depuis le tableau de bord Supabase arrivent avec les jetons dans l'adresse.
+  const type = q.get('type') || h.get('type'), th = q.get('token_hash'), clean = () => history.replaceState(null, '', location.pathname);
+  const isReset = q.has('reset') || type === 'recovery';
+  if (q.get('error_code') || h.get('error_code') || q.get('error') || h.get('error')) { clean(); return linkProblem(); }
+  if (th && ['recovery', 'signup', 'email', 'invite', 'magiclink', 'email_change'].includes(type)) {
+    const { data, error } = await sb.auth.verifyOtp({ token_hash: th, type }); clean();
+    if (error) return isNetwork(error) ? showGate('<h2>Pas de connexion</h2><p class="gtext">Reconnecte-toi à internet puis rouvre le lien reçu par e-mail.</p>') : linkProblem();
+    session = data.session;
+  } else if (!session && h.get('access_token') && h.get('refresh_token')) {
+    const { data, error } = await sb.auth.setSession({ access_token: h.get('access_token'), refresh_token: h.get('refresh_token') }); clean();
+    if (error) return linkProblem(); session = data.session;
+  } else if (!session && q.has('code')) { clean(); return linkProblem(true); }
   if (isReset && session) return newPasswordForm();
   if (INV_TOKEN) return guestBoot();
   if (session) { if (new URLSearchParams(location.search).has('code')) history.replaceState(null, '', location.pathname); await afterLogin(); }

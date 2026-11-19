@@ -420,7 +420,7 @@ nav button.ping{animation:ping .5s ease}
 .flyer{position:absolute;z-index:70;pointer-events:none;background:#fff;font-size:.78rem;font-weight:600;padding:8px 14px;border-radius:20px;box-shadow:0 10px 20px rgba(32,36,58,.25)}
 .toast{position:absolute;left:50%;top:60px;transform:translate(-50%,-14px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:20px;font-size:.8rem;opacity:0;transition:.3s;z-index:40;pointer-events:none;max-width:86%;text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
-.splash{position:absolute;inset:0;z-index:60;background:linear-gradient(180deg,var(--sky),var(--pale) 60%,var(--lilac));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;transition:opacity .7s ease .1s}
+.splash{position:fixed;inset:0;z-index:500;background:linear-gradient(180deg,var(--sky),var(--pale) 60%,var(--lilac));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;transition:opacity .7s ease .1s}
 .splash .brand{font-size:2.6rem}
 .splash.out{opacity:0;pointer-events:none}
 .splash.three{position:fixed;z-index:500;background:#EFE7D8!important}
@@ -2037,7 +2037,11 @@ html[data-theme="dark"] .gd-ill{background:radial-gradient(circle at 30% 25%,col
 .lp-priv li{display:flex;gap:12px;align-items:flex-start;background:#fff;border-radius:18px;padding:14px}
 .lp-priv li svg{width:22px;height:22px;flex:none;color:var(--green);margin-top:2px}
 .lp-priv li span{font-size:.86rem;line-height:1.5;color:#55584f}.lp-priv li b{display:block;color:var(--ink);font-size:.92rem;margin-bottom:2px}
-.lp-inst{background:#E7EFE9;border-radius:22px;padding:18px}
+.lp-more ul{list-style:none;padding:0;margin:16px 0 0;display:grid;grid-template-columns:1fr;gap:10px}
+.lp-more li{display:flex;gap:12px;align-items:flex-start;background:#E7EFE9;border-radius:18px;padding:14px}
+.lp-more li svg{width:22px;height:22px;flex:none;color:var(--green);margin-top:2px}
+.lp-more li span{font-size:.86rem;line-height:1.5;color:#55584f}.lp-more li b{display:block;color:var(--ink);font-size:.92rem;margin-bottom:2px}
+@media (min-width:760px){.lp-more ul{grid-template-columns:1fr 1fr}}
 .lp-end{text-align:center}
 @media (min-width:760px){
   .lp-f{display:grid;grid-template-columns:1fr 260px;align-items:center;gap:40px}.lp-f.r{grid-template-columns:260px 1fr}.lp-f.r .lp-tx{order:2}
@@ -2046,7 +2050,7 @@ html[data-theme="dark"] .gd-ill{background:radial-gradient(circle at 30% 25%,col
 html[data-theme="dark"] .lp p,html[data-theme="dark"] .lp-priv li span{color:#C2C0BA}
 html[data-theme="dark"] .lp-priv li{background:#1A1C1B}
 html[data-theme="dark"] .lp-priv li b{color:#ECEBE6}
-html[data-theme="dark"] .lp-inst{background:#1E2A22}
+html[data-theme="dark"] .lp-more li{background:#1E2A22}html[data-theme="dark"] .lp-more li span{color:#C2C0BA}html[data-theme="dark"] .lp-more li b{color:#ECEBE6}
 html[data-theme="dark"] .lp-ph{border-color:#000}
 
 /* v1.8 : notifications */

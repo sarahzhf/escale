@@ -70,7 +70,7 @@ setInterval(() => document.querySelectorAll('[data-gdue]').forEach(el => { el.te
 ACT.crewSet = async d => { const t = trip(d.trip); let fr = [], cur = [];
   try { [fr, cur] = await Promise.all([rpc('my_friends'), rpc('crew_of', { p_trip: t.id })]); } catch (_) { toast('Réessaie dans un instant'); return; }
   fr = fr.filter(f => f.relation === 'friend'); const sel = new Set((cur || []).map(x => typeof x === 'string' ? x : x.crew_of || x.user_id));
-  openPanel(`<h2>Missions de groupe</h2><p class="small">Choisis tes amis Eskalys qui partent avec toi à ${esc(place(t))}. Chaque jour du voyage, vous recevrez la même mission, puis vous voterez pour la plus belle photo. Ils ne voient pas ton journal ni tes dépenses.</p>
+  openPanel(`<h2>Amis du voyage</h2><p class="small">Choisis tes amis Eskalys qui partent avec toi à ${esc(place(t))}. Chaque jour du voyage, vous recevrez la même mission, puis vous voterez pour la plus belle photo. Tu pourras aussi les inviter à remplir le carnet avec toi. Ils ne voient pas tes dépenses.</p>
     <div class="crew">${fr.map(f => `<button type="button" class="crew-r ${sel.has(f.id) ? 'on' : ''}" data-u="${f.id}" aria-pressed="${sel.has(f.id)}">${avatar(f)}<b>${esc(f.display_name)}</b><i>${SV.check}</i></button>`).join('') || '<p class="small">Tu n\'as pas encore d\'amis sur Eskalys. Ajoute-les depuis ton profil.</p>'}</div>
     <button class="btn full" id="crew-ok">Enregistrer<i>${SV.arrow}</i></button>${CLOSE()}`, p => {
     p.querySelectorAll('.crew-r').forEach(b => b.onclick = () => { const u = b.dataset.u, on = !sel.has(u); on ? sel.add(u) : sel.delete(u); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });

@@ -38,7 +38,7 @@ $$;
 revoke all on function public.is_trip_editor(uuid) from public, anon;
 grant execute on function public.is_trip_editor(uuid) to authenticated;
 
--- 3. inviter ou retirer un ami (propriétaire seulement, amis seulement, 10 au maximum)
+-- 3. inviter ou retirer un ami (propriétaire seulement, amis du voyage seulement, 10 au maximum)
 create or replace function public.collab_set(p_trip uuid, p_user uuid, p_on boolean)
 returns void language plpgsql security definer set search_path = public as $$
 begin
@@ -46,6 +46,8 @@ begin
   if p_on then
     if p_user = auth.uid() then raise exception 'C''est déjà ton carnet'; end if;
     if not exists (select 1 from public.my_friends() f where f.id = p_user and f.relation = 'friend') then raise exception 'Tu peux inviter seulement tes amis'; end if;
+    -- seulement les amis du voyage : ceux que la propriétaire a ajoutés à l'équipage (Entre amis, amis Eskalys du voyage)
+    if not exists (select 1 from public.crew_of(p_trip) x where to_jsonb(x)::text like '%' || p_user::text || '%') then raise exception 'Ajoute d''abord cet ami aux amis du voyage, dans Entre amis'; end if;
     if (select count(*) from public.trip_collaborators where trip_id = p_trip) >= 10 then raise exception '10 amis au maximum par carnet'; end if;
     insert into public.trip_collaborators (trip_id, user_id) values (p_trip, p_user) on conflict do nothing;
   else

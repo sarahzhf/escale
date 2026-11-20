@@ -117,12 +117,16 @@ const COLLAB_TRIPS = new Map();
 
   /* la propriétaire : qui peut remplir ce carnet avec moi */
   ACT.collabManage = async () => { const t = bookTrip(); if (!t || t._collab) return;
-    let fr = [], cur = [];
-    try { [fr, cur] = await Promise.all([rpc('my_friends'), rpc('collab_list', { p_trip: t.id })]); } catch (e) { toast(navigator.onLine ? 'Le carnet à plusieurs sera disponible après la prochaine mise à jour' : 'Pas de connexion'); return; }
-    fr = (fr || []).filter(f => f.relation === 'friend'); const on = new Set((cur || []).map(x => x.id));
+    let fr = [], cur = [], crew = [];
+    try { [fr, cur, crew] = await Promise.all([rpc('my_friends'), rpc('collab_list', { p_trip: t.id }), rpc('crew_of', { p_trip: t.id })]); } catch (e) { toast(navigator.onLine ? 'Le carnet à plusieurs sera disponible après la prochaine mise à jour' : 'Pas de connexion'); return; }
+    // seulement les amis du voyage : l'équipage choisi dans Entre amis
+    const inCrew = new Set((crew || []).map(x => typeof x === 'string' ? x : x.crew_of || x.user_id || x.id));
+    fr = (fr || []).filter(f => f.relation === 'friend' && inCrew.has(f.id)); const on = new Set((cur || []).map(x => x.id));
     openPanel(`<h2>Carnet à plusieurs</h2><p class="small">Invite les amis qui étaient du voyage. Ils pourront écrire, ajouter leurs photos et décorer les pages avec toi. Ils ne voient jamais ton budget, tes dépenses ni tes documents.</p>
       ${fr.length ? `<div class="flist collab-l">${fr.map(f => `<button type="button" class="togrow ${on.has(f.id) ? 'on' : ''}" data-u="${f.id}" aria-pressed="${on.has(f.id)}"><div><b>${esc(f.display_name || 'Ami')}</b><span>${on.has(f.id) ? 'Peut remplir le carnet' : 'Touche pour l’inviter'}</span></div><i class="sw"></i></button>`).join('')}</div>`
-        : '<p class="small" style="margin-top:12px">Ajoute d’abord tes compagnons de voyage en amis depuis ton profil.</p>'}${CLOSE('Fermer')}`, p => {
+        : '<p class="small" style="margin-top:12px">Aucun ami du voyage pour l’instant. Ajoute d’abord tes amis Eskalys qui sont partis avec toi.</p>'}
+      <button type="button" class="btn2 wide" id="cl-crew" style="margin-top:12px">${SV.users}Choisir les amis du voyage</button>${CLOSE('Fermer')}`, p => {
+      p.querySelector('#cl-crew').onclick = () => { closePanel(); setTimeout(() => ACT.crewSet({ trip: t.id }), 360); };
       p.querySelectorAll('[data-u]').forEach(b => b.onclick = async () => { const v = !b.classList.contains('on'); b.disabled = true;
         try { await rpc('collab_set', { p_trip: t.id, p_user: b.dataset.u, p_on: v }); b.classList.toggle('on', v); b.setAttribute('aria-pressed', v); b.querySelector('span').textContent = v ? 'Peut remplir le carnet' : 'Touche pour l’inviter'; toast(v ? 'Invitation envoyée' : 'Retiré du carnet'); }
         catch (e) { toast(errMsg(e)); } b.disabled = false; });

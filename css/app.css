@@ -2916,3 +2916,5 @@ html[data-theme="dark"] .pf-out em.ok{background:#20372A}html[data-theme="dark"]
 html[data-theme="dark"] .itp-pickbar{background:#1E2320;color:#ECEBE6}html[data-theme="dark"] .ip-mo button{background:#1E2320;border-color:#2E3A32}
 .itp-name{display:grid!important;grid-template-columns:auto 1fr;column-gap:0;align-items:center}.itp-name .itp-no{grid-row:1 / span 2;align-self:center}.itp-name i{grid-column:2}
 .itp-tr.hid{visibility:hidden!important;pointer-events:none}
+.itp-top{display:grid!important;grid-template-columns:96px 1fr 96px;align-items:start}.itp-top>#itp-back{justify-self:start}.itp-tools{justify-self:end}.itp-h{grid-column:2;min-width:0}
+.itp-btn svg{width:20px;height:20px}.itp-btn[hidden]{display:none}

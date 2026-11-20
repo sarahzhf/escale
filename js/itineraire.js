@@ -20,7 +20,10 @@
   const RED = '#E0533D';
   /* trois fonds de carte : illustrée (aquarelle, façon carte de voyage), plan, satellite en relief */
   const STYLES = { illu: { n: 'Illustrée', u: 'aquarelle' }, plan: { n: 'Plan', u: 'streets-v2' }, sat: { n: 'Satellite', u: 'satellite' } };
-  const styleKey = () => { try { const k = localStorage.getItem('escale:itps'); return STYLES[k] ? k : 'illu'; } catch (_) { return 'illu'; } };
+  const LS = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) { return null; } };
+  const flatKey = () => { const k = LS('escale:itps'); return k === 'plan' ? 'plan' : 'illu'; };
+  const styleKey = () => LS('escale:it3d') === '1' ? 'sat' : flatKey();
+  const LAYERS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg>';
   const isSat = () => IT && IT.sk === 'sat';
   /* moyens de transport d'une étape à l'autre */
   const MODES = { avion: ['Avion', '<path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>'],
@@ -75,15 +78,15 @@
     el.innerHTML = `<div class="itp-map" id="itp-map"></div><div class="itp-veil" aria-hidden="true"></div>
       <header class="itp-top"><button class="itp-btn" id="itp-back" aria-label="Retour">${SV.back}</button>
         <div class="itp-h"><p>${mode === 'amis' ? 'Entre amis' : 'Mon itinéraire'}</p><h1 id="itp-t">&nbsp;</h1><span id="itp-s"></span></div>
-        <div class="itp-tools"><button class="itp-btn txt" id="itp-style" aria-label="Changer de fond de carte">${STYLES[styleKey()].n}</button><button class="itp-btn txt" id="itp-view" aria-label="Changer de vue">3D</button></div></header>
+        <div class="itp-tools"><button class="itp-btn" id="itp-style" aria-label="Changer de fond de carte" ${styleKey() === 'sat' ? 'hidden' : ''}>${LAYERS}</button><button class="itp-btn txt" id="itp-view" aria-label="Changer de vue">${styleKey() === 'sat' ? '2D' : '3D'}</button></div></header>
       <div class="itp-sel" id="itp-sel"></div>
       <div class="itp-msg" id="itp-msg" hidden></div>
       <section class="itp-sheet" id="itp-sheet"></section>`;
     ($('phone') || document.body).appendChild(el); requestAnimationFrame(() => el.classList.add('on'));
     el.querySelector('#itp-back').onclick = close;
-    el.querySelector('#itp-view').onclick = () => { const m = IT && IT.map; if (!m) return; const flat = m.getPitch() > 20; m.easeTo({ pitch: flat ? 0 : 58, bearing: flat ? 0 : -14, duration: 1100 }); el.querySelector('#itp-view').textContent = flat ? '3D' : '2D'; };
-    el.querySelector('#itp-style').onclick = () => { if (!IT || !IT.map) return; const ks = Object.keys(STYLES), k = ks[(ks.indexOf(IT.sk) + 1) % ks.length]; IT.sk = k; try { localStorage.setItem('escale:itps', k); } catch (_) { }
-      el.querySelector('#itp-style').textContent = STYLES[k].n; IT.styled = false; IT.map.setStyle(styleURL(k)); };
+    // 2D : la carte à plat, comme un plan ; 3D : le satellite en relief, incliné, avec les pins en 3D
+    el.querySelector('#itp-view').onclick = () => { if (!IT || !IT.map) return; const to3d = IT.sk !== 'sat'; LS('escale:it3d', to3d ? '1' : '0'); setSk(to3d ? 'sat' : flatKey()); };
+    el.querySelector('#itp-style').onclick = () => { if (!IT || !IT.map || IT.sk === 'sat') return; const k = IT.sk === 'illu' ? 'plan' : 'illu'; LS('escale:itps', k); setSk(k); toast(`Carte ${STYLES[k].n.toLowerCase()}`); };
     return el;
   }
   function close() { if (!IT) return; const el = $('itp'); cancelAnimationFrame(IT.raf || 0); try { IT.map && IT.map.remove(); } catch (_) { } IT = null; if (el) { el.classList.remove('on'); setTimeout(() => el.remove(), 260); } }
@@ -175,6 +178,8 @@
     map.on('move', placeLabels);
     return map;
   }
+  function setSk(k) { if (!IT || !IT.map) return; IT.sk = k; IT.styled = false; const v = $('itp-view'), st = $('itp-style'); if (v) v.textContent = k === 'sat' ? '2D' : '3D'; if (st) st.hidden = k === 'sat';
+    try { IT.map.setTerrain && IT.map.setTerrain(null); } catch (_) { } IT.map.setStyle(styleURL(k)); }
   function styleURL(k) { return window.ITP_STYLE || `https://api.maptiler.com/maps/${STYLES[k].u}/style.json?key=${KEY()}`; }
   function clearMap() { const m = IT.map; IT.markers.forEach(x => x.remove()); IT.markers = [];
     ['itp-3d', 'itp-dots', 'itp-route', 'itp-route-sh', 'itp-route-done'].forEach(id => { try { if (m.getLayer(id)) m.removeLayer(id); } catch (_) { } }); ['itp-route', 'itp-dots'].forEach(id => { try { if (m.getSource(id)) m.removeSource(id); } catch (_) { } }); }
@@ -212,7 +217,7 @@
     return { type: 'FeatureCollection', features: f.map(c => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: c } })) }; }
   function intro(pts) {
     const m = IT.map, b = new maplibregl.LngLatBounds(pts[0], pts[0]); pts.forEach(p => b.extend(p));
-    const sat = isSat(), v = $('itp-view'); if (v) v.textContent = sat ? '2D' : '3D';
+    const sat = isSat();
     if (pts.length === 1) m.flyTo({ center: pts[0], zoom: 12.5, pitch: sat ? 58 : 0, bearing: sat ? -14 : 0, duration: REDUCED ? 0 : 2600, essential: true });
     else m.fitBounds(b, { padding: { top: 210, bottom: 260, left: 50, right: 120 }, pitch: sat ? 56 : 0, bearing: sat ? -14 : 0, maxZoom: 14.5, duration: REDUCED ? 0 : 2800, essential: true });
     cancelAnimationFrame(IT.raf || 0);

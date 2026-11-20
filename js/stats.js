@@ -187,7 +187,7 @@ function statsHTML(t) {
       L.forEach(r => { const n = subName(r.d) || 'Sans précision'; bySub[n] = (bySub[n] || 0) + (eurM ? r.v : 1); });
       const subE = Object.entries(bySub).sort((a, b) => b[1] - a[1]), smax = Math.max(...subE.map(e => e[1]), 1), bud = !all && budgetsOf(t)[sel.k], spentK = !all && catsOf(t)[sel.k];
       return `<div class="sx-detail"><p><b>${esc(sel.n)}</b> : ${fmt(sel.v)} en ${nbTxt(sel.cnt)}, ${fmt(sel.v / Math.max(1, sel.cnt))} en moyenne.</p>
-        ${subE.length > 1 || (subE[0] && subE[0][0] !== 'Sans précision') ? `<div class="sx-rank sub">${subE.map(([n, v]) => `<div class="r"><span class="n">${esc(n)}</span><span class="tr"><i style="width:${v / smax * 100}%;background:${CATV(sel.k)}"></i></span><b class="num">${eurM ? fmt(v) : v}</b></div>`).join('')}</div>` : ''}
+        ${(typeof proOn !== 'function' || proOn()) && (subE.length > 1 || (subE[0] && subE[0][0] !== 'Sans précision')) ? `<div class="sx-rank sub">${subE.map(([n, v]) => `<div class="r"><span class="n">${esc(n)}</span><span class="tr"><i style="width:${v / smax * 100}%;background:${CATV(sel.k)}"></i></span><b class="num">${eurM ? fmt(v) : v}</b></div>`).join('')}</div>` : ''}
         ${bud ? `<div class="mb2"><i class="${spentK > bud ? 'over' : ''}" style="width:${pct(spentK, bud)}%"></i></div><p class="small num">${fmt(spentK)} sur ${fmt(bud)} prévus pour tout le voyage${spentK > bud ? `, dépassé de ${fmt(spentK - bud)}` : `, reste ${fmt(bud - spentK)}`}</p>` : ''}
         ${!all ? `<button class="link" data-act="catFilter" data-k="${sel.k}">Voir ces dépenses${SV.right}</button>` : ''}</div>`; })() : '';
   const catCard = `<section class="sx-card"><h3>Top catégories<em>${eurM ? 'en euros' : 'en nombre de dépenses'}</em></h3>
@@ -198,7 +198,7 @@ function statsHTML(t) {
   const merCard = mer.length > 1 ? `<section class="sx-card"><h3>Top commerçants<em>${eurM ? 'en euros' : 'en nombre de passages'}</em></h3>
     <ol class="sx-list">${mtop.map((m, i) => `<li><span class="rk num">${i + 1}</span><span class="ic sm" style="--cc:${CATV(m.c)}">${ico(m.c)}</span><span class="m"><b>${esc(m.name)}</b><span class="tr"><i style="width:${val(m) / mmax * 100}%"></i></span></span><span class="p num">${eurM ? fmt(m.v) : m.n + ' passage' + (m.n > 1 ? 's' : '')}<span>${eurM ? m.n + ' fois' : fmt(m.v)}</span></span></li>`).join('')}</ol>
     <p class="small sx-note">Regroupés par commerçant, ou par description quand le champ commerçant est vide.</p></section>` : '';
-  const ranks = `<div class="sec sx-sec"><h2>Classements</h2><div class="seg sm" role="group" aria-label="Classer par"><button class="${eurM ? 'on' : ''}" data-act="sxMode" data-v="eur" aria-pressed="${eurM}">En €</button><button class="${eurM ? '' : 'on'}" data-act="sxMode" data-v="nb" aria-pressed="${!eurM}">En nombre</button></div></div>${catCard}${merCard}`;
+  const ranks = `<div class="sec sx-sec"><h2>Classements</h2><div class="seg sm" role="group" aria-label="Classer par"><button class="${eurM ? 'on' : ''}" data-act="sxMode" data-v="eur" aria-pressed="${eurM}">En €</button><button class="${eurM ? '' : 'on'}" data-act="sxMode" data-v="nb" aria-pressed="${!eurM}">En nombre</button></div></div>${catCard}`;
   // plus grosses dépenses
   const big = rows.slice().sort((a, b) => b.v - a.v).slice(0, 5);
   const bigCard = `<section class="sx-card"><h3>Plus grosses dépenses<em>${all ? 'tous voyages confondus' : 'ta part'}</em></h3><ol class="sx-list">${big.map((r, i) => `<li><button data-act="editExp" data-trip="${r.t.id}" data-id="${r.d.id}"><span class="rk num">${i + 1}</span><span class="ic sm" style="--cc:${CATV(r.d.c)}">${ico(r.d.c)}</span><span class="m"><b>${esc(r.d.l)}</b><span class="small">${all ? `${flag(r.t.pays)}${esc(short(r.t))}, ` : ''}${fd(r.date)}${r.d.m && r.d.m !== r.d.l ? `, ${esc(r.d.m)}` : ''}</span></span><span class="p num">${fmt(r.v)}<span>${pctTxt(r.v, total)} du total</span></span></button></li>`).join('')}</ol></section>`;
@@ -211,17 +211,18 @@ function statsHTML(t) {
       <button class="link small" data-act="budget" data-trip="${t.id}">Modifier le budget</button></details>`;
   }
   const others = otherTripsPerDay(null).sort((p, q) => q.v - p.v), omax = Math.max(...others.map(x => x.v), 1);
-  if (others.length > 1) {
+  if (others.length > 1 && !all && (typeof proOn !== 'function' || proOn())) {
     const inner = `<div class="sx-rank trips">${others.map(x => `<div class="r ${!all && x.x.id === t.id ? 'me' : ''}"><span class="n">${flag(x.x.pays)}${esc(short(x.x))}</span><span class="tr"><i style="width:${x.v / omax * 100}%"></i></span><b class="num">${fmt(x.v)}</b></div>`).join('')}</div>`;
     more += all ? `<section class="sx-card"><h3>Par voyage<em>dépense moyenne par jour</em></h3>${inner}</section>`
       : `<details class="acc" data-acc="cmp" ${open.cmp ? 'open' : ''}><summary><span><b>Comparé à tes autres voyages</b><em>dépense moyenne par jour</em></span>${SV.down || ''}</summary>${inner}</details>`;
   }
-  return `<div id="stwrap">${head}${kpi}${tips}${evo}${ranks}${bigCard}${more}</div>`;
+  const pro = typeof statsProHTML === 'function' ? statsProHTML(t, rows, total) : '';
+  return `<div id="stwrap">${head}${kpi}${tips}${evo}${ranks}${bigCard}${more}${pro}</div>`;
 }
 
 const reStats = () => { const w = $('stwrap'), t = trip(depId); if (w && t) { w.outerHTML = statsHTML(t); hideTip(); } };
 ACT.stCat = d => { STX.k = STX.k === d.k ? null : d.k; reStats(); };
-ACT.sxScope = d => { STX.scope = d.v === 'all' ? 'all' : 'trip'; STX.k = null; reStats(); };
+ACT.sxScope = d => { if (d.v === 'all' && typeof proOn === 'function' && !proOn()) return ACT.statsPaywall(); STX.scope = d.v === 'all' ? 'all' : 'trip'; STX.k = null; reStats(); };
 ACT.sxMode = d => { STX.mode = d.v === 'nb' ? 'nb' : 'eur'; reStats(); };
 ACT.sxEv = d => { STX.ev = d.v === 'day' ? 'day' : 'cum'; reStats(); };
 DD['st-p'] = v => { STX.p = v || ''; STX.k = null; reStats(); };

@@ -2832,3 +2832,4 @@ html[data-theme="dark"] .balert{background:#3a3220;color:#F4E6C4;border-color:#6
 .hist-av{flex:none;width:32px;height:32px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:var(--lilac);font-style:normal;font-weight:600;font-size:.85rem}.hist-av img{width:100%;height:100%;object-fit:cover}
 .hist-r span{font-size:.88rem;line-height:1.4}.hist-r em{display:block;font-style:normal;font-size:.74rem;color:var(--muted);margin-top:2px}
 .stk .fp,.stk .fp *{pointer-events:none;-webkit-user-drag:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.book-ov:not(.editing) .bk-stage,.bk-leaf{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}

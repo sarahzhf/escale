@@ -29,30 +29,30 @@ const COLLAB_TRIPS = new Map();
   const SLOTS = [[[25, 46]], [[25, 33], [25, 68]], [[17, 32], [33, 50], [19, 72]], [[16, 32], [34, 32], [16, 66], [34, 66]], [[15, 28], [34, 30], [25, 52], [15, 75], [35, 75]], [[15, 26], [35, 26], [15, 51], [35, 51], [15, 76], [35, 76]]];
   const FR_MAP = { polaroid: 'polaroid', simple: 'blanc', cercle: 'rond', timbre: 'timbre', arche: 'arrondi', ovale: 'arrondi', festonne: 'blanc', vague: 'blanc', dentelle: 'blanc' };
   /** Première modification d'une page : ses photos quittent la grille et deviennent libres, à la même place à peu près. */
+  const FREED = new Set();
   function freePage(e) {
-    if (!e || (e.lay && e.lay.free)) return false; e.lay = e.lay || {}; e.st = e.st || [];
+    if (!e || (e.lay && e.lay.free) || FREED.has(e.id)) return false; FREED.add(e.id); e.lay = e.lay || {}; e.st = e.st || [];
     const placed = new Set(e.st.filter(x => x.k === 'f').map(x => x.p)), ph = e.photos.map((p, i) => ({ p, i })).filter(o => o.p && !placed.has(o.p)).slice(0, 6);
     const pos = SLOTS[Math.max(0, ph.length - 1)] || SLOTS[0], sc = ph.length <= 1 ? 1.15 : ph.length <= 2 ? .95 : ph.length <= 4 ? .72 : .6;
     // les photos passent sous les stickers déjà posés
     const add = ph.map((o, k) => ({ k: 'f', p: o.p, x: pos[k][0], y: pos[k][1], s: sc, r: [-4, 3, -2, 5, -5, 2][k % 6], fr: FR_MAP[pageFrame(e, o.i)] || 'polaroid', ar: 'carre', cx: 50, cy: 50, cz: 1 }));
-    e.st = add.concat(e.st); e.lay.free = 1; delete e.lay.fr; return true;
+    e.st = add.concat(e.st); e.lay.free = 1; delete e.lay.fr; e.photos = e.photos.filter(Boolean); return true;
   }
   { const r0 = bkRender; bkRender = () => { if (BK && BK.edit && BK.book.own) { const e = curEntry(); if (freePage(e)) { if (BK.sel != null) BK.sel = null; save(); } } r0(); }; }
   // Photo : on choisit une photo, elle arrive au milieu de la page, prête à être déplacée
-  ACT.bkPhoto = () => { const t = bookTrip(), e = curEntry(); if (!t || !e) return; freePage(e);
+  ACT.bkPhoto = () => { const t = bookTrip(), e = curEntry(); if (!t || !e) return;
     if (e.photos.filter(Boolean).length >= 12) { toast('12 photos maximum par page'); return; }
-    let i = e.photos.findIndex(x => !x); if (i < 0) { e.photos.push(null); i = e.photos.length - 1; }
-    pickPhoto(`fp|${t.id}|${e.id}|${i}`); };
+    pickPhoto(`fp|${t.id}|${e.id}|new`); }; // l'emplacement n'est créé qu'une fois la photo choisie
   { const on0 = onPhoto; onPhoto = async (target, path) => {
     if (!String(target).startsWith('fp|')) return on0(target, path);
     const [, tid, eid, i] = target.split('|'), t = trip(tid), e = t && t.entrees.find(x => x.id === eid); if (!e) return;
-    e.photos[+i] = path; e.st = e.st || []; const cx = BK && BK.zoom === 'r' ? 75 : 25;
+    e.photos = e.photos.filter(Boolean); e.photos.push(path); e.st = e.st || []; const cx = BK && BK.zoom === 'r' ? 75 : 25;
     e.st.push({ k: 'f', p: path, x: r1(cx - 4 + Math.random() * 8), y: r1(42 + Math.random() * 12), s: 1, r: Math.round(Math.random() * 8 - 4), fr: 'polaroid', ar: 'o', cx: 50, cy: 50, cz: 1 });
     if (BK && curEntry() && curEntry().id === eid) BK.sel = e.st.length - 1;
     save(); if (BK) bkRender(); toast('Photo posée : glisse-la où tu veux'); }; }
   // retirer une photo libre la retire aussi des photos du jour
   { const st0 = ACT.bkStk; ACT.bkStk = d => { const e = curEntry(), s = e && BK.sel != null ? e.st[BK.sel] : null;
-    if (s && s.k === 'f' && d.op === 'del') { const i = e.photos.indexOf(s.p); if (i >= 0 && !e.st.some((x, k) => k !== BK.sel && x.p === s.p)) e.photos[i] = null; }
+    if (s && s.k === 'f' && d.op === 'del' && !e.st.some((x, k) => k !== BK.sel && x.p === s.p)) e.photos = e.photos.filter(x => x && x !== s.p);
     return st0(d); }; }
 
   /* rogner : on fait glisser la photo dans son cadre, on zoome, on choisit le format */
@@ -227,4 +227,66 @@ const COLLAB_TRIPS = new Map();
     const btn = `<button class="bk-ic" data-act="bkHistory" aria-label="Historique des modifications">${SV.clock}</button>`;
     if (book.collab) ed.insertAdjacentHTML('beforebegin', btn);
     else if (book.own && navigator.onLine) rpc('collab_list', { p_trip: book.tripId }).then(L => { if (L && L.length && BK && BK.book.tripId === book.tripId && top.isConnected && !top.querySelector('[data-act="bkHistory"]')) ed.insertAdjacentHTML('beforebegin', btn); }).catch(() => { }); }; }
+
+  /* ---------- carnet plus léger et plus fluide ---------- */
+  // Les pages souples en WebGL demandaient une « photo » de chaque double page avant de tourner (lent, lourd en mémoire).
+  // La page se tourne maintenant directement au doigt, en 3D CSS : elle suit le geste et se pose, ou revient.
+  if (typeof PC !== 'undefined') PC.failed = true;
+  const EASE = 'cubic-bezier(.22,.61,.36,1)';
+  function liveTurn(stage) {
+    let g = null;
+    const leafEl = () => $('bkLeaf'), cancelG = () => { g = null; };
+    stage.addEventListener('pointerdown', e => {
+      if (!BK || BK.edit || BK.busy || e.button > 0 || e.target.closest('button,a,input,[contenteditable]')) { g = null; return; }
+      g = { id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), on: false, lx: e.clientX, lt: performance.now(), v: 0 };
+    });
+    stage.addEventListener('pointermove', e => {
+      if (!g || e.pointerId !== g.id || !BK) return; const dx = e.clientX - g.x0, dy = e.clientY - g.y0, now = performance.now();
+      g.v = (e.clientX - g.lx) / Math.max(1, now - g.lt); g.lx = e.clientX; g.lt = now;
+      if (!g.on) { if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy) * 1.2) return; if (!start(dx < 0 ? 1 : -1)) { g = null; return; } }
+      move(dx);
+    });
+    const up = e => { if (!g || e.pointerId !== g.id) return; const G = g; g = null; if (!G.on) return;
+      const done = G.p > .33 || (G.dir > 0 ? G.v < -.45 : G.v > .45); finish(G, done && !(G.dir > 0 ? G.v > .3 : G.v < -.3)); };
+    stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', e => { if (g && e.pointerId === g.id && g.on) { const G = g; g = null; finish(G, false); } else cancelG(); });
+    function start(dir) {
+      const n = BK.book.spreads.length, L = $('bkL'), R = $('bkR'), stk = $('bkStk'), leaf = leafEl(); if (!leaf || !L || !R) return false;
+      const phone = !BK.wide && BK.zoom, G = g; G.dir = dir; G.phone = phone;
+      if (phone) { const z = BK.zoom, pos = BK.i * 2 + (z === 'r' ? 1 : 0), to = pos + dir; if (to < 0 || to > n * 2 - 1) return false;
+        G.ti = to >> 1; G.tz = to % 2 ? 'r' : 'l'; G.side = z; G.here = z === 'r' ? R : L; G.keep = G.here.innerHTML;
+        const target = pageHTML(BK.book, BK.book.spreads[G.ti], G.tz);
+        if (dir > 0) { G.front = G.keep; G.back = blankBack(); G.here.innerHTML = target; G.a0 = 0; G.a1 = -180; G.origin = '0 50%'; }
+        else { G.front = target; G.back = blankBack(); G.a0 = -180; G.a1 = 0; G.origin = '0 50%'; }
+      } else { const k = BK.i + dir; if (k < 0 || k >= n) return false; G.k = k; const to = BK.book.spreads[k];
+        if (dir > 0) { G.side = 'r'; G.here = R; G.keep = R.innerHTML; G.front = G.keep; G.back = pageHTML(BK.book, to, 'l'); R.innerHTML = pageHTML(BK.book, to, 'r'); G.a0 = 0; G.a1 = -180; G.origin = '0 50%'; G.after = () => { L.innerHTML = G.back; }; }
+        else { G.side = 'l'; G.here = L; G.keep = L.innerHTML; G.front = G.keep; G.back = pageHTML(BK.book, to, 'r'); L.innerHTML = pageHTML(BK.book, to, 'l'); G.a0 = 0; G.a1 = 180; G.origin = '100% 50%'; G.after = () => { R.innerHTML = G.back; }; } }
+      BK.busy = true; BK.sel = null; stk.style.opacity = 0;
+      leaf.className = `bk-leaf on live ${G.side}`; leaf.style.animation = 'none'; leaf.style.transition = 'none'; leaf.style.transformOrigin = G.origin;
+      leaf.innerHTML = `<div class="lf f"><div class="bk-pg ${G.side}">${G.front}</div><i class="sh"></i></div><div class="lf b"><div class="bk-pg ${G.side === 'l' ? 'r' : 'l'}">${G.back}</div><i class="sh"></i></div>`;
+      G.w = (G.here.getBoundingClientRect().width || 200) * (phone ? 1 : 1.15); G.persp = Math.round(Math.max(1400, G.w * 6)); G.on = true; G.p = 0; set(G, G.a0); return true;
+    }
+    function set(G, a) { const leaf = leafEl(); if (!leaf) return; const p = Math.abs(a - G.a0) / 180, lift = Math.sin(Math.min(1, p) * Math.PI);
+      leaf.style.transform = `perspective(${G.persp}px) rotateY(${a}deg) translateZ(${(lift * 6).toFixed(1)}px)`;
+      const f = leaf.querySelector('.f .sh'), b = leaf.querySelector('.b .sh'), d = Math.abs(a) / 180; if (f) f.style.opacity = (d * .55).toFixed(3); if (b) b.style.opacity = ((1 - d) * .45).toFixed(3);
+      const sh = $('bkShade'); if (sh) { sh.className = `bk-shade ${G.side} ${G.origin.startsWith('100') ? 'hr' : 'hl'}`; sh.style.animation = 'none'; sh.style.opacity = (lift * .7).toFixed(3); } }
+    function move(dx) { const G = g; if (!G || !G.on) return; let p = (G.dir > 0 ? -dx : dx) / G.w; p = Math.max(0, Math.min(1, p)); G.p = p; set(G, G.a0 + (G.a1 - G.a0) * p); }
+    function finish(G, done) {
+      const leaf = leafEl(), to = done ? G.a1 : G.a0, rest = done ? 1 - G.p : G.p, ms = Math.round(180 + 260 * rest);
+      if (leaf) { leaf.style.transition = `transform ${ms}ms ${EASE}`; requestAnimationFrame(() => set(G, to)); leaf.querySelectorAll('.sh').forEach(x => x.style.transition = `opacity ${ms}ms ${EASE}`); }
+      const sh = $('bkShade'); if (sh) sh.style.transition = `opacity ${ms}ms ${EASE}`;
+      setTimeout(() => {
+        const stk = $('bkStk');
+        if (leaf) { leaf.className = 'bk-leaf'; leaf.style.cssText = ''; leaf.innerHTML = ''; }
+        if (sh) { sh.className = 'bk-shade'; sh.style.cssText = ''; }
+        if (!BK) return;
+        if (done) { if (G.phone) { BK.i = G.ti; BK.busy = false; bkRender(); snapZoom(G.tz); bkBar(); } else { if (G.after) G.after(); BK.i = G.k; BK.busy = false; if (stk) stk.innerHTML = stkLayerHTML(); bkBar(); } }
+        else { G.here.innerHTML = G.keep; BK.busy = false; }
+        if (stk) stk.style.opacity = '';
+      }, ms + 30);
+    }
+  }
+  { const ob2 = openBook; openBook = (book, start) => { ob2(book, start); const st = $('bkStage'); if (st && !st._live) { st._live = 1; liveTurn(st); } }; }
+
+  // en modification : toucher la page alors qu'un élément est sélectionné le désélectionne seulement (pas de texte surprise)
+  { const bt0 = bookTap; bookTap = (x, y) => { if (BK && BK.edit && BK.sel != null) { BK.sel = null; document.querySelectorAll('#bkStk .stk.sel').forEach(el => el.classList.remove('sel')); bkBar(); return; } return bt0(x, y); }; }
 })();

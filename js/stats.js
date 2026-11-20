@@ -143,7 +143,7 @@ function statsHTML(t) {
   const popts = all ? [] : [...(f.enCours ? [['today', "Aujourd'hui"], ['last7', '7 derniers jours']] : []), ...(months.length > 1 ? months.map(m => ['m:' + m, monthName(m)]) : [])];
   if (STX.p && !popts.some(o => o[0] === STX.p)) STX.p = '';
   const nTrips = S.trips.filter(x => x.depenses.length).length;
-  const head = `<div class="sec st-head"><h2>Statistiques</h2>${!all && t.depenses.length ? `<button class="more" data-act="exportOpen" data-trip="${t.id}">Exporter</button>` : ''}</div>
+  const head = `${!all && t.depenses.length && typeof exportRowHTML === 'function' ? exportRowHTML(t) : ''}<div class="sec st-head"><h2>Statistiques</h2></div>
     <div class="sx-filters"><div class="seg" role="group" aria-label="Voyages pris en compte"><button class="${all ? '' : 'on'}" data-act="sxScope" data-v="trip" aria-pressed="${!all}">Ce voyage</button><button class="${all ? 'on' : ''}" data-act="sxScope" data-v="all" aria-pressed="${all}">Tous les voyages${nTrips > 1 ? ` (${nTrips})` : ''}</button></div>${popts.length ? ddHTML('st-p', 'Tout le voyage', popts, STX.p) : ''}</div>`;
   const rows = stRows(t), total = rows.reduce((a, r) => a + r.v, 0);
   // chiffres clés

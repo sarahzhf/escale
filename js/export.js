@@ -254,10 +254,23 @@ async function expDeliver({ blob, name }) {
   try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: name }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
   const a = document.createElement('a'), url = URL.createObjectURL(blob); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
+/* ---------- plan PRO : verrou prêt, désactivé tant que le paiement n'existe pas ----------
+   Pour l'activer : PRO.lock = true. L'accès PRO sera lu dans les réglages du compte (pro_until), rempli par le paiement. */
+const PRO = { lock: false, has: () => { try { return !!(SETTINGS && SETTINGS.pro_until && new Date(SETTINGS.pro_until) > new Date()); } catch (_) { return false; } } };
+const proLocked = () => PRO.lock && !PRO.has();
+const EXP_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 18v-6M9 15l3 3 3-3"/></svg>';
+function exportRowHTML(t) { return `<button class="exp-row" data-act="exportOpen" data-trip="${t.id}"><span class="exp-ic">${EXP_IC}</span><span class="exp-tx"><b>Exporter en PDF ou sur Excel</b><small>Le relevé de tes dépenses, à garder ou à envoyer</small></span>${proLocked() ? '<span class="pro-tag">PRO</span>' : '<i class="exp-go">›</i>'}</button>`; }
+const expThumbs = () => `<div class="exp-thumbs" aria-hidden="true"><figure class="a"><img src="icons/pro/export-pdf.webp" alt=""><figcaption>PDF</figcaption></figure><figure class="b"><img src="icons/pro/export-excel.webp" alt=""><figcaption>Excel</figcaption></figure></div>`;
+function exportPaywall(t) {
+  openPanel(`<div class="exp-pay">${expThumbs()}<span class="pro-tag big">PRO</span><h2>Exporte tes dépenses</h2>
+   <p class="small">Avec Eskalys PRO, transforme ton voyage en relevé clair, prêt à garder, à envoyer ou à partager entre amis.</p>
+   <ul class="exp-list"><li><b>PDF</b> : chiffres clés, répartition par catégorie, dépenses jour par jour, comptes entre amis et détail complet.</li><li><b>Excel</b> : tableau de bord avec graphiques, tableaux filtrables par catégorie, sous-catégorie et jour, totaux qui se recalculent.</li></ul>
+   <button class="btn full" disabled>Passer à PRO (bientôt disponible)</button>${CLOSE()}</div>`, () => { }, { nofocus: true }); }
 ACT.exportOpen = d => { const t = trip(d.trip); if (!t) return; if (!t.depenses.length) { toast('Aucune dépense à exporter pour ce voyage'); return; }
-  openPanel(`<h2>Exporter les dépenses</h2><p class="small">${esc(t.ville || C(t).n)} : ${t.depenses.length} dépense${t.depenses.length > 1 ? 's' : ''}. Le fichier est créé sur ton téléphone, rien n'est envoyé.</p>
+  if (proLocked()) return exportPaywall(t);
+  openPanel(`${expThumbs()}<h2>Exporter les dépenses</h2><p class="small">${esc(t.ville || C(t).n)} : ${t.depenses.length} dépense${t.depenses.length > 1 ? 's' : ''}. Le fichier est créé sur ton téléphone, rien n'est envoyé.</p>
    <button class="exp-opt" data-x="pdf"><b>PDF</b><span>Un relevé clair et mis en page : chiffres clés, répartition par catégorie, dépenses par jour et détail complet. Idéal à garder ou à envoyer.</span></button>
-   <button class="exp-opt" data-x="xlsx"><b>Excel</b><span>Un tableau à retravailler : toutes les dépenses avec filtres, et des feuilles Résumé, Catégories et Jours calculées automatiquement.</span></button>${CLOSE()}`, p => {
+   <button class="exp-opt" data-x="xlsx"><b>Excel</b><span>Un classeur complet : tableau de bord avec graphiques, dépenses filtrables, catégories, sous-catégories et jours, totaux qui se recalculent.</span></button>${CLOSE()}`, p => {
     p.querySelectorAll('.exp-opt').forEach(b => b.onclick = async () => { if (b.disabled) return; p.querySelectorAll('.exp-opt').forEach(x => x.disabled = true); const old = b.querySelector('b').textContent; b.querySelector('b').textContent = 'Préparation…';
       try { const r = b.dataset.x === 'pdf' ? await expPDF(t) : await expXLSX(t); await expDeliver(r); closePanel(); toast('Fichier prêt'); }
       catch (e) { console.error(e); toast('Export impossible, réessaie'); } finally { p.querySelectorAll('.exp-opt').forEach(x => x.disabled = false); b.querySelector('b').textContent = old; } }); }, { nofocus: true }); };

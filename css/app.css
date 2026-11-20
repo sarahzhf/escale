@@ -2856,3 +2856,15 @@ html[data-theme="dark"] .balert{background:#3a3220;color:#F4E6C4;border-color:#6
 .bk-editing b{font-weight:600}
 .exp-opt{display:block;width:100%;text-align:left;background:var(--card,#fff);border:1px solid #E2DCD0;border-radius:16px;padding:14px 16px;margin-top:10px;font:inherit;color:inherit;cursor:pointer}.exp-opt b{display:block;font-size:1rem;color:var(--green);margin-bottom:3px}.exp-opt span{font-size:.84rem;line-height:1.45;color:#6E6A62}.exp-opt:disabled{opacity:.6}
 html[data-theme="dark"] .exp-opt{background:#1E2320;border-color:#2E3A32}html[data-theme="dark"] .exp-opt span{color:#B9B6AE}html[data-theme="dark"] .exp-opt b{color:#93C9A3}
+
+.exp-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--card,#fff);border:1px solid #E2DCD0;border-radius:18px;padding:12px 14px;margin:14px 0 4px;font:inherit;color:inherit;cursor:pointer}
+.exp-row .exp-ic{width:40px;height:40px;border-radius:12px;background:#EEF4EF;color:var(--green);display:grid;place-items:center;flex:none}.exp-row .exp-ic svg{width:22px;height:22px}
+.exp-row .exp-tx{flex:1;min-width:0}.exp-row b{display:block;font-size:.95rem}.exp-row small{display:block;font-size:.78rem;color:#6E6A62;margin-top:1px}.exp-row .exp-go{font-style:normal;font-size:1.5rem;color:#B5AFA3;line-height:1}
+.pro-tag{flex:none;background:linear-gradient(135deg,#D9A441,#B8862E);color:#fff;font-size:.68rem;font-weight:700;letter-spacing:.08em;border-radius:999px;padding:4px 9px}.pro-tag.big{display:inline-block;font-size:.75rem;margin:6px 0 2px}
+.exp-thumbs{position:relative;height:150px;margin:4px auto 12px;max-width:300px}
+.exp-thumbs figure{position:absolute;top:8px;width:46%;margin:0;background:#fff;padding:6px 6px 22px;border-radius:6px;box-shadow:0 10px 24px -10px rgba(0,0,0,.35)}
+.exp-thumbs figure img{display:block;width:100%;height:96px;object-fit:cover;object-position:top;border-radius:3px;border:1px solid #EEE9DF}
+.exp-thumbs figcaption{position:absolute;left:0;right:0;bottom:4px;text-align:center;font-family:Caveat,cursive;font-size:1rem;color:#4A4740}
+.exp-thumbs .a{left:6%;transform:rotate(-7deg)}.exp-thumbs .b{right:6%;transform:rotate(6deg);top:16px}
+.exp-pay{text-align:center}.exp-pay h2{margin-top:2px}.exp-list{text-align:left;padding-left:18px;font-size:.86rem;line-height:1.5;color:#55584f}.exp-list li{margin:6px 0}
+html[data-theme="dark"] .exp-row{background:#1E2320;border-color:#2E3A32}html[data-theme="dark"] .exp-row small{color:#B9B6AE}html[data-theme="dark"] .exp-row .exp-ic{background:#25332A;color:#93C9A3}html[data-theme="dark"] .exp-thumbs figure{background:#F4EFE6}html[data-theme="dark"] .exp-list{color:#C2C0BA}

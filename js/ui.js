@@ -7,7 +7,7 @@ const C = t => COUNTRIES[t.pays] || COUNTRIES.FR;
 /** Nom affiché d'un voyage : la ville si elle est renseignée, sinon le pays (roadtrip). */
 const place = t => (t && t.ville) || C(t).n;
 const fmtL = (n, t) => Math.round(n).toLocaleString('fr-FR') + ' ' + C(t).cur;
-const trip = id => S.trips.find(t => t.id === id);
+const trip = id => S.trips.find(t => t.id === id) || (typeof COLLAB_TRIPS !== 'undefined' ? COLLAB_TRIPS.get(id) : undefined);
 const sorted = () => S.trips.slice().sort((a, b) => D(b.du) - D(a.du));
 const currentTrip = () => S.trips.find(t => info(t).enCours) || null;
 function budgetsOf(t) { if (t.budgets) return t.budgets; const b = {}; Object.keys(CATS).forEach(k => b[k] = Math.round(t.budget * CATS[k].pct)); return b; }

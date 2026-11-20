@@ -11,7 +11,9 @@
       ['book', 'Un carnet par voyage', 'Crée un voyage avec + : pays, ville, dates et budget. Il devient un carnet en cuir, rangé debout dans ta bibliothèque en bois (écran Voyages, puis Journal).', ['Fais défiler l’étagère du doigt pour choisir un carnet', 'Touche un carnet pour l’ouvrir', 'Touche un objet de l’étagère pour le changer']],
       ['book', 'Des pages qui se tournent', 'Le carnet s’ouvre sur une double page : à gauche les photos du jour, à droite le titre et ton texte. Les pages se tournent par-dessus la reliure, comme un vrai carnet.', ['Balaye vers la gauche : page suivante', 'Balaye vers la droite : page précédente', 'Touche une page pour zoomer dessus, touche à côté pour refermer'], 'book'],
       ['pencil', 'Écris et décore', 'Touche le crayon en haut du carnet. Touche l’endroit de la page où tu veux écrire : une zone de texte s’ouvre à cet endroit. Ajoute tes photos, puis des stickers : émojis, masking tape, étiquettes, ou stickers découpés dans tes propres photos.', ['Glisse un sticker pour le déplacer', 'Pince avec deux doigts pour l’agrandir ou le tourner', 'Touche Terminé quand ta page est prête']],
-      ['star', 'Un carnet à ton style', 'Choisis la couleur du cuir de chaque carnet, le modèle de pages (crème lignées ou blanches à pinces dorées), la typographie, le papier et les cadres des photos.', ['Dans le carnet, en mode modification : le bouton Aa', 'Dans l’aperçu du voyage : la couverture se change avec l’appareil photo']],
+      ['img', 'Tes photos où tu veux', 'En mode modification, chaque photo se pose librement sur la page, comme un sticker. Rogne-la, choisis son format et son cadre, ou aucun cadre : ton carnet, ta mise en page.', ['Glisse une photo pour la déplacer, pince pour l’agrandir ou la tourner', 'Touche une photo puis ✂ pour la rogner, ▢ pour changer son cadre', 'Polaroïd avec légende, rond, timbre, pellicule, scotchée…']],
+      ['star', 'Un carnet à ton style', 'Choisis la couleur du cuir de chaque carnet, le modèle de pages, la typographie et le papier : uni, coloré, kraft, aquarelle, millimétré, vieux papier, bleu nuit…', ['Dans le carnet, en mode modification : le bouton Aa', 'Papier : « Mettre ce papier sur toutes les pages » en un geste', 'Dans l’aperçu du voyage : la couverture se change avec l’appareil photo']],
+      ['users', 'Un carnet à plusieurs', 'Invite les amis qui étaient du voyage à remplir le carnet avec toi : ils écrivent, ajoutent leurs photos et décorent les pages. Ils ne voient jamais ton budget, tes dépenses ni tes documents.', ['Dans le carnet, touche l’icône des deux personnages', 'Les carnets partagés avec toi sont dans Journal, sous ton étagère']],
     ]],
     ['Ton budget', '#B8452C', [
       ['wallet', 'Tes dépenses en deux secondes', 'Note une dépense en euros ou en monnaie locale : Eskalys convertit au taux du jour, répartit les nuits d’hôtel sur leurs jours et te dit combien il te reste par jour.', ['+ puis Dépense, ou le bouton du bas dans un voyage', 'Photographie un ticket : il est lu sur ton téléphone, rien n’est envoyé']],
@@ -41,8 +43,8 @@
     ]],
   ];
   const STEPS = CH.flatMap(([n, c, L], ci) => L.map(([ic, t, d, tips, ill]) => ({ ci, n, c, ic, t, d, tips, ill })));
-  // nouveautés des versions 2.8 et 2.9 : montrées une fois aux comptes qui ont déjà vu le guide
-  const NEWS = new Set(['Simule ton voyage', 'Où partir, quand et avec quel budget', 'Ton itinéraire en 3D', 'Leurs itinéraires en carte', 'Ton avis compte']), NEWS_V = 'v2.9';
+  // nouveautés de la version 2.10 (carnet libre, papiers, carnet à plusieurs) : montrées une fois aux comptes qui ont déjà vu le guide
+  const NEWS = new Set(['Tes photos où tu veux', 'Un carnet à ton style', 'Un carnet à plusieurs']), NEWS_V = 'v2.10';
   let LIST = STEPS, newsMode = false;
   const key = () => `escale:guide2:${(typeof ME !== 'undefined' && ME && ME.id) || 'x'}`;
   const seen = () => { try { return localStorage.getItem(key()) === '1' || localStorage.getItem('escale-guide-seen') === '1'; } catch (_) { return true; } };

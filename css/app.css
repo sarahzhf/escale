@@ -2918,3 +2918,5 @@ html[data-theme="dark"] .itp-pickbar{background:#1E2320;color:#ECEBE6}html[data-
 .itp-tr.hid{visibility:hidden!important;pointer-events:none}
 .itp-top{display:grid!important;grid-template-columns:96px 1fr 96px;align-items:start}.itp-top>#itp-back{justify-self:start}.itp-tools{justify-self:end}.itp-h{grid-column:2;min-width:0}
 .itp-btn svg{width:20px;height:20px}.itp-btn[hidden]{display:none}
+/* nouveau voyage : aller-retour ou aller simple */
+.tk-seg{display:flex;margin:4px 0 12px}.tk-seg button{flex:1}.tk-note{margin:10px 2px 16px;clear:both}

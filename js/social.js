@@ -284,7 +284,7 @@ ACT.noop = () => { };
 ACT.openUser = d => { if ($('panel').classList.contains('open')) closePanel(); if (d.u === ME.id) { if (current === 'profil') $('s-profil').scrollTo({ top: 0, behavior: 'smooth' }); else go('profil'); return; } if (current === 'ami' && amiId === d.u) { $('s-ami').scrollTo({ top: 0, behavior: 'smooth' }); return; } amiId = d.u; aTab = 'posts'; go('ami'); };
 ACT.openPost = async d => { let p = POSTS.get(d.p); if (!p) { const r = await rpc('feed', { p_scope: 'one', p_user: d.p }); p = r && r[0]; } if (!p) { toast("Cette publication n'est plus disponible"); return; } openPanel(`<div class="inpanel">${postCard(p)}</div>${CLOSE('Fermer')}`, null, { nofocus: true }); };
 ACT.openAlbum = async d => { const a = await rpc('get_album', { p_trip: d.trip }); if (!a) { toast('Album indisponible'); return; }
-  openPanel(`<h2>${esc(a.city)}</h2><p class="small">${flag(a.country_code)} ${esc((COUNTRIES[a.country_code] || {}).n || a.country_code)}, ${fd(a.start_date)} au ${fd(a.end_date)}</p>
+  openPanel(`<h2>${esc(a.city)}</h2><p class="small">${flag(a.country_code)} ${esc((COUNTRIES[a.country_code] || {}).n || a.country_code)}, ${a.open_end ? `depuis le ${fd(a.start_date)}, aller simple` : `${fd(a.start_date)} au ${fd(a.end_date)}`}</p>
    ${a.cover_path ? `<div class="alb-cover">${IMG(a.cover_path)}</div>` : ''}${(a.places || []).length ? `<div class="tags">${a.places.map(l => `<span class="pill">${esc(l)}</span>`).join('')}</div>` : ''}
    ${a.entries.map(e => `<div class="alb-entry"><p class="caps">Jour ${e.day}</p><h3>${esc(e.title)}</h3>${e.note ? `<p class="small wrap">${esc(e.note)}</p>` : ''}<div class="alb-ph">${(e.photos || []).filter(Boolean).map(ph => IMG(ph)).join('')}</div></div>`).join('') || '<p class="small">Pas encore de pages.</p>'}${CLOSE('Fermer')}`, null, { nofocus: true }); };
 async function relAct(fn, msg) { try { await fn(); toast(msg); refreshSocial(); updateBadges(); } catch (e) { toast(errMsg(e)); } }
@@ -390,7 +390,7 @@ function scoreHTML() {
 }
 function travelHTML() {
   const L = TRAVEL.filter(x => !x.challenged); if (!L.length) return '';
-  return `<div class="sec"><h2>Tes amis en voyage</h2></div>${L.map(x => `<div class="trav">${avatar(x.user)}<div><b>${first(x.user.display_name)} est à ${esc(x.city)} ${flag(x.country_code)}</b><span>jusqu'au ${fd(x.end_date)} · un défi sur place ?</span></div><button class="btn2 g" data-act="newChal" data-u="${x.user.id}" data-pays="${x.country_code}" data-place="${esc(x.city)}">${SV.target}Défier</button></div>`).join('')}`;
+  return `<div class="sec"><h2>Tes amis en voyage</h2></div>${L.map(x => `<div class="trav">${avatar(x.user)}<div><b>${first(x.user.display_name)} est à ${esc(x.city)} ${flag(x.country_code)}</b><span>${x.open_end ? 'aller simple, sans date de retour' : `jusqu'au ${fd(x.end_date)}`} · un défi sur place ?</span></div><button class="btn2 g" data-act="newChal" data-u="${x.user.id}" data-pays="${x.country_code}" data-place="${esc(x.city)}">${SV.target}Défier</button></div>`).join('')}`;
 }
 function boardHTML() {
   if (BOARD.length < 2) return '';

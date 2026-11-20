@@ -25,8 +25,11 @@ const VIS_TO_DB = { public: 'public', amis: 'friends', prive: 'private' };
 const VIS_FROM_DB = { public: 'public', friends: 'amis', private: 'prive' };
 
 /* ---------- correspondance appli <-> base ---------- */
+// colonnes one_way / open_end présentes dans la base (script SQL v2.10.13 lancé)
+let DB_OW = false, NO_OW = false;
 const ROW = {
-  trips: t => ({ id: t.id, country_code: t.pays, city: t.ville || null, start_date: t.du, end_date: t.au, budget: Number(t.budget) || 0,
+  trips: t => ({ id: t.id, country_code: t.pays, city: t.ville || null, start_date: t.du, end_date: t.open ? openAu(t) : t.au, budget: Number(t.budget) || 0,
+    ...(!NO_OW && (t.ow || t.open || DB_OW) ? { one_way: !!(t.ow || t.open), open_end: !!t.open } : {}),
     category_budgets: t.budgets || null, places: t.lieux || [], is_favorite: !!t.fav, album_visibility: VIS_TO_DB[t.vis || 'prive'], cover_path: t.cover || null,
     members: t.membres || [], settlements: t.reglements || [], book_color: t.bk || null, checklist: t.todo || [], tickets: t.tickets || [], ...(Array.isArray(t.itin) ? { itinerary: t.itin } : {}) }),
   expenses: ([t, d]) => ({ id: d.id, trip_id: t.id, day: d.j, label: d.l, category: d.c,
@@ -43,7 +46,7 @@ const LIST = {
 };
 // colonnes modifiables (les autres sont figées par la base)
 const UPDATABLE = {
-  trips: ['country_code', 'city', 'start_date', 'end_date', 'budget', 'category_budgets', 'places', 'is_favorite', 'album_visibility', 'cover_path', 'members', 'settlements', 'book_color', 'checklist', 'tickets', 'itinerary'],
+  trips: ['country_code', 'city', 'start_date', 'end_date', 'one_way', 'open_end', 'budget', 'category_budgets', 'places', 'is_favorite', 'album_visibility', 'cover_path', 'members', 'settlements', 'book_color', 'checklist', 'tickets', 'itinerary'],
   expenses: ['day', 'label', 'category', 'amount_local', 'currency', 'amount_eur', 'paid_by', 'split', 'sub', 'end_day', 'merchant'],
   journal_entries: ['day', 'title', 'note', 'photo_paths', 'description', 'stickers', 'layout'],
   wishes: ['note'],
@@ -52,7 +55,8 @@ const ORDER_INS = ['trips', 'expenses', 'journal_entries', 'wishes'];
 const ORDER_DEL = ['expenses', 'journal_entries', 'wishes', 'trips'];
 
 function fromDb(trips, exps, entries, wishes) {
-  const T = trips.map(r => ({ id: r.id, pays: r.country_code, ville: r.city || '', membres: r.members || [], reglements: r.settlements || [], bk: r.book_color || null, du: r.start_date, au: r.end_date, budget: Number(r.budget),
+  if (trips.some(r => 'one_way' in r)) DB_OW = true;
+  const T = trips.map(r => ({ id: r.id, pays: r.country_code, ville: r.city || '', membres: r.members || [], reglements: r.settlements || [], bk: r.book_color || null, du: r.start_date, au: r.end_date, ow: !!(r.one_way || r.open_end), open: !!r.open_end, budget: Number(r.budget),
     budgets: r.category_budgets || null, lieux: r.places || [], todo: r.checklist || [], tickets: r.tickets || [], fav: r.is_favorite, vis: VIS_FROM_DB[r.album_visibility] || 'prive',
     cover: r.cover_path, entrees: [], depenses: [], ...(Array.isArray(r.itinerary) ? { itin: r.itinerary } : {}) }));
   const byId = Object.fromEntries(T.map(t => [t.id, t]));
@@ -126,6 +130,7 @@ async function sync() {
     const had = PENDING.size; updatePending(); if (had && wasOffline) { wasOffline = false; toast('Connexion retrouvée : tout est synchronisé'); if (typeof refresh === 'function') refresh(); }
   } catch (e) {
     if (isNetwork(e)) { setOnline(false); backoff = Math.min(60000, (backoff || 2500) * 2); setTimeout(sync, backoff); }
+    else if (!NO_OW && /one_way|open_end/.test(e.message || '')) { NO_OW = true; again = true; } // script SQL pas encore lancé : on envoie sans ces colonnes
     else {
       console.warn('sync', e);
       toast(e.code === 'P0429' ? e.message : `Une modification n'a pas pu être enregistrée${e.message ? ` (${String(e.message).slice(0, 80)})` : ''}, on recharge tes carnets.`);

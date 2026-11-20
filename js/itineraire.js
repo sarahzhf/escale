@@ -113,7 +113,7 @@
     $('itp-sel').querySelectorAll('[data-t]').forEach(b => b.onclick = () => { IT.trip = b.dataset.t; mySel(); showMine(); });
     const on = $('itp-sel').querySelector('.on'); if (on) on.scrollIntoView({ inline: 'center', block: 'nearest' }); }
   function showMine() { const t = trip(IT.trip); if (!t) return; const r = myStops(t); IT.stops = r.stops; IT.draft = r.draft;
-    head(place(t), r.draft ? `${fd(t.du)} au ${fd(t.au)}` : r.stops.map(s => s.n).slice(0, 5).join(' - ')); msg(false); sheet(); draw(); }
+    head(place(t), r.draft ? `${tripDates(t)}` : r.stops.map(s => s.n).slice(0, 5).join(' - ')); msg(false); sheet(); draw(); }
 
   /* amis : un ami, puis un de ses voyages */
   async function openFriends() {

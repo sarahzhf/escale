@@ -493,7 +493,7 @@ function renderJournalShelf() {
   const row = $('shelf'), spines = [...row.querySelectorAll('.spine:not(.add)')];
   const select = (i, scroll) => { shelfSel = Math.max(0, Math.min(spines.length - 1, i)); spines.forEach((s, k) => s.classList.toggle('on', k === shelfSel));
     const t = trip(spines[shelfSel].dataset.trip), f = info(t);
-    $('shelfInfo').innerHTML = `<div><b>${esc(place(t))}</b><span>${flag(t.pays)} ${fd(t.du)} au ${fd(t.au)} ${D(t.du).getFullYear()}, ${t.entrees.length} page${t.entrees.length > 1 ? 's' : ''}${f.enCours ? ', en cours' : ''}</span></div><button class="btn2 g" data-act="openBook" data-trip="${t.id}">Ouvrir</button>`;
+    $('shelfInfo').innerHTML = `<div><b>${esc(place(t))}</b><span>${flag(t.pays)} ${tripDates(t)} ${D(t.du).getFullYear()}, ${t.entrees.length} page${t.entrees.length > 1 ? 's' : ''}${f.enCours ? ', en cours' : ''}</span></div><button class="btn2 g" data-act="openBook" data-trip="${t.id}">Ouvrir</button>`;
     if (scroll) spines[shelfSel].scrollIntoView({ inline: 'center', block: 'nearest', behavior: reduced() ? 'auto' : 'smooth' }); };
   spines.forEach((s, i) => s.onclick = () => { if (i === shelfSel) ACT.openBook({ trip: s.dataset.trip }); else select(i, true); });
   // molette : un cran = un carnet

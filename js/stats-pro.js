@@ -18,7 +18,7 @@ function statsProHTML(t, rows, total) {
   return proSection(parts.join(''));
 }
 /** La prévision avec son simulateur reste gratuite pour tous (choix de Sarah, 20 nov. 2026). */
-function forecastFreeHTML(t) { if (STX.scope === 'all' || STX.p) return ''; const f = info(t), days = Array.from({ length: f.jours }, (_, i) => i + 1); return proForecastHTML(t, f, perDay(t, days), elapsedOf(t)); }
+function forecastFreeHTML(t) { if (STX.scope === 'all' || STX.p || t.open) return ''; const f = info(t), days = Array.from({ length: f.jours }, (_, i) => i + 1); return proForecastHTML(t, f, perDay(t, days), elapsedOf(t)); }
 function proSection(inner) {
   if (!inner) return '';
   const head = `<div class="sec sx-sec pro-head"><h2>Tableau de bord ${proBadge()}</h2></div>`;

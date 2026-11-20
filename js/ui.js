@@ -103,7 +103,7 @@ const ACT = {
   addPlace: d => placeInput(d.trip),
   rmPlace: d => { const t = trip(d.trip), l = t.lieux[+d.i]; t.lieux.splice(+d.i, 1); save(); refresh(); if (l) toast(`${l} retiré des lieux`); },
   fav: d => { const t = trip(d.trip); t.fav = !t.fav; save(); refresh(); toast(t.fav ? 'Ajouté aux favoris' : 'Retiré des favoris'); },
-  share: d => { const t = trip(d.trip), txt = `${place(t)}, ${fd(t.du)} au ${fd(t.au)} : ${fmt(spentOf(t))} pour ${info(t).jours} jours.`; copyText(txt, 'Résumé du carnet copié'); },
+  share: d => { const t = trip(d.trip), txt = `${place(t)}, ${tripDates(t)} : ${fmt(spentOf(t))} pour ${info(t).jours} jours.`; copyText(txt, 'Résumé du carnet copié'); },
   depTrip: d => { depId = d.trip; go('depenses'); }, editExp: d => expSheet(d.trip, d.id),
   catFilter: d => { const t = trip(depId); openTrip(t.id); expF = { trip: t.id, y: null, m: null, j: null, c: d.k || null }; dTab = 'depenses'; openTrip(t.id, true); },
   gcur: d => { gCur = d.v === 'loc' ? 'loc' : 'eur'; const g = $('gauge'), t = trip(depId); if (g && t) g.outerHTML = gaugeHTML(t, true); }, ask: d => { go('ia'); ask(d.q); },
@@ -155,18 +155,28 @@ function prepSheet(tid, fresh) {
       save(); closePanel(); refresh(); toast(t.todo.length ? `${t.todo.length} point${t.todo.length > 1 ? 's' : ''} à préparer` : 'Liste vidée'); };
   }, { nofocus: true });
 }
+const AU_AR = 'Retour <span class="req">*</span>', AU_AS = 'Fin du voyage <i class="opt">facultatif</i>';
 function tripSheet(id) {
-  const t = id ? trip(id) : null;
+  const t = id ? trip(id) : null; const ow0 = !!(t && (t.ow || t.open)); let ow = ow0;
   openPanel(`<h2>${t ? 'Modifier le voyage' : 'Nouveau voyage'}</h2><p class="small">${t ? 'Change les infos de ce carnet.' : 'Un carnet se crée avec des emplacements vides pour tes photos.'} Les champs marqués <span class="req">*</span> sont obligatoires.</p>
    <label class="fld" data-f="pays"><span>Pays <span class="req">*</span></span><input id="f-pays" autocomplete="off" maxlength="40" placeholder="Tape un pays, ex. Italie" value="${t ? esc(C(t).n) : ''}" required>${paysList()}<em class="ferr"></em></label>
    <label class="fld" data-f="ville"><span>Ville ou région <i class="opt">facultatif</i></span><input id="f-ville" maxlength="80" value="${t ? esc(t.ville) : ''}" placeholder="Ex. Pouilles, ou Bari, Lecce, Matera"><em class="small">Plusieurs villes : sépare-les par des virgules, elles apparaîtront sur ta carte. Laisse vide pour un roadtrip.</em></label>
-   <div class="two"><label class="fld" data-f="du"><span>Départ <span class="req">*</span></span><input id="f-du" type="date" required value="${t ? t.du : addDays(TODAY, 30)}"><em class="ferr"></em></label><label class="fld" data-f="au"><span>Retour <span class="req">*</span></span><input id="f-au" type="date" required value="${t ? t.au : addDays(TODAY, 36)}"><em class="ferr"></em></label></div>
+   <div class="seg wide tk-seg" id="f-kind" role="radiogroup" aria-label="Type de trajet"><button type="button" role="radio" data-k="ar" class="${ow0 ? '' : 'on'}" aria-checked="${!ow0}">Aller-retour</button><button type="button" role="radio" data-k="as" class="${ow0 ? 'on' : ''}" aria-checked="${ow0}">Aller simple</button></div>
+   <div class="two"><label class="fld" data-f="du"><span>Départ <span class="req">*</span></span><input id="f-du" type="date" required value="${t ? t.du : addDays(TODAY, 30)}"><em class="ferr"></em></label><label class="fld" data-f="au"><span id="f-au-l">${ow0 ? AU_AS : AU_AR}</span><input id="f-au" type="date" ${ow0 ? '' : 'required'} value="${t ? (t.open ? '' : t.au) : addDays(TODAY, 36)}"><em class="ferr"></em></label></div>
+   <p class="small tk-note" id="f-as-note" ${ow0 ? '' : 'hidden'}>Pas encore de date de fin ? Laisse vide : ton carnet reste ouvert jour après jour, et tu ajouteras la fin quand tu la connaîtras.</p>
    <label class="fld" data-f="bud"><span>Budget total en euros <span class="req">*</span></span><input id="f-bud" type="number" inputmode="numeric" min="0" max="10000000" required value="${t ? t.budget : 900}"><em class="ferr"></em></label>
    <button class="btn full" id="f-ok">${t ? 'Enregistrer' : 'Créer le carnet'}<i>${SV.arrow}</i></button>
    ${t ? `<button class="danger" id="f-del">Supprimer ce carnet</button>` : ''}${CLOSE()}`, p => {
     const bad = (k, msg) => { const f = p.querySelector(`[data-f="${k}"]`); f.classList.add('bad'); f.querySelector('.ferr').textContent = msg; return true; };
     combo(p.querySelector('#f-pays'), countryItems); combo(p.querySelector('#f-ville'), () => cityItems(paysCode(p.querySelector('#f-pays').value))(), { multi: true });
     p.querySelectorAll('.fld input').forEach(i => i.addEventListener('input', () => { const f = i.closest('.fld'); f.classList.remove('bad'); const e = f.querySelector('.ferr'); if (e) e.textContent = ''; }));
+    const kind = p.querySelector('#f-kind'), auI = p.querySelector('#f-au');
+    kind.querySelectorAll('button').forEach(b => b.onclick = () => {
+      ow = b.dataset.k === 'as'; kind.querySelectorAll('button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b); });
+      p.querySelector('#f-au-l').innerHTML = ow ? AU_AS : AU_AR; auI.required = !ow; p.querySelector('#f-as-note').hidden = !ow;
+      const f = auI.closest('.fld'); f.classList.remove('bad'); f.querySelector('.ferr').textContent = '';
+      if (!ow && !auI.value) { const du = p.querySelector('#f-du').value; auI.value = addDays(du || TODAY, 6); }
+    });
     p.querySelector('#f-ok').onclick = () => {
       p.querySelectorAll('.fld.bad').forEach(f => { f.classList.remove('bad'); f.querySelector('.ferr').textContent = ''; });
       const ville = p.querySelector('#f-ville').value.trim(), du = p.querySelector('#f-du').value, au = p.querySelector('#f-au').value, bt = p.querySelector('#f-bud').value, b = +bt, praw = p.querySelector('#f-pays').value.trim(), pays = paysCode(praw);
@@ -174,14 +184,17 @@ function tripSheet(id) {
       if (!praw) ko = bad('pays', 'Indique le pays du voyage');
       else if (!pays) ko = bad('pays', 'Pays non reconnu, choisis-le dans la liste');
       if (!du) ko = bad('du', 'Indique la date de départ');
-      if (!au) ko = bad('au', 'Indique la date de retour');
-      else if (du && D(au) < D(du)) ko = bad('au', 'Le retour doit suivre le départ');
+      const open = ow && !au;
+      if (!au && !ow) ko = bad('au', 'Indique la date de retour, ou choisis « Aller simple »');
+      else if (open) { /* aller simple sans date de fin */ }
+      else if (du && D(au) < D(du)) ko = bad('au', ow ? 'La fin doit suivre le départ' : 'Le retour doit suivre le départ');
       else if (du && diffDays(du, au) > 365) ko = bad('au', 'Un voyage dure un an au maximum');
       if (bt === '' || !(b >= 0) || b > 1e7) ko = bad('bud', 'Indique un budget, même approximatif (0 accepté)');
       if (ko) { const f = p.querySelector('.fld.bad input'); f && f.focus(); toast('Il manque des informations'); return; }
-      if (t) { Object.assign(t, { pays, ville, du, au, budget: b }); if (t.budgets) { const tot = Object.values(t.budgets).reduce((a, c) => a + c, 0); if (tot !== b) t.budgets = null; } save(); closePanel(); refresh(); toast('Carnet mis à jour'); }
-      else { const nt = { id: uid(), pays, ville, du, au, budget: b, cover: null, fav: false, vis: 'prive', lieux: [], todo: [], membres: [], reglements: [], entrees: [{ id: uid(), j: 1, t: 'Premier jour', n: '', photos: [null, null] }], depenses: [] };
-        S.trips.push(nt); S.envies = S.envies.filter(w => w.pays !== pays); save(); closePanel(); setTimeout(() => { openTrip(nt.id); setTimeout(() => prepSheet(nt.id, true), 420); }, 380); toast('Carnet créé'); }
+      const fin = open ? du : au;
+      if (t) { Object.assign(t, { pays, ville, du, au: fin, ow, open, budget: b }); if (open) t.au = openAu(t); if (t.budgets) { const tot = Object.values(t.budgets).reduce((a, c) => a + c, 0); if (tot !== b) t.budgets = null; } save(); closePanel(); refresh(); toast('Carnet mis à jour'); }
+      else { const nt = { id: uid(), pays, ville, du, au: fin, ow, open, budget: b, cover: null, fav: false, vis: 'prive', lieux: [], todo: [], membres: [], reglements: [], entrees: [{ id: uid(), j: 1, t: 'Premier jour', n: '', photos: [null, null] }], depenses: [] };
+        if (open) nt.au = openAu(nt); S.trips.push(nt); S.envies = S.envies.filter(w => w.pays !== pays); save(); closePanel(); setTimeout(() => { openTrip(nt.id); setTimeout(() => prepSheet(nt.id, true), 420); }, 380); toast('Carnet créé'); }
     };
     const del = p.querySelector('#f-del'); if (del) del.onclick = () => confirmIn(p, 'Supprimer ce carnet, ses dépenses et ses photos ?', () => {
       [t.cover, ...t.entrees.flatMap(e => e.photos), ...(t.tickets || []).filter(x => x.kind === 'doc').map(x => x.p)].forEach(releaseMedia);
@@ -350,7 +363,7 @@ function openTrip(id, keep) {
   const t = trip(id); if (!t) return; if (openId !== id && !keep) dTab = 'apercu'; openId = id;
   const sc = $('s-carnet'), y = keep ? sc.scrollTop : 0;
   const f = info(t), c = catsOf(t), s = spentOf(t), diff = s - t.budget, pc = t.budget ? Math.round(Math.abs(diff) / t.budget * 100) : 0, d = daysOf(t), b = budgetsOf(t);
-  const status = f.futur ? `Départ dans ${diffDays(TODAY, t.du)} jours` : f.enCours ? `En cours, jour ${f.jour} sur ${f.jours}` : diff <= 0 ? 'Budget tenu' : 'Budget dépassé';
+  const status = f.futur ? `Départ dans ${diffDays(TODAY, t.du)} jours` : f.enCours ? (f.open ? `En cours, jour ${f.jour}` : `En cours, jour ${f.jour} sur ${f.jours}`) : diff <= 0 ? 'Budget tenu' : 'Budget dépassé';
   const allPh = [[t.cover, `${t.id}|cover`], ...t.entrees.flatMap(e => e.photos.map((p, i) => [p, `${t.id}|e|${e.id}|${i}`]))];
   const dayMap = {}; d.forEach((v, i) => dayMap[i + 1] = v);
   const top = Object.entries(c).sort((a, b2) => b2[1] - a[1])[0];
@@ -383,7 +396,7 @@ function openTrip(id, keep) {
        <button data-photo="${t.id}|cover" aria-label="Changer la couverture">${SV.cam}</button>
        <button class="${t.fav ? 'on' : ''}" data-act="fav" data-trip="${t.id}" aria-label="Favori">${t.fav ? SV.heartF : SV.heart}</button>
        <button data-act="share" data-trip="${t.id}" aria-label="Copier le résumé">${SV.share}</button></div>
-     <div class="dtitle"><h1>${esc(place(t))}</h1><p class="m"><span>${SV.place}${esc(C(t).n)}</span><span>${SV.cal}${f.jours} jours, ${fd(t.du)} au ${fd(t.au)}</span></p><p class="r">${SV.star}<b>${status}</b><span>${f.futur || f.enCours ? '' : '(' + pc + ' % ' + (diff <= 0 ? 'sous le' : 'au-dessus du') + ' budget)'}</span></p></div></div>
+     <div class="dtitle"><h1>${esc(place(t))}</h1><p class="m"><span>${SV.place}${esc(C(t).n)}</span><span>${SV.cal}${f.jours} jour${f.jours > 1 ? "s" : ""}, ${tripDates(t)}${f.ow ? ", aller simple" : ""}</span></p><p class="r">${SV.star}<b>${status}</b><span>${f.futur || f.enCours ? '' : '(' + pc + ' % ' + (diff <= 0 ? 'sous le' : 'au-dessus du') + ' budget)'}</span></p></div></div>
    <div class="dsheet"><div class="dtabs">${[['apercu', 'Aperçu'], ['journal', 'Journal'], ['depenses', 'Dépenses'], ['comptes', 'Entre amis'], ['photos', 'Photos']].map(([k, l]) => `<button data-act="dtab" data-v="${k}" class="${dTab === k ? 'on' : ''}">${l}</button>`).join('')}</div>${body}<div style="height:110px"></div></div>`;
   const act = { apercu: ['addExp', 'Ajouter une dépense'], journal: ['addPage', 'Nouvelle page'], depenses: ['addExp', 'Ajouter une dépense'], photos: ['photoTrip', 'Ajouter une photo'], comptes: (t.membres || []).length ? ['addExp', 'Dépense partagée'] : ['members', 'Inviter des amis'] }[dTab];
   $('dock').innerHTML = `<div class="l num"><b>${fmt(f.futur ? t.budget : s)}</b><small>${f.futur ? 'de budget' : f.enCours ? 'dépensés à ce jour' : 'dépensés'}</small></div><button class="btn" data-act="${act[0]}" data-trip="${t.id}">${act[1]}<i>${SV.right}</i></button>`;
@@ -442,7 +455,7 @@ function renderDepenses(keep) {
   const sc = $('s-depenses'), y = keep ? sc.scrollTop : 0;
   if (!S.trips.length) { sc.innerHTML = `<h1 class="bigtitle sans">Budget</h1><div class="emptycard"><b>Aucun voyage pour l'instant</b><p>Crée un voyage pour suivre ton budget, tes dépenses par jour et par catégorie, avec conversion de devise.</p><button class="btn2 g wide" data-act="newTrip">${SV.plus}Créer un voyage</button></div>`; return; }
   if (!depId || !trip(depId)) depId = (currentTrip() || sorted()[0]).id;
-  const t = trip(depId), f = info(t), c = catsOf(t), s = spentOf(t), b = budgetsOf(t), left = t.budget - s, remDays = f.enCours ? f.jours - f.jour + 1 : f.futur ? f.jours : 0, per = remDays ? left / remDays : 0, p = projection(t), loc = C(t).rate !== 1;
+  const t = trip(depId), f = info(t), c = catsOf(t), s = spentOf(t), b = budgetsOf(t), left = t.budget - s, remDays = f.open ? 0 : f.enCours ? f.jours - f.jour + 1 : f.futur ? f.jours : 0, per = remDays ? left / remDays : 0, p = projection(t), loc = C(t).rate !== 1;
   const list = t.depenses.filter(d => !catF || d.c === catF), byDay = {}; list.forEach(d => (byDay[d.j] = byDay[d.j] || []).push(d));
   sc.innerHTML = `
    <h1 class="bigtitle sans">Budget</h1>
@@ -463,13 +476,13 @@ let gCur = 'eur';
 function gaugeHTML(t, keepAnim) {
   const f = info(t), s = spentOf(t), left = t.budget - s, over = left < 0, loc = C(t).rate !== 1, r = loc && gCur === 'loc' ? C(t).rate : 1;
   const money = v => r === 1 ? fmt(v) : fmtL(v * r, t);
-  const remDays = f.enCours ? f.jours - f.jour + 1 : f.futur ? f.jours : 0, per = remDays ? left / remDays : 0, p = projection(t);
+  const remDays = f.open ? 0 : f.enCours ? f.jours - f.jour + 1 : f.futur ? f.jours : 0, per = remDays ? left / remDays : 0, p = projection(t);
   const N = 64, A0 = -205, A1 = 25, frac = t.budget ? Math.min(1, s / t.budget) : (s ? 1 : 0), cx = 160, cy = 160, R1 = 124, R2 = 150;
   const pt = (a, R) => [cx + R * Math.cos(a * Math.PI / 180), cy + R * Math.sin(a * Math.PI / 180)];
   const ticks = Array.from({ length: N }, (_, i) => { const a = A0 + (A1 - A0) * i / (N - 1), on = (i + .5) / N <= frac, [x1, y1] = pt(a, R1), [x2, y2] = pt(a, R2);
     return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" class="${on ? 'on' : ''}" style="--i:${i}"/>`; }).join('');
   const am = A0 + (A1 - A0) * frac, [ax, ay] = pt(am, R1 - 8), [mx, my] = pt(am, R2 + 12), [bx, by] = pt(am, R2 + 30), bl = Math.max(16, Math.min(84, (bx + 10) / 340 * 100));
-  const status = f.futur ? 'Avant le départ' : f.enCours ? `Jour ${f.jour} sur ${f.jours}` : 'Voyage terminé';
+  const status = f.futur ? 'Avant le départ' : f.enCours ? (f.open ? `Jour ${f.jour}` : `Jour ${f.jour} sur ${f.jours}`) : 'Voyage terminé';
   return `<section class="gauge ${over ? 'over' : ''}" id="gauge" aria-label="Budget : ${esc(money(s))} dépensés sur ${esc(money(t.budget))}">
     <div class="g-top"><span>${status}</span><span class="num">${t.budget ? Math.round(s / t.budget * 100) + ' % utilisé' : ''}</span></div>
     <div class="g-dial"><svg viewBox="-10 -10 340 230" aria-hidden="true">${ticks}
@@ -477,7 +490,7 @@ function gaugeHTML(t, keepAnim) {
       <span class="g-bub num" style="left:${bl}%;top:${(by + 10) / 230 * 100}%"${r === 1 && !keepAnim ? ` data-count="${Math.round(s)}"` : ''}>${money(s)}</span>
       <div class="g-mid"><span>Budget du voyage</span><b class="num">${money(t.budget)}</b><em class="num ${over ? 'ko' : ''}">${over ? `dépassé de ${money(-left)}` : f.enCours || f.futur ? `il reste ${money(left)}` : `${money(left)} sous le budget`}</em></div></div>
     ${loc ? `<div class="g-seg"><div class="seg" role="group" aria-label="Devise"><button class="${gCur === 'eur' ? 'on' : ''}" data-act="gcur" data-v="eur">Euros</button><button class="${gCur === 'loc' ? 'on' : ''}" data-act="gcur" data-v="loc">${esc(C(t).cur)}</button></div></div>` : ''}
-    <div class="g-pills">${f.enCours || f.futur ? `<div><b class="num">${money(per)}</b><span>par jour ${f.futur ? 'sur place' : "jusqu'au retour"}</span></div><div><b class="num">${remDays} jour${remDays > 1 ? 's' : ''}</b><span>${f.futur ? 'de voyage' : 'restants'}</span></div>` : `<div><b class="num">${money(s / f.jours)}</b><span>par jour en moyenne</span></div><div><b class="num">${over ? '+ ' : '− '}${money(Math.abs(left))}</b><span>par rapport au budget</span></div>`}</div>
+    <div class="g-pills">${(f.enCours || f.futur) && !f.open ? `<div><b class="num">${money(per)}</b><span>par jour ${f.futur ? 'sur place' : "jusqu'au retour"}</span></div><div><b class="num">${remDays} jour${remDays > 1 ? 's' : ''}</b><span>${f.futur ? 'de voyage' : 'restants'}</span></div>` : `<div><b class="num">${money(s / f.jours)}</b><span>par jour en moyenne</span></div><div><b class="num">${over ? '+ ' : '− '}${money(Math.abs(left))}</b><span>par rapport au budget</span></div>`}</div>
     ${p.worst ? `<p class="g-warn">${SV.warn || ''}<span>Au rythme actuel, <b>${CATS[p.worst.k].n.toLowerCase()}</b> finira vers ${money(p.worst.proj)} pour ${money(budgetsOf(t)[p.worst.k])} prévus.</span></p>` : ''}
     ${loc && gCur === 'loc' ? `<p class="g-rate">1 € = ${fmtRate(C(t).rate)} ${esc(C(t).cur)}, ${rateNote()}</p>` : ''}
     <div class="g-act"><button class="pill" data-act="budget" data-trip="${t.id}">Modifier le budget</button><button class="pill" data-open="${t.id}">Ouvrir le carnet</button></div>
@@ -518,8 +531,8 @@ function local(q) {
       return L.length ? `${CATS[askedCat].n} ${where} : ${fmt(c[askedCat])} en ${L.length} dépense${L.length > 1 ? 's' : ''}${sub ? ` (${sub})` : ''}. ${b ? (c[askedCat] > b ? `C'est ${fmt(c[askedCat] - b)} de plus que les ${fmt(b)} prévus.` : `Il te reste ${fmt(b - c[askedCat])} sur les ${fmt(b)} prévus.`) : ''}${has('pu', 'peux', 'possible', 'assez') ? ` Ton budget total ${t.budget - s >= 0 ? `laisse encore ${fmt(t.budget - s)}` : `est dépassé de ${fmt(s - t.budget)}`}.` : ''}` : `Tu n'as noté aucune dépense de ${CATS[askedCat].n.toLowerCase()} ${where}.`; }
     if (has('plus', 'principal', 'gros poste', 'ou part')) { if (!topCats.length) return `Tu n'as pas encore de dépense ${where}.`; const [k, v] = topCats[0];
       return `${where[0].toUpperCase() + where.slice(1)}, ton plus gros poste est ${CATS[k].n.toLowerCase()} : ${fmt(v)}, soit ${Math.round(v / s * 100)} % de tes dépenses.${topCats[1] ? ` Viennent ensuite ${CATS[topCats[1][0]].n.toLowerCase()} (${fmt(topCats[1][1])})${topCats[2] ? ` et ${CATS[topCats[2][0]].n.toLowerCase()} (${fmt(topCats[2][1])})` : ''}.` : ''}`; }
-    if (has('par jour', 'moyenne', 'quotidien')) return `${where[0].toUpperCase() + where.slice(1)}, tu dépenses en moyenne ${fmt(s / days)} par jour.${f.enCours ? ` Pour finir dans ton budget, il te reste ${fmt((t.budget - s) / (f.jours - f.jour + 1))} par jour jusqu'au retour.` : ''}`;
-    if (has('budget', 'reste', 'tiens', 'depasse', 'combien il')) return `Tu as dépensé ${fmt(s)} sur ${fmt(t.budget)} ${where}. ${s > t.budget ? `Ton budget est dépassé de ${fmt(s - t.budget)}.` : `Il te reste ${fmt(t.budget - s)}${f.enCours ? `, soit ${fmt((t.budget - s) / (f.jours - f.jour + 1))} par jour jusqu'au retour` : ''}.`}`;
+    if (has('par jour', 'moyenne', 'quotidien')) return `${where[0].toUpperCase() + where.slice(1)}, tu dépenses en moyenne ${fmt(s / days)} par jour.${f.enCours && !f.open ? ` Pour finir dans ton budget, il te reste ${fmt((t.budget - s) / (f.jours - f.jour + 1))} par jour jusqu'au retour.` : ''}`;
+    if (has('budget', 'reste', 'tiens', 'depasse', 'combien il')) return `Tu as dépensé ${fmt(s)} sur ${fmt(t.budget)} ${where}. ${s > t.budget ? `Ton budget est dépassé de ${fmt(s - t.budget)}.` : `Il te reste ${fmt(t.budget - s)}${f.enCours && !f.open ? `, soit ${fmt((t.budget - s) / (f.jours - f.jour + 1))} par jour jusqu'au retour` : ''}.`}`;
     if (has('prevoir', 'combien pour', 'estimer')) { const avg = perDay.length ? perDay.reduce((a, [, v]) => a + v, 0) / perDay.length : 0; return avg ? `D'après tes carnets, tu dépenses en moyenne ${fmt(avg)} par jour. Pour une semaine, prévois autour de ${fmt(avg * 7)}, à ajuster selon le coût de la vie sur place.` : "Note quelques dépenses dans un voyage et je pourrai t'aider à prévoir les suivants."; }
     if (has('total', 'combien', 'depense')) return `Tu as dépensé ${fmt(s)} ${where}${topCats[0] ? `, surtout en ${CATS[topCats[0][0]].n.toLowerCase()} (${fmt(topCats[0][1])})` : ''}.`;
     return `${place(t)} : ${fmt(s)} dépensés sur ${fmt(t.budget)}${topCats[0] ? `, surtout en ${CATS[topCats[0][0]].n.toLowerCase()}` : ''}. Demande-moi par exemple ce qu'il te reste, ta moyenne par jour, une catégorie comme les repas ou le transport, ou de comparer deux voyages.`;
@@ -570,7 +583,7 @@ function renderHome() {
      <div class="rec" data-open="${t.id}">${phHTML(t.cover, `${t.id}|cover`, 'Ajouter une photo')}<span class="sh"></span>
        <button class="heart ${t.fav ? 'on' : ''}" data-act="fav" data-trip="${t.id}" aria-label="Favori">${t.fav ? SV.heartF : SV.heart}</button>
        <div class="tx"><span class="badge">${SV.leaf}${cur ? `En cours, jour ${info(t).jour} sur ${info(t).jours}` : next ? `Départ dans ${diffDays(TODAY, t.du)} jours` : 'Terminé'}</span>
-         <h3>${esc(place(t))} ${flag(t.pays)}</h3><p class="sub">${esc(C(t).n)}, ${fd(t.du)} au ${fd(t.au)}</p>
+         <h3>${esc(place(t))} ${flag(t.pays)}</h3><p class="sub">${esc(C(t).n)}, ${tripDates(t)}</p>
          <p class="row num"><span>${SV.page}${t.entrees.length} page${t.entrees.length > 1 ? 's' : ''}</span><span>${SV.clock}${info(t).jours} jours</span><span>${cur ? `Reste <b>${fmt(t.budget - spentOf(t))}</b>` : `Budget <b>${fmt(t.budget)}</b>`}</span></p></div></div>` : ''}
      ${exps.length ? `<div class="sec"><h2>Dernières dépenses</h2><button class="more" data-act="depTrip" data-trip="${cur.id}">Tout voir</button></div>
      <div class="xlist">${exps.map(d => `<button class="xrow" data-act="editExp" data-trip="${cur.id}" data-id="${d.id}"><span class="ic">${ico(d.c)}</span><span class="m"><b>${esc(d.l)}</b><span>${esc(short(cur))}, jour ${d.j}, ${CATS[d.c].n}</span><strong class="num">${fmt(d.eur)}</strong></span><span class="r"><span>${d.v != null ? fmtL(d.v, cur) : ''}</span><span>${SV.dots.replace('<svg', '<svg width="16" height="16"')}</span></span></button>`).join('')}</div>` : ''}`}
@@ -611,7 +624,7 @@ function renderCards() {
    ${S.trips.length && !list.length ? `<div class="emptyj">Aucun voyage avec ces filtres. <button class="link" data-act="vf" data-k="reset">Tout afficher</button></div>` : ''}
    <div class="vlist">${list.map(t => { const f = info(t), s = spentOf(t);
      return `<div class="vcard"><div style="position:relative">${phHTML(t.cover, `${t.id}|cover`, 'Ajouter une couverture')}<button class="heart ${t.fav ? 'on' : ''}" data-act="fav" data-trip="${t.id}" aria-label="Favori">${t.fav ? SV.heartF : SV.heart}</button></div>
-       <button class="bd" data-open="${t.id}"><span class="l1"><b>${esc(place(t))}</b><span class="num">${SV.star}${photosCount(t)}</span></span><span class="l2">${esc(C(t).n)}, ${fd(t.du)} au ${fd(t.au)} ${D(t.du).getFullYear()}, ${f.jours} jours</span>
+       <button class="bd" data-open="${t.id}"><span class="l1"><b>${esc(place(t))}</b><span class="num">${SV.star}${photosCount(t)}</span></span><span class="l2">${esc(C(t).n)}, ${tripDates(t)} ${D(t.du).getFullYear()}, ${f.jours} jours</span>
        <span class="l3 num">${f.futur ? `Budget <b>${fmt(t.budget)}</b>` : s <= t.budget ? `<s>${fmt(t.budget)}</s><b>${fmt(s)}</b> dépensés` : `<b>${fmt(s)}</b> dépensés, budget ${fmt(t.budget)}`}</span></button></div>`; }).join('')}
      <button class="vcard new" data-act="newTrip">${SV.plus}Nouveau voyage</button></div>`;
 }

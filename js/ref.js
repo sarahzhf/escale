@@ -75,7 +75,11 @@ const TODAY=iso(new Date());
 const diffDays=(a,b)=>Math.round((D(b)-D(a))/864e5);
 const fd=s=>D(s).toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
 const addDays=(s,n)=>{const d=D(s);d.setDate(d.getDate()+n);return iso(d);};
-function info(t){const jours=Math.max(1,diffDays(t.du,t.au)+1),j=diffDays(t.du,TODAY)+1,enCours=j>=1&&j<=jours,futur=j<1;return {jours,jour:enCours?j:(futur?0:jours),enCours,futur};}
+/* aller simple sans date de fin : le voyage dure jusqu'à aujourd'hui (un an au plus) */
+function openAu(t){if(!t.open)return t.au;const max=addDays(t.du,365);return TODAY<t.du?t.du:TODAY>max?max:TODAY;}
+function info(t){if(t.open)t.au=openAu(t);const jours=Math.max(1,diffDays(t.du,t.au)+1),j=diffDays(t.du,TODAY)+1,enCours=j>=1&&(j<=jours||t.open),futur=j<1;return {jours,jour:enCours?Math.min(j,jours):(futur?0:jours),enCours,futur,open:!!t.open,ow:!!(t.ow||t.open)};}
+/** Dates du voyage en texte : « 3 mars au 12 mars », ou « depuis le 3 mars » pour un aller simple sans date de fin. */
+function tripDates(t){if(t.open){t.au=openAu(t);return `${TODAY<t.du?'à partir du':'depuis le'} ${fd(t.du)}`;}return `${fd(t.du)} au ${fd(t.au)}`;}
 /* ---------- Pays saisis au clavier ---------- */
 Object.assign(COUNTRIES,{
  BE:{n:"Belgique",iso:"056",ll:[4.35,50.85],cur:"€",rate:1},CH:{n:"Suisse",iso:"756",ll:[7.45,46.95],cur:"CHF",rate:.95},IE:{n:"Irlande",iso:"372",ll:[-6.26,53.35],cur:"€",rate:1},

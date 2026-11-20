@@ -1,5 +1,5 @@
 /* Eskalys : statistiques avancées (plan PRO). Un vrai tableau de bord, interactif, avec seulement des chiffres utiles :
-   1. Prévision : où tu finiras, et combien tu peux encore dépenser par jour (curseur pour simuler).
+   (La prévision avec son curseur est gratuite : voir forecastFreeHTML.)
    2. Calendrier : chaque jour coloré selon ce qu'il a coûté, touche un jour pour le détail.
    3. Habitudes : taille de tes achats, semaine ou week-end, panier moyen par catégorie.
    4. Change : ce que chaque devise t'a coûté, et ce que le taux du jour t'a fait gagner ou perdre.
@@ -14,14 +14,16 @@ const proBadge = () => '<span class="pro-tag sm">PRO</span>';
 function statsProHTML(t, rows, total) {
   if (STX.scope === 'all') return proSection(proCompareHTML(rows, total));
   const f = info(t), days = Array.from({ length: f.jours }, (_, i) => i + 1), pd = perDay(t, days), el = elapsedOf(t);
-  const parts = [proForecastHTML(t, f, pd, el), proCalendarHTML(t, f, pd, el), proHabitsHTML(t, rows, total, pd, el), proFxHTML(t), proGroupHTML(t), proMerchantsHTML(rows)].filter(Boolean);
+  const parts = [proCalendarHTML(t, f, pd, el), proHabitsHTML(t, rows, total, pd, el), proFxHTML(t), proGroupHTML(t), proMerchantsHTML(rows)].filter(Boolean);
   return proSection(parts.join(''));
 }
+/** La prévision avec son simulateur reste gratuite pour tous (choix de Sarah, 20 nov. 2026). */
+function forecastFreeHTML(t) { if (STX.scope === 'all' || STX.p) return ''; const f = info(t), days = Array.from({ length: f.jours }, (_, i) => i + 1); return proForecastHTML(t, f, perDay(t, days), elapsedOf(t)); }
 function proSection(inner) {
   if (!inner) return '';
   const head = `<div class="sec sx-sec pro-head"><h2>Tableau de bord ${proBadge()}</h2></div>`;
   if (proOn()) return head + inner;
-  return `${head}<div class="pro-lock"><div class="pro-blur" aria-hidden="true">${inner}</div><div class="pro-cta"><span class="pro-tag big">PRO</span><b>Ton tableau de bord complet</b><p>Prévision de fin de voyage, calendrier de tes dépenses, habitudes, change, comptes entre amis et commerçants.</p><button class="btn" data-act="statsPaywall">Découvrir PRO</button></div></div>`;
+  return `${head}<div class="pro-lock"><div class="pro-blur" aria-hidden="true">${inner}</div><div class="pro-cta"><span class="pro-tag big">PRO</span><b>Ton tableau de bord complet</b><p>Calendrier de tes dépenses, habitudes, change, comptes entre amis, adresses fidèles et comparaison de tes voyages.</p><button class="btn" data-act="statsPaywall">Découvrir PRO</button></div></div>`;
 }
 
 /* 1. Prévision et simulateur */
@@ -121,5 +123,5 @@ function proCompareHTML(rows, total) {
 /* verrou : écran PRO pour les statistiques */
 ACT.statsPaywall = () => openPanel(`<div class="exp-pay"><span class="pro-tag big">PRO</span><h2>Ton tableau de bord complet</h2>
   <p class="small">Comprends vraiment où part ton argent, et garde le contrôle pendant le voyage.</p>
-  <ul class="exp-list"><li><b>Prévision</b> : où tu finiras, et combien tu peux encore dépenser chaque jour, avec un curseur pour simuler.</li><li><b>Calendrier</b> : chaque jour coloré selon ce qu’il a coûté, et son détail en un geste.</li><li><b>Habitudes</b> : taille de tes achats, semaine ou week-end, panier moyen.</li><li><b>Change, entre amis, commerçants</b>, et la comparaison de tous tes voyages année par année.</li></ul>
+  <ul class="exp-list"><li><b>Calendrier</b> : chaque jour coloré selon ce qu’il a coûté, et son détail en un geste.</li><li><b>Habitudes</b> : taille de tes achats, semaine ou week-end, panier moyen.</li><li><b>Change, entre amis, commerçants</b>, et la comparaison de tous tes voyages année par année.</li></ul>
   <button class="btn full" disabled>Passer à PRO (bientôt disponible)</button>${CLOSE()}</div>`, () => { }, { nofocus: true });

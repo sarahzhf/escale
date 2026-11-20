@@ -217,7 +217,8 @@ function statsHTML(t) {
       : `<details class="acc" data-acc="cmp" ${open.cmp ? 'open' : ''}><summary><span><b>Comparé à tes autres voyages</b><em>dépense moyenne par jour</em></span>${SV.down || ''}</summary>${inner}</details>`;
   }
   const pro = typeof statsProHTML === 'function' ? statsProHTML(t, rows, total) : '';
-  return `<div id="stwrap">${head}${kpi}${tips}${evo}${ranks}${bigCard}${more}${pro}</div>`;
+  const fc = typeof forecastFreeHTML === 'function' ? forecastFreeHTML(t) : '';
+  return `<div id="stwrap">${head}${kpi}${fc}${tips}${evo}${ranks}${bigCard}${more}${pro}</div>`;
 }
 
 const reStats = () => { const w = $('stwrap'), t = trip(depId); if (w && t) { w.outerHTML = statsHTML(t); hideTip(); } };

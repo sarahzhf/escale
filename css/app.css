@@ -2852,3 +2852,5 @@ html[data-theme="dark"] .balert{background:#3a3220;color:#F4E6C4;border-color:#6
 .bk-tools:not(.wide) button span{font-size:.72rem;font-weight:600}
 .fp .tape{position:absolute;top:-8px;left:50%;width:46px;height:14px;transform:translateX(-50%) rotate(-4deg);background:rgba(243,201,121,.72)}
 .fp .tape.t1{background:rgba(232,169,184,.72);transform:translateX(-50%) rotate(5deg)}.fp .tape.t2{background:rgba(169,196,175,.78);transform:translateX(-50%) rotate(-8deg)}
+.bk-editing{margin:0 0 8px;text-align:center;font-size:.78rem;color:#20243A;background:rgba(255,255,255,.7);border-radius:12px;padding:6px 10px}
+.bk-editing b{font-weight:600}

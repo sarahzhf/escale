@@ -314,4 +314,16 @@ const COLLAB_TRIPS = new Map();
 
   // en modification : toucher la page alors qu'un élément est sélectionné le désélectionne seulement (pas de texte surprise)
   { const bt0 = bookTap; bookTap = (x, y) => { if (BK && BK.edit && BK.sel != null) { BK.sel = null; document.querySelectorAll('#bkStk .stk.sel').forEach(el => el.classList.remove('sel')); bkBar(); return; } return bt0(x, y); }; }
+
+  /* ---------- modifier la bonne page, et savoir laquelle on modifie ---------- */
+  { const ed0 = ACT.bkEdit; ACT.bkEdit = d => { if (!BK) return;
+    if (!BK.edit && !curEntry()) { const sp = BK.book.spreads[BK.i];
+      if (sp && sp.kind === 'add') { ACT.bkNewPage(); return; }
+      toast('Cette page se remplit toute seule : tourne la page jusqu’à une journée, puis touche le crayon'); return; }
+    return ed0(d); }; }
+  ACT.bkSide = () => { if (!BK || BK.wide) return; BK.sel = null; bkZoom(BK.zoom === 'r' ? 'l' : 'r'); };
+  { const bar1 = bkBar; bkBar = () => { bar1(); if (!BK || !BK.edit) return; const e = curEntry(), bot = $('bkBot'); if (!e || !bot || bot.querySelector('.bk-editing')) return;
+    const side = BK.wide ? '' : BK.zoom === 'r' ? ' · page de droite' : ' · page de gauche';
+    bot.insertAdjacentHTML('afterbegin', `<p class="bk-editing">✎ Tu modifies : <b>Jour ${e.j}${e.t ? ', ' + esc(e.t) : ''}</b>${side}</p>`);
+    const tools = bot.querySelector('.bk-tools.wide'); if (tools && !BK.wide) tools.querySelector('[data-act="bkEdit"]').insertAdjacentHTML('beforebegin', `<button data-act="bkSide" aria-label="Passer à l'autre page de cette journée">⇆<span>${BK.zoom === 'r' ? 'Gauche' : 'Droite'}</span></button>`); }; }
 })();

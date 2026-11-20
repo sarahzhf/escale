@@ -319,8 +319,16 @@ const COLLAB_TRIPS = new Map();
   { const ed0 = ACT.bkEdit; ACT.bkEdit = d => { if (!BK) return;
     if (!BK.edit && !curEntry()) { const sp = BK.book.spreads[BK.i];
       if (sp && sp.kind === 'add') { ACT.bkNewPage(); return; }
-      toast('Cette page se remplit toute seule : tourne la page jusqu’à une journée, puis touche le crayon'); return; }
-    return ed0(d); }; }
+      // couverture (ou page automatique) : on demande simplement quelle page modifier
+      const days = BK.book.spreads.map((x, k) => ({ x, k })).filter(o => o.x.kind === 'day');
+      openPanel(`<h2>Quelle page veux-tu modifier ?</h2><p class="small">La couverture se fait toute seule avec le nom et les dates du voyage. Choisis une journée, ou crée une nouvelle page.</p>
+        ${days.length ? `<div class="flist bk-pick">${days.map(o => `<button type="button" class="togrow" data-act="bkEditDay" data-i="${o.k}"><div><b>Jour ${o.x.e.j}${o.x.e.t ? ', ' + esc(o.x.e.t) : ''}</b><span>Écrire, ajouter des photos, décorer</span></div><i aria-hidden="true">›</i></button>`).join('')}</div>` : ''}
+        <button type="button" class="btn ${days.length ? 'ghost' : ''}" style="margin-top:14px;width:100%" data-act="bkPickNew">＋ Nouvelle page</button>`);
+      return; }
+    return ed0(d); };
+  ACT.bkEditDay = d => { closePanel(); if (!BK) return; const k = +d.i; if (!(BK.book.spreads[k] || {}).e) return;
+    BK.i = k; BK.sel = null; bkRender(); if (!BK.edit) ed0(); }; }
+  ACT.bkPickNew = () => { closePanel(); ACT.bkNewPage(); };
   ACT.bkSide = () => { if (!BK || BK.wide) return; BK.sel = null; bkZoom(BK.zoom === 'r' ? 'l' : 'r'); };
   { const bar1 = bkBar; bkBar = () => { bar1(); if (!BK || !BK.edit) return; const e = curEntry(), bot = $('bkBot'); if (!e || !bot || bot.querySelector('.bk-editing')) return;
     const side = BK.wide ? '' : BK.zoom === 'r' ? ' · page de droite' : ' · page de gauche';

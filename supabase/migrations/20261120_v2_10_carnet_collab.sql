@@ -149,3 +149,74 @@ revoke all on function public.collab_media_ok(text) from public, anon;
 grant execute on function public.collab_media_ok(text) to authenticated;
 drop policy if exists media_collab_read on storage.objects;
 create policy media_collab_read on storage.objects for select to authenticated using (bucket_id = 'media' and public.collab_media_ok(objects.name));
+
+-- 11. historique des modifications d'un carnet à plusieurs : qui a modifié quoi, et quand.
+--     Une ligne par personne et par page, regroupée sur 15 minutes. Gardé 180 jours.
+create table if not exists public.journal_history (
+  id bigserial primary key,
+  trip_id uuid not null references public.trips(id) on delete cascade,
+  entry_id uuid,
+  user_id uuid references auth.users(id) on delete set null,
+  day integer,
+  title text,
+  acts text[] not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists journal_history_trip on public.journal_history(trip_id, updated_at desc);
+alter table public.journal_history enable row level security;
+-- aucune règle : lu seulement par collab_history, écrit seulement par le déclencheur
+
+create or replace function public.journal_history_log()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare v_trip uuid := coalesce(new.trip_id, old.trip_id); v_acts text[] := '{}'; v_last bigint;
+  nf int; of int; ns int; os int;
+begin
+  if auth.uid() is null or not exists (select 1 from public.trip_collaborators c where c.trip_id = v_trip) then return null; end if;
+  if tg_op = 'INSERT' then v_acts := array['page_new'];
+  elsif tg_op = 'DELETE' then v_acts := array['page_del'];
+  else
+    if new.title is distinct from old.title or new.description is distinct from old.description or new.day is distinct from old.day then v_acts := array_append(v_acts, 'titre'); end if;
+    if new.note is distinct from old.note then v_acts := array_append(v_acts, 'texte'); end if;
+    nf := (select count(*) from jsonb_array_elements(coalesce(new.stickers, '[]'::jsonb)) x where x->>'k' = 'f');
+    of := (select count(*) from jsonb_array_elements(coalesce(old.stickers, '[]'::jsonb)) x where x->>'k' = 'f');
+    if coalesce(cardinality(array_remove(new.photo_paths, null)), 0) > coalesce(cardinality(array_remove(old.photo_paths, null)), 0) or nf > of then v_acts := array_append(v_acts, 'photo_add');
+    elsif coalesce(cardinality(array_remove(new.photo_paths, null)), 0) < coalesce(cardinality(array_remove(old.photo_paths, null)), 0) or nf < of then v_acts := array_append(v_acts, 'photo_del'); end if;
+    ns := (select count(*) from jsonb_array_elements(coalesce(new.stickers, '[]'::jsonb)) x where x->>'k' not in ('f', 'x'));
+    os := (select count(*) from jsonb_array_elements(coalesce(old.stickers, '[]'::jsonb)) x where x->>'k' not in ('f', 'x'));
+    if ns > os then v_acts := array_append(v_acts, 'stk_add'); elsif ns < os then v_acts := array_append(v_acts, 'stk_del'); end if;
+    if (select coalesce(string_agg(x->>'v', '|' order by n), '') from jsonb_array_elements(coalesce(new.stickers, '[]'::jsonb)) with ordinality a(x, n) where x->>'k' = 'x')
+       is distinct from (select coalesce(string_agg(x->>'v', '|' order by n), '') from jsonb_array_elements(coalesce(old.stickers, '[]'::jsonb)) with ordinality a(x, n) where x->>'k' = 'x') then v_acts := array_append(v_acts, 'texte'); end if;
+    if cardinality(v_acts) = 0 and new.stickers is distinct from old.stickers then v_acts := array_append(v_acts, 'deplace'); end if;
+    if new.layout is distinct from old.layout and (new.layout - 'free') is distinct from (old.layout - 'free') then v_acts := array_append(v_acts, 'style'); end if;
+  end if;
+  if cardinality(v_acts) = 0 then return null; end if;
+  select h.id into v_last from public.journal_history h
+    where h.trip_id = v_trip and h.entry_id = coalesce(new.id, old.id) and h.user_id = auth.uid() and h.updated_at > now() - interval '15 minutes'
+    order by h.updated_at desc limit 1;
+  if v_last is not null then
+    update public.journal_history set acts = (select array_agg(distinct a) from unnest(acts || v_acts) a), updated_at = now(),
+      day = coalesce(new.day, old.day), title = coalesce(new.title, old.title) where id = v_last;
+  else
+    insert into public.journal_history (trip_id, entry_id, user_id, day, title, acts)
+      values (v_trip, coalesce(new.id, old.id), auth.uid(), coalesce(new.day, old.day), coalesce(new.title, old.title), (select array_agg(distinct a) from unnest(v_acts) a));
+  end if;
+  if random() < 0.05 then delete from public.journal_history where trip_id = v_trip and updated_at < now() - interval '180 days'; end if;
+  return null;
+exception when others then
+  return null; -- l'historique ne doit jamais empêcher d'enregistrer une page
+end $$;
+drop trigger if exists journal_history_log on public.journal_entries;
+create trigger journal_history_log after insert or update or delete on public.journal_entries
+  for each row execute function public.journal_history_log();
+
+create or replace function public.collab_history(p_trip uuid)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.is_trip_editor(p_trip) then return '[]'::jsonb; end if;
+  return coalesce((select jsonb_agg(jsonb_build_object('at', h.updated_at, 'entry_id', h.entry_id, 'day', h.day, 'title', h.title, 'acts', h.acts,
+      'me', h.user_id = auth.uid(), 'name', p.display_name, 'avatar', p.avatar_path) order by h.updated_at desc)
+    from (select * from public.journal_history where trip_id = p_trip order by updated_at desc limit 150) h left join public.profiles p on p.id = h.user_id), '[]'::jsonb);
+end $$;
+revoke all on function public.collab_history(uuid) from public, anon;
+grant execute on function public.collab_history(uuid) to authenticated;

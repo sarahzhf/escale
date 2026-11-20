@@ -125,7 +125,7 @@ const COLLAB_TRIPS = new Map();
     openPanel(`<h2>Carnet à plusieurs</h2><p class="small">Invite les amis qui étaient du voyage. Ils pourront écrire, ajouter leurs photos et décorer les pages avec toi. Ils ne voient jamais ton budget, tes dépenses ni tes documents.</p>
       ${fr.length ? `<div class="flist collab-l">${fr.map(f => `<button type="button" class="togrow ${on.has(f.id) ? 'on' : ''}" data-u="${f.id}" aria-pressed="${on.has(f.id)}"><div><b>${esc(f.display_name || 'Ami')}</b><span>${on.has(f.id) ? 'Peut remplir le carnet' : 'Touche pour l’inviter'}</span></div><i class="sw"></i></button>`).join('')}</div>`
         : '<p class="small" style="margin-top:12px">Aucun ami du voyage pour l’instant. Ajoute d’abord tes amis Eskalys qui sont partis avec toi.</p>'}
-      <button type="button" class="btn2 wide" id="cl-crew" style="margin-top:12px">${SV.users}Choisir les amis du voyage</button>${CLOSE('Fermer')}`, p => {
+      <button type="button" class="btn2 wide" id="cl-crew" style="margin-top:12px">${SV.users}Choisir les amis du voyage</button>${on.size ? `<button type="button" class="btn2 wide" data-act="bkHistory" style="margin-top:8px">${SV.clock}Historique des modifications</button>` : ''}${CLOSE('Fermer')}`, p => {
       p.querySelector('#cl-crew').onclick = () => { closePanel(); setTimeout(() => ACT.crewSet({ trip: t.id }), 360); };
       p.querySelectorAll('[data-u]').forEach(b => b.onclick = async () => { const v = !b.classList.contains('on'); b.disabled = true;
         try { await rpc('collab_set', { p_trip: t.id, p_user: b.dataset.u, p_on: v }); b.classList.toggle('on', v); b.setAttribute('aria-pressed', v); b.querySelector('span').textContent = v ? 'Peut remplir le carnet' : 'Touche pour l’inviter'; toast(v ? 'Invitation envoyée' : 'Retiré du carnet'); }
@@ -182,4 +182,49 @@ const COLLAB_TRIPS = new Map();
   { const rj0 = renderJournalShelf; renderJournalShelf = (...a) => { const r = rj0(...a); const sc = $('s-journal'); if (sc && !sc.querySelector('#collabShelf')) { const anchor = sc.querySelector('#shelfInfo') || sc.querySelector('.emptycard'); if (anchor) { anchor.insertAdjacentHTML('afterend', '<div id="collabShelf"></div>'); sharedShelf(); } } return r; }; if (typeof SCREENS !== 'undefined') SCREENS.journal = renderJournalShelf; }
   ACT.collabLeaveAsk = d => openPanel(`<h2>Quitter ce carnet ?</h2><p class="small">Tes pages et tes photos restent dans le carnet de ton amie. Tu ne pourras plus le modifier, sauf si elle t'invite à nouveau.</p><button class="danger" data-act="collabLeave" data-trip="${d.trip}">Quitter le carnet</button>${CLOSE()}`, null, { nofocus: true });
   ACT.collabLeave = async d => { try { await rpc('collab_leave', { p_trip: d.trip }); COLLAB_TRIPS.delete(d.trip); closePanel(); closeBook(); toast('Tu as quitté ce carnet'); sharedShelf(); } catch (e) { toast(errMsg(e)); } };
+
+  /* ---------- annuler la dernière action ---------- */
+  // à chaque enregistrement pendant la modification, l'état précédent de la page est gardé (50 étapes)
+  const UNDO = [], BASE = new Map(); let undoing = false;
+  const ej = e => JSON.stringify({ t: e.t, d: e.d || '', n: e.n || '', j: e.j, photos: e.photos, st: e.st || [], lay: e.lay || {} });
+  { const sv1 = save; save = (...a) => {
+    if (BK && BK.edit && !undoing) { const e = curEntry(); if (e) { const j = ej(e), prev = BASE.get(e.id);
+      if (prev && prev !== j) { UNDO.push({ tid: BK.book.tripId, id: e.id, j: prev }); if (UNDO.length > 50) UNDO.shift(); }
+      BASE.set(e.id, j); } }
+    return sv1(...a); }; }
+  ACT.bkUndo = () => { if (!BK) return; let k = UNDO.length - 1; while (k >= 0 && UNDO[k].tid !== BK.book.tripId) k--;
+    if (k < 0) { toast('Rien à annuler'); return; } const u = UNDO.splice(k, 1)[0], t = trip(u.tid), e = t && t.entrees.find(x => x.id === u.id);
+    if (!e) { toast('Cette page n’existe plus'); return; }
+    const v = JSON.parse(u.j); Object.assign(e, { t: v.t, d: v.d, n: v.n, j: v.j, photos: v.photos, st: v.st, lay: v.lay }); BASE.set(e.id, u.j);
+    const i = BK.book.spreads.findIndex(x => x.kind === 'day' && x.e.id === e.id); if (i >= 0 && i !== BK.i) BK.i = i;
+    BK.sel = null; undoing = true; try { save(); } finally { undoing = false; } bkRender(); toast('Action annulée'); };
+  // les photos retirées pendant la modification ne sont effacées qu'à la fin, pour pouvoir annuler
+  const LATER = new Set();
+  { const rm0 = releaseMedia; releaseMedia = p => { if (BK && BK.edit && p) { LATER.add(p); return; } rm0(p); };
+    const flushLater = () => { if (!LATER.size) return; const used = new Set(); [...S.trips, ...COLLAB_TRIPS.values()].forEach(t => t.entrees.forEach(e => { e.photos.forEach(x => x && used.add(x)); (e.st || []).forEach(x => x.p && used.add(x.p)); }));
+      [...LATER].forEach(p => { if (!used.has(p)) rm0(p); }); LATER.clear(); };
+    const br = bkRender; bkRender = () => { if (BK && !BK.edit) { flushLater(); UNDO.length = 0; } br(); };
+    const cb = closeBook; closeBook = (...a) => { const r = cb(...a); flushLater(); UNDO.length = 0; BASE.clear(); return r; }; }
+  { const bar0 = bkBar; bkBar = () => { bar0(); if (!BK || !BK.edit) return; const tools = document.querySelector('#bkBot .bk-tools'); if (!tools) return;
+    const has = UNDO.some(u => u.tid === BK.book.tripId);
+    tools.insertAdjacentHTML('afterbegin', `<button data-act="bkUndo" class="undo" aria-label="Annuler la dernière action" ${has ? '' : 'disabled'}>↶</button>`); }; }
+
+  /* ---------- historique des modifications (carnet à plusieurs) ---------- */
+  const ACTS = { page_new: 'a créé la page', page_del: 'a supprimé la page', titre: 'a changé le titre', texte: 'a écrit du texte', photo_add: 'a ajouté des photos', photo_del: 'a retiré des photos',
+    stk_add: 'a ajouté des stickers', stk_del: 'a retiré des stickers', deplace: 'a déplacé ou recadré des éléments', style: 'a changé le style de la page' };
+  const joinFr = L => L.length <= 1 ? (L[0] || 'a modifié la page') : L.slice(0, -1).join(', ') + ' et ' + L[L.length - 1];
+  const dayLbl = d => { const k = diffDays(iso(new Date(d)), TODAY); return k === 0 ? 'Aujourd’hui' : k === 1 ? 'Hier' : new Date(d).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }); };
+  ACT.bkHistory = async () => { const tid = BK && BK.book.tripId; if (!tid) return; let L;
+    try { L = await rpc('collab_history', { p_trip: tid }); } catch (_) { toast(navigator.onLine ? 'Historique indisponible pour l’instant' : 'Pas de connexion'); return; }
+    L = L || []; let last = '';
+    const rows = L.map(h => { const g = dayLbl(h.at), head = g !== last ? `<p class="caps hist-d">${esc(g)}</p>` : ''; last = g;
+      const who = h.me ? 'Tu' : (h.name || 'Un ami'), ini = esc(((h.me ? (S.user || 'Moi') : who)[0] || '?').toUpperCase()), acts = joinFr(Object.keys(ACTS).filter(a => (h.acts || []).includes(a)).map(a => ACTS[a]));
+      return `${head}<button class="hist-r" data-act="histGo" data-e="${h.entry_id || ''}"><i class="hist-av">${h.avatar ? IMG(h.avatar) : ini}</i><span><b>${esc(who)}</b> ${esc(h.me ? acts.replace(/^a /, 'as ') : acts)}<em>${h.day ? `Jour ${h.day}` : ''}${h.title ? `, ${esc(h.title)}` : ''} · ${new Date(h.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</em></span></button>`; }).join('');
+    openPanel(`<h2>Historique</h2><p class="small">Qui a modifié quoi dans ce carnet, du plus récent au plus ancien.</p>${rows ? `<div class="hist">${rows}</div>` : '<p class="small" style="margin-top:12px">Rien pour l’instant. L’historique se remplit dès qu’un ami est invité à remplir le carnet avec toi.</p>'}${CLOSE('Fermer')}`, null, { nofocus: true }); };
+  ACT.histGo = d => { closePanel(); if (!BK || !d.e) return; const i = BK.book.spreads.findIndex(x => x.kind === 'day' && x.e.id === d.e); if (i >= 0) setTimeout(() => flipTo(i), 380); };
+  // bouton Historique : en haut du carnet pour les amis invités, et pour la propriétaire dès qu'un ami est invité
+  { const ob1 = openBook; openBook = (book, start) => { ob1(book, start); const top = document.querySelector('#book .bk-top'), ed = top && top.querySelector('[data-act="bkEdit"]'); if (!ed) return;
+    const btn = `<button class="bk-ic" data-act="bkHistory" aria-label="Historique des modifications">${SV.clock}</button>`;
+    if (book.collab) ed.insertAdjacentHTML('beforebegin', btn);
+    else if (book.own && navigator.onLine) rpc('collab_list', { p_trip: book.tripId }).then(L => { if (L && L.length && BK && BK.book.tripId === book.tripId && top.isConnected && !top.querySelector('[data-act="bkHistory"]')) ed.insertAdjacentHTML('beforebegin', btn); }).catch(() => { }); }; }
 })();

@@ -233,9 +233,15 @@ const COLLAB_TRIPS = new Map();
   // La page se tourne maintenant directement au doigt, en 3D CSS : elle suit le geste et se pose, ou revient.
   if (typeof PC !== 'undefined') PC.failed = true;
   const EASE = 'cubic-bezier(.22,.61,.36,1)';
+  // stickers d'une moitié de double page : à leur place sur la double page (halfStk), ou dans la face d'une feuille (faceStk)
+  const stOf = sp => sp && sp.kind === 'day' ? (sp.e.st || []) : [];
+  const onHalf = (x, h) => h === 'l' ? x < 50 : x >= 50;
+  // from : moitié d'origine des stickers, to : moitié où on les affiche sur la double page
+  function halfStk(sp, from, to = from) { return stOf(sp).map((x, i) => onHalf(x.x, from) ? stickerHTML({ ...x, x: x.x + (to === from ? 0 : to === 'r' ? 50 : -50) }, i, false) : '').join(''); }
+  function faceStk(sp, h) { return stOf(sp).map((x, i) => onHalf(x.x, h) ? stickerHTML({ ...x, x: (x.x - (h === 'r' ? 50 : 0)) * 2 }, i, false) : '').join(''); }
   function liveTurn(stage) {
     let g = null;
-    const leafEl = () => $('bkLeaf'), cancelG = () => { g = null; };
+    const cancelG = () => { g = null; };
     stage.addEventListener('pointerdown', e => {
       if (!BK || BK.edit || BK.busy || e.button > 0 || e.target.closest('button,a,input,[contenteditable]')) { g = null; return; }
       g = { id: e.pointerId, x0: e.clientX, y0: e.clientY, t0: performance.now(), on: false, lx: e.clientX, lt: performance.now(), v: 0 };
@@ -250,7 +256,7 @@ const COLLAB_TRIPS = new Map();
       const done = G.p > .33 || (G.dir > 0 ? G.v < -.45 : G.v > .45); finish(G, done && !(G.dir > 0 ? G.v > .3 : G.v < -.3)); };
     stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', e => { if (g && e.pointerId === g.id && g.on) { const G = g; g = null; finish(G, false); } else cancelG(); });
     function start(dir) {
-      const n = BK.book.spreads.length, L = $('bkL'), R = $('bkR'), stk = $('bkStk'), leaf = leafEl(); if (!leaf || !L || !R) return false;
+      const n = BK.book.spreads.length, L = $('bkL'), R = $('bkR'), stk = $('bkStk'); if (!L || !R) return false;
       const phone = !BK.wide && BK.zoom, G = g; G.dir = dir; G.phone = phone;
       if (phone) { const z = BK.zoom, pos = BK.i * 2 + (z === 'r' ? 1 : 0), to = pos + dir; if (to < 0 || to > n * 2 - 1) return false;
         G.ti = to >> 1; G.tz = to % 2 ? 'r' : 'l'; G.side = z; G.here = z === 'r' ? R : L; G.keep = G.here.innerHTML;
@@ -260,28 +266,42 @@ const COLLAB_TRIPS = new Map();
       } else { const k = BK.i + dir; if (k < 0 || k >= n) return false; G.k = k; const to = BK.book.spreads[k];
         if (dir > 0) { G.side = 'r'; G.here = R; G.keep = R.innerHTML; G.front = G.keep; G.back = pageHTML(BK.book, to, 'l'); R.innerHTML = pageHTML(BK.book, to, 'r'); G.a0 = 0; G.a1 = -180; G.origin = '0 50%'; G.after = () => { L.innerHTML = G.back; }; }
         else { G.side = 'l'; G.here = L; G.keep = L.innerHTML; G.front = G.keep; G.back = pageHTML(BK.book, to, 'r'); L.innerHTML = pageHTML(BK.book, to, 'l'); G.a0 = 0; G.a1 = 180; G.origin = '100% 50%'; G.after = () => { R.innerHTML = G.back; }; } }
-      BK.busy = true; BK.sel = null; stk.style.opacity = 0;
-      leaf.className = `bk-leaf on live ${G.side}`; leaf.style.animation = 'none'; leaf.style.transition = 'none'; leaf.style.transformOrigin = G.origin;
-      leaf.innerHTML = `<div class="lf f"><div class="bk-pg ${G.side}">${G.front}</div><i class="sh"></i></div><div class="lf b"><div class="bk-pg ${G.side === 'l' ? 'r' : 'l'}">${G.back}</div><i class="sh"></i></div>`;
+      BK.busy = true; BK.sel = null;
+      // calque des stickers : les moitiés immobiles gardent les leurs, la feuille emporte ceux de ses deux faces
+      const sp = BK.book.spreads, cur = sp[BK.i], A = BK.i;
+      if (phone) { const tgt = sp[G.ti]; G.fe = dir > 0 ? [cur, G.side] : [tgt, G.tz]; G.be = [null, 'l'];
+        stk.innerHTML = dir > 0 ? halfStk(tgt, G.tz, G.side) + halfStk(cur, G.side === 'l' ? 'r' : 'l') : halfStk(cur, 'l') + halfStk(cur, 'r'); }
+      else { const tgt = sp[G.k];
+        if (dir > 0) { G.fe = [cur, 'r']; G.be = [tgt, 'l']; stk.innerHTML = halfStk(cur, 'l') + halfStk(tgt, 'r'); }
+        else { G.fe = [cur, 'l']; G.be = [tgt, 'r']; stk.innerHTML = halfStk(tgt, 'l') + halfStk(cur, 'r'); } }
+      // la feuille est dessinée dans un calque posé sur la page, à la taille réelle de l'écran :
+      // elle reste nette même quand la page est zoomée (téléphone), et sa perspective est la sienne
+      const st = $('bkStage'), sr = st.getBoundingClientRect(), r = G.here.getBoundingClientRect(), sc = r.width / PG_W;
+      const ov = document.createElement('div'); ov.className = `lt-ov ${G.side}`;
+      ov.style.cssText = `left:${r.left - sr.left}px;top:${r.top - sr.top}px;width:${r.width}px;height:${r.height}px;--k:${sc};perspective:${Math.round(Math.max(900, r.width * 5))}px`;
+      ov.innerHTML = `<div class="lt-leaf" style="transform-origin:${G.origin}"><div class="lt-face f"><div class="bk-pg ${G.side}">${G.front}</div><div class="lfs">${faceStk(G.fe[0], G.fe[1])}</div><i class="sh"></i></div><div class="lt-face b"><div class="bk-pg ${G.side === 'l' ? 'r' : 'l'}">${G.back}</div><div class="lfs">${faceStk(G.be[0], G.be[1])}</div><i class="sh"></i></div></div>`;
+      st.appendChild(ov); G.ov = ov;
       G.w = (G.here.getBoundingClientRect().width || 200) * (phone ? 1 : 1.15); G.persp = Math.round(Math.max(1400, G.w * 6)); G.on = true; G.p = 0; set(G, G.a0); return true;
     }
-    function set(G, a) { const leaf = leafEl(); if (!leaf) return; const p = Math.abs(a - G.a0) / 180, lift = Math.sin(Math.min(1, p) * Math.PI);
-      leaf.style.transform = `perspective(${G.persp}px) rotateY(${a}deg) translateZ(${(lift * 6).toFixed(1)}px)`;
-      const f = leaf.querySelector('.f .sh'), b = leaf.querySelector('.b .sh'), d = Math.abs(a) / 180; if (f) f.style.opacity = (d * .55).toFixed(3); if (b) b.style.opacity = ((1 - d) * .45).toFixed(3);
-      const sh = $('bkShade'); if (sh) { sh.className = `bk-shade ${G.side} ${G.origin.startsWith('100') ? 'hr' : 'hl'}`; sh.style.animation = 'none'; sh.style.opacity = (lift * .7).toFixed(3); } }
+    function set(G, a) { const lf = G.ov && G.ov.firstChild; if (!lf) return; const p = Math.abs(a - G.a0) / 180, lift = Math.sin(Math.min(1, p) * Math.PI);
+      lf.style.transform = `rotateY(${a}deg)`;
+      const f = lf.querySelector('.f .sh'), b = lf.querySelector('.b .sh'), d = Math.abs(a) / 180, edge = Math.pow(Math.abs(Math.sin(a * Math.PI / 180)), 6) * .5; // plus sombre de profil : on voit la tranche, pas le contenu écrasé
+      if (f) f.style.opacity = Math.min(.9, d * .5 + edge).toFixed(3); if (b) b.style.opacity = Math.min(.9, (1 - d) * .4 + edge).toFixed(3);
+      const sh = $('bkShade'); if (sh) { sh.className = `bk-shade ${G.side} ${G.origin.startsWith('100') ? 'hr' : 'hl'}`; sh.style.animation = 'none'; sh.style.opacity = (lift * .6).toFixed(3); } }
     function move(dx) { const G = g; if (!G || !G.on) return; let p = (G.dir > 0 ? -dx : dx) / G.w; p = Math.max(0, Math.min(1, p)); G.p = p; set(G, G.a0 + (G.a1 - G.a0) * p); }
     function finish(G, done) {
-      const leaf = leafEl(), to = done ? G.a1 : G.a0, rest = done ? 1 - G.p : G.p, ms = Math.round(180 + 260 * rest);
-      if (leaf) { leaf.style.transition = `transform ${ms}ms ${EASE}`; requestAnimationFrame(() => set(G, to)); leaf.querySelectorAll('.sh').forEach(x => x.style.transition = `opacity ${ms}ms ${EASE}`); }
+      const lf = G.ov && G.ov.firstChild, to = done ? G.a1 : G.a0, rest = done ? 1 - G.p : G.p, ms = Math.round(180 + 260 * rest);
+      if (lf) { lf.style.transition = `transform ${ms}ms ${EASE}`; lf.querySelectorAll('.sh').forEach(x => x.style.transition = `opacity ${ms}ms ${EASE}`); requestAnimationFrame(() => set(G, to)); }
       const sh = $('bkShade'); if (sh) sh.style.transition = `opacity ${ms}ms ${EASE}`;
       setTimeout(() => {
         const stk = $('bkStk');
-        if (leaf) { leaf.className = 'bk-leaf'; leaf.style.cssText = ''; leaf.innerHTML = ''; }
         if (sh) { sh.className = 'bk-shade'; sh.style.cssText = ''; }
-        if (!BK) return;
-        if (done) { if (G.phone) { BK.i = G.ti; BK.busy = false; bkRender(); snapZoom(G.tz); bkBar(); } else { if (G.after) G.after(); BK.i = G.k; BK.busy = false; if (stk) stk.innerHTML = stkLayerHTML(); bkBar(); } }
-        else { G.here.innerHTML = G.keep; BK.busy = false; }
-        if (stk) stk.style.opacity = '';
+        if (BK) {
+          if (done) { if (G.phone) { BK.i = G.ti; BK.busy = false; bkRender(); snapZoom(G.tz); bkBar(); } else { if (G.after) G.after(); BK.i = G.k; BK.busy = false; if (stk) stk.innerHTML = stkLayerHTML(); bkBar(); } }
+          else { G.here.innerHTML = G.keep; BK.busy = false; if (stk) stk.innerHTML = stkLayerHTML(); }
+        }
+        // le calque part une image plus tard, une fois la page posée dessous : aucun clignotement
+        requestAnimationFrame(() => { if (G.ov) G.ov.remove(); });
       }, ms + 30);
     }
   }

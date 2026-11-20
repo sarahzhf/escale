@@ -38,9 +38,24 @@ $$;
 revoke all on function public.is_trip_editor(uuid) from public, anon;
 grant execute on function public.is_trip_editor(uuid) to authenticated;
 
+-- 2 bis. nouveau type de notification « carnet_invite » : ajouté à la liste autorisée, sans toucher aux autres
+do $$ declare c record; v text[];
+begin
+  for c in select conname, pg_get_constraintdef(oid) d from pg_constraint
+           where conrelid = 'public.notifications'::regclass and contype = 'c' and pg_get_constraintdef(oid) like '%kind%' loop
+    if c.d like '%carnet_invite%' then continue; end if;
+    select array_agg(m[1]) into v from regexp_matches(c.d, '''([a-z_]+)''', 'g') m;
+    if v is null then continue; end if;
+    v := array_append(v, 'carnet_invite');
+    execute format('alter table public.notifications drop constraint %I', c.conname);
+    execute format('alter table public.notifications add constraint %I check (kind = any (%L::text[]))', c.conname, v);
+  end loop;
+end $$;
+
 -- 3. inviter ou retirer un ami (propriétaire seulement, amis du voyage seulement, 10 au maximum)
 create or replace function public.collab_set(p_trip uuid, p_user uuid, p_on boolean)
 returns void language plpgsql security definer set search_path = public as $$
+declare n int;
 begin
   if not exists (select 1 from public.trips t where t.id = p_trip and t.owner_id = auth.uid()) then raise exception 'Ce carnet n''est pas le tien'; end if;
   if p_on then
@@ -50,6 +65,12 @@ begin
     if not exists (select 1 from public.crew_of(p_trip) x where to_jsonb(x)::text like '%' || p_user::text || '%') then raise exception 'Ajoute d''abord cet ami aux amis du voyage, dans Entre amis'; end if;
     if (select count(*) from public.trip_collaborators where trip_id = p_trip) >= 10 then raise exception '10 amis au maximum par carnet'; end if;
     insert into public.trip_collaborators (trip_id, user_id) values (p_trip, p_user) on conflict do nothing;
+    get diagnostics n = row_count;
+    -- l'ami est prévenu une seule fois ; un souci de notification n'empêche jamais l'invitation
+    if n > 0 then
+      begin insert into public.notifications (user_id, actor_id, kind) values (p_user, auth.uid(), 'carnet_invite');
+      exception when others then null; end;
+    end if;
   else
     delete from public.trip_collaborators where trip_id = p_trip and user_id = p_user;
   end if;

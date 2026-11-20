@@ -23,7 +23,7 @@ const COLLAB_TRIPS = new Map();
   window.freePhotoHTML = s => {
     const fr = FP_FRAMES[s.fr] ? s.fr : 'polaroid', ar = s.fr === 'rond' ? '1 / 1' : (FP_AR[s.ar] || FP_AR.o)[1];
     const crop = `--cx:${+s.cx >= 0 ? +s.cx : 50}%;--cy:${+s.cy >= 0 ? +s.cy : 50}%;--cz:${Math.max(1, Math.min(3, +s.cz || 1))}`;
-    return `<figure class="fp fr-${fr}"><span class="fpc${ar ? '' : ' nat'}" style="${ar ? `aspect-ratio:${ar};` : ''}${crop}">${IMG(s.p)}</span>${fr === 'polaroid' && s.cap ? `<figcaption>${esc(s.cap)}</figcaption>` : ''}${fr === 'scotch' ? '<i class="tp a"></i><i class="tp b"></i>' : ''}</figure>`;
+    return `<figure class="fp fr-${fr}"><span class="fpc${ar ? '' : ' nat'}" style="${ar ? `aspect-ratio:${ar};` : ''}${crop}">${IMG(s.p)}</span>${fr === 'polaroid' && s.cap ? `<figcaption>${esc(s.cap)}</figcaption>` : ''}${fr === 'polaroid' && s.tp != null ? `<i class="tape t${(+s.tp || 0) % 3}"></i>` : ''}${fr === 'scotch' ? '<i class="tp a"></i><i class="tp b"></i>' : ''}</figure>`;
   };
   const r1 = n => Math.round(n * 10) / 10;
   const SLOTS = [[[25, 46]], [[25, 33], [25, 68]], [[17, 32], [33, 50], [19, 72]], [[16, 32], [34, 32], [16, 66], [34, 66]], [[15, 28], [34, 30], [25, 52], [15, 75], [35, 75]], [[15, 26], [35, 26], [15, 51], [35, 51], [15, 76], [35, 76]]];
@@ -34,8 +34,13 @@ const COLLAB_TRIPS = new Map();
     if (!e || (e.lay && e.lay.free) || FREED.has(e.id)) return false; FREED.add(e.id); e.lay = e.lay || {}; e.st = e.st || [];
     const placed = new Set(e.st.filter(x => x.k === 'f').map(x => x.p)), ph = e.photos.map((p, i) => ({ p, i })).filter(o => o.p && !placed.has(o.p)).slice(0, 6);
     const pos = SLOTS[Math.max(0, ph.length - 1)] || SLOTS[0], sc = ph.length <= 1 ? 1.15 : ph.length <= 2 ? .95 : ph.length <= 4 ? .72 : .6;
+    // place exacte de chaque photo dans la grille affichée : la page ne bouge pas quand elle devient libre
+    let real = null; const stkEl = $('bkStk'), Lp = $('bkL');
+    if (stkEl && Lp && BK && curEntry() === e) { const sr = stkEl.getBoundingClientRect(), figs = [...Lp.querySelectorAll('.pg-ph > figure')];
+      if (sr.width && figs.length === ph.length) real = figs.map(f => { const r = f.getBoundingClientRect(), rot = parseFloat(getComputedStyle(f).getPropertyValue('--rot')) || 0;
+        return { x: r1((r.left + r.width / 2 - sr.left) / sr.width * 100), y: r1((r.top + r.height / 2 - sr.top) / sr.height * 100), s: Math.max(.3, Math.min(4, Math.round(f.offsetWidth / 118 * 100) / 100)), r: rot }; }); }
     // les photos passent sous les stickers déjà posés
-    const add = ph.map((o, k) => ({ k: 'f', p: o.p, x: pos[k][0], y: pos[k][1], s: sc, r: [-4, 3, -2, 5, -5, 2][k % 6], fr: FR_MAP[pageFrame(e, o.i)] || 'polaroid', ar: 'carre', cx: 50, cy: 50, cz: 1 }));
+    const add = ph.map((o, k) => ({ k: 'f', p: o.p, x: real ? real[k].x : pos[k][0], y: real ? real[k].y : pos[k][1], s: real ? real[k].s : sc, r: real ? real[k].r : [-4, 3, -2, 5, -5, 2][k % 6], fr: FR_MAP[pageFrame(e, o.i)] || 'polaroid', ar: 'carre', cx: 50, cy: 50, cz: 1, tp: k % 3 })); // tp : le petit morceau de scotch du polaroïd, gardé
     e.st = add.concat(e.st); e.lay.free = 1; delete e.lay.fr; e.photos = e.photos.filter(Boolean); return true;
   }
   { const r0 = bkRender; bkRender = () => { if (BK && BK.edit && BK.book.own) { const e = curEntry(); if (freePage(e)) { if (BK.sel != null) BK.sel = null; save(); } } r0(); }; }

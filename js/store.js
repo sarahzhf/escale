@@ -128,7 +128,7 @@ async function sync() {
     if (isNetwork(e)) { setOnline(false); backoff = Math.min(60000, (backoff || 2500) * 2); setTimeout(sync, backoff); }
     else {
       console.warn('sync', e);
-      toast(e.code === 'P0429' ? e.message : "Une modification n'a pas pu être enregistrée, on recharge tes carnets.");
+      toast(e.code === 'P0429' ? e.message : `Une modification n'a pas pu être enregistrée${e.message ? ` (${String(e.message).slice(0, 80)})` : ''}, on recharge tes carnets.`);
       try { await loadData(); refresh(); } catch (_) { }
     }
   } finally { syncing = false; if (again) sync(); }

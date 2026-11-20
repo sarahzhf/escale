@@ -2849,3 +2849,6 @@ html[data-theme="dark"] .balert{background:#3a3220;color:#F4E6C4;border-color:#6
 .lt-face .sh{position:absolute;inset:0;pointer-events:none;opacity:0;background:linear-gradient(90deg,rgba(40,30,20,.5),rgba(40,30,20,.1) 60%,rgba(40,30,20,.22))}
 .lt-ov.l .lt-face.f .sh,.lt-ov.r .lt-face.b .sh{background:linear-gradient(270deg,rgba(40,30,20,.5),rgba(40,30,20,.1) 60%,rgba(40,30,20,.22))}
 .lt-face .stk.sel::after{display:none}
+.bk-tools:not(.wide) button span{font-size:.72rem;font-weight:600}
+.fp .tape{position:absolute;top:-8px;left:50%;width:46px;height:14px;transform:translateX(-50%) rotate(-4deg);background:rgba(243,201,121,.72)}
+.fp .tape.t1{background:rgba(232,169,184,.72);transform:translateX(-50%) rotate(5deg)}.fp .tape.t2{background:rgba(169,196,175,.78);transform:translateX(-50%) rotate(-8deg)}

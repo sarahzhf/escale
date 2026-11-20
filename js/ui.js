@@ -530,12 +530,13 @@ async function ask(q) {
   if (asking) return; $('askIn').value = '';
   bubble('me', q); const out = bubble('ai', ''); out.innerHTML = '<span class="thinking">Je feuillette tes carnets…</span>';
   if (!(SETTINGS && SETTINGS.ai_enabled)) { setTimeout(() => { out.textContent = local(q); $('s-ia').scrollTop = 1e6; }, 400); return; }
+  if (typeof aiAllowed === 'function' && !aiAllowed()) { out.innerHTML = `${esc(local(q))}<span class="ai-lim">Réponse simple : tes questions de la semaine à l’assistant sont utilisées. <button class="link" data-act="aiPaywall">Passer à PRO</button></span>`; aiQuotaShow(); $('s-ia').scrollTop = 1e6; return; }
   asking = true;
   try {
     const { data, error } = await sb.functions.invoke('assistant', { body: { question: q, history: turns.slice(-12) } });
     if (error) { let msg = 'L’assistant est indisponible, voici une réponse simple : ' + local(q); try { const j = await error.context.json(); if (j && j.error && error.context.status !== 502) msg = j.error; } catch (_) { } out.textContent = msg; }
     else if (!data || !data.answer || !String(data.answer).trim()) out.textContent = local(q);
-    else { out.textContent = data.answer; turns.push({ role: 'user', content: q }, { role: 'assistant', content: data.answer }); }
+    else { out.textContent = data.answer; turns.push({ role: 'user', content: q }, { role: 'assistant', content: data.answer }); if (typeof aiCount === 'function') aiCount(); }
   } catch (e) { out.textContent = local(q); }
   finally { asking = false; $('s-ia').scrollTop = 1e6; }
 }

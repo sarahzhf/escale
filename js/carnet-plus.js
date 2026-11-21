@@ -19,10 +19,24 @@ const COLLAB_TRIPS = new Map();
   /* ---------- photos libres ---------- */
   const FP_FRAMES = { aucun: 'Sans cadre', polaroid: 'Polaroïd', blanc: 'Bord blanc', arrondi: 'Arrondi', rond: 'Rond', timbre: 'Timbre', film: 'Pellicule', scotch: 'Scotchée', ombre: 'Ombre douce', kraft: 'Bord kraft' };
   const FP_AR = { o: ['Original', null], carre: ['Carré', '1 / 1'], portrait: ['Portrait', '3 / 4'], paysage: ['Paysage', '4 / 3'], large: ['Large', '16 / 9'], story: ['Story', '9 / 16'] };
-  window.FP_FRAMES = FP_FRAMES;
+  /* cadres ornés (collection PRO) : image du cadre, ouverture découpée (masque), place de la photo en % du cadre */
+  const FP_ORN = {
+    'or-ovale': ['Ovale doré', [1161, 1450], [19.7, 19.6, 60.6, 63.2]],
+    'or-rond': ['Rond doré', [1209, 1187], [15.2, 15.1, 69.5, 70.2]],
+    'or-cadre': ['Doré ancien', [1263, 1505], [19.1, 17.1, 61.3, 66.1]],
+    'argent': ['Argent ciselé', [1110, 1469], [19.9, 21.9, 60.3, 59.3]],
+    'bordeaux': ['Bordeaux', [1222, 1520], [16.9, 13.5, 66.4, 72.3]],
+    'coeur-or': ['Cœur doré', [1515, 1435], [15, 13.9, 70, 69.8]],
+    'coeur-rose': ['Cœur rose', [1437, 1456], [20.8, 24.9, 58.6, 54.1]],
+  };
+  Object.entries(FP_ORN).forEach(([k, [n]]) => { FP_FRAMES[k] = n; });
+  const ornAR = k => { const [, [W, H], [, , w, h]] = FP_ORN[k]; return `${Math.round(W * w)} / ${Math.round(H * h)}`; };
+  window.FP_FRAMES = FP_FRAMES; window.FP_ORN = FP_ORN;
   window.freePhotoHTML = s => {
     const fr = FP_FRAMES[s.fr] ? s.fr : 'polaroid', ar = s.fr === 'rond' ? '1 / 1' : (FP_AR[s.ar] || FP_AR.o)[1];
     const crop = `--cx:${+s.cx >= 0 ? +s.cx : 50}%;--cy:${+s.cy >= 0 ? +s.cy : 50}%;--cz:${Math.max(1, Math.min(3, +s.cz || 1))}`;
+    if (FP_ORN[fr]) { const [, [W, H], [l, t, w, h]] = FP_ORN[fr], u = `icons/cadres/${fr}`;
+      return `<figure class="fp fr-orn" style="aspect-ratio:${W} / ${H}"><span class="fpc" style="left:${l}%;top:${t}%;width:${w}%;height:${h}%;-webkit-mask-image:url(${u}-m.png);mask-image:url(${u}-m.png);${crop}">${IMG(s.p)}</span><img class="orn" src="${u}.webp" alt="" draggable="false" decoding="async"></figure>`; }
     return `<figure class="fp fr-${fr}"><span class="fpc${ar ? '' : ' nat'}" style="${ar ? `aspect-ratio:${ar};` : ''}${crop}">${IMG(s.p)}</span>${fr === 'polaroid' && s.cap ? `<figcaption>${esc(s.cap)}</figcaption>` : ''}${fr === 'polaroid' && s.tp != null ? `<i class="tape t${(+s.tp || 0) % 3}"></i>` : ''}${fr === 'scotch' ? '<i class="tp a"></i><i class="tp b"></i>' : ''}</figure>`;
   };
   const r1 = n => Math.round(n * 10) / 10;
@@ -63,15 +77,15 @@ const COLLAB_TRIPS = new Map();
   /* rogner : on fait glisser la photo dans son cadre, on zoome, on choisit le format */
   ACT.fpCrop = () => { const e = curEntry(), s = e && e.st[BK.sel]; if (!s || s.k !== 'f') return;
     const keep = { ar: s.ar, cx: s.cx, cy: s.cy, cz: s.cz };
-    const ar = () => s.fr === 'rond' ? '1 / 1' : (FP_AR[s.ar || 'o'] || FP_AR.o)[1];
+    const ar = () => FP_ORN[s.fr] ? ornAR(s.fr) : s.fr === 'rond' ? '1 / 1' : (FP_AR[s.ar || 'o'] || FP_AR.o)[1];
     openPanel(`<h2>Rogner la photo</h2><p class="small">Fais glisser la photo pour la cadrer, zoome avec le curseur.</p>
       <div class="fp-ed"><span class="fpc" id="fp-box">${IMG(s.p)}</span></div>
       <label class="fld"><span>Zoom</span><input type="range" id="fp-z" min="1" max="3" step="0.01" value="${+s.cz || 1}"></label>
-      <p class="setsec">Format</p><div class="seg wide wrap" id="fp-ar">${Object.entries(FP_AR).map(([k, [n]]) => `<button type="button" data-ar="${k}" class="${(s.ar || 'o') === k ? 'on' : ''}">${n}</button>`).join('')}</div>
+      <p class="setsec"${FP_ORN[s.fr] ? ' hidden' : ''}>Format</p><div class="seg wide wrap" id="fp-ar"${FP_ORN[s.fr] ? ' hidden' : ''}>${Object.entries(FP_AR).map(([k, [n]]) => `<button type="button" data-ar="${k}" class="${(s.ar || 'o') === k ? 'on' : ''}">${n}</button>`).join('')}</div>
       <button class="btn full" id="fp-ok" style="margin-top:14px">Valider le cadrage<i>${SV.arrow}</i></button>
       <button class="btn2 wide" id="fp-rs" style="margin-top:8px">Recentrer</button>${CLOSE()}`, p => {
       const box = p.querySelector('#fp-box');
-      const paint = () => { const a = ar(); box.style.aspectRatio = a || ''; box.classList.toggle('nat', !a); box.classList.toggle('round', s.fr === 'rond');
+      const paint = () => { const a = ar(); box.style.aspectRatio = a || ''; box.classList.toggle('nat', !a); box.classList.toggle('round', s.fr === 'rond'); const mk = FP_ORN[s.fr] ? `url(icons/cadres/${s.fr}-m.png)` : ''; box.style.webkitMaskImage = mk; box.style.maskImage = mk; box.classList.toggle('orn', !!mk);
         box.style.setProperty('--cx', (s.cx ?? 50) + '%'); box.style.setProperty('--cy', (s.cy ?? 50) + '%'); box.style.setProperty('--cz', s.cz || 1); };
       paint();
       let d0 = null;

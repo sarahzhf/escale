@@ -34,6 +34,46 @@ const DOODLES = {
   butterfly: `<path ${D_STROKE} d="M24 16v22M24 20c-4-10-16-12-17-6s7 10 17 8c-9 2-13 10-9 13s9-3 9-9c0 6 5 12 9 9s0-11-9-13c10 2 18-2 17-8s-13-4-17 6M22 12l2 4 2-4"/>`,
 };
 /* décorations (nœuds, dentelles, fleurons, coins) : [viewBox, dessin] */
+/* dentelles réalistes : galon à oeillets, tulle en losanges, motifs fleuris en point de toile, festons à picots, vrais jours transparents */
+const LACE = (() => {
+  const f = n => +n.toFixed(2);
+  const eyelets = (w, y, r, step) => { let d = ''; for (let x = step / 2; x < w; x += step) d += `M${f(x - r)} ${y}a${r} ${r} 0 1 0 ${f(2 * r)} 0a${r} ${r} 0 1 0 ${f(-2 * r)} 0z`; return d; };
+  const flower = (cx, cy, R) => { let d = ''; for (let i = 0; i < 5; i++) { const a = i * 1.2566 - 1.5708, x = cx + Math.cos(a) * R * .55, y = cy + Math.sin(a) * R * .55, rx = R * .42, ry = R * .28;
+      d += `M${f(x + Math.cos(a) * rx)} ${f(y + Math.sin(a) * rx)}A${f(rx)} ${f(ry)} ${f(a * 57.3)} 1 0 ${f(x - Math.cos(a) * rx)} ${f(y - Math.sin(a) * rx)}A${f(rx)} ${f(ry)} ${f(a * 57.3)} 1 0 ${f(x + Math.cos(a) * rx)} ${f(y + Math.sin(a) * rx)}z`; }
+    return d; };
+  const leaf = (x, y, a, L) => { const c = Math.cos(a), sn = Math.sin(a), ex = x + c * L, ey = y + sn * L, nx = -sn * L * .32, ny = c * L * .32;
+    return `M${f(x)} ${f(y)}Q${f((x + ex) / 2 + nx)} ${f((y + ey) / 2 + ny)} ${f(ex)} ${f(ey)}Q${f((x + ex) / 2 - nx)} ${f((y + ey) / 2 - ny)} ${f(x)} ${f(y)}z`; };
+  const relief = id => `<filter id="${id}" x="-5%" y="-10%" width="110%" height="130%"><feDropShadow dx=".35" dy=".7" stdDeviation=".45" flood-color="#000" flood-opacity=".32"/></filter>`;
+  // grande dentelle : 240 x 50, motif répété tous les 30
+  const W = 30, H = 50;
+  let scal = `M0 33`; for (let x = 0; x < 240; x += W) scal += `Q${x + W / 2} ${H - 4} ${x + W} 33`;
+  let picots = ''; for (let x = 0; x < 240; x += W) for (let k = 1; k < 8; k++) { const t = k / 8, px = x + t * W, py = 33 + 26 * t * (1 - t) + 1.7; picots += `M${f(px - .9)} ${f(py)}a.9 .9 0 1 0 1.8 0a.9 .9 0 1 0 -1.8 0z`; }
+  let motifs = '', vines = '', hearts = '', leaves = ''; for (let x = 0; x < 240; x += W) { const cx = x + W / 2; motifs += flower(cx, 18.5, 7.2); hearts += `M${f(cx - 1.1)} 18.5a1.1 1.1 0 1 0 2.2 0a1.1 1.1 0 1 0 -2.2 0z`;
+    vines += `M${x + 1.5} 26q${W / 4} -5 ${W / 2 - 2.5} -2.5M${x + W - 1.5} 26q${-W / 4} -5 ${-(W / 2 - 2.5)} -2.5`; leaves += leaf(x + 6, 24.2, -2.6, 4.2) + leaf(x + W - 6, 24.2, -.55, 4.2); }
+  let tulle = ''; for (let k = -40; k < 280; k += 3.2) tulle += `M${f(k)} 4l30 30M${f(k + 30)} 4l-30 30`;
+  const lace = ['0 0 240 50', `<defs>${relief('lr')}<clipPath id="lc"><rect y="6" width="240" height="27.5"/></clipPath></defs>
+    <g filter="url(#lr)"><path clip-path="url(#lc)" fill="none" stroke="currentColor" stroke-width=".32" opacity=".75" d="${tulle}"/>
+    <path fill="currentColor" fill-rule="evenodd" d="M0 0h240v4.6H0z${eyelets(240, 2.3, .75, 3)}"/>
+    <path fill="none" stroke="currentColor" stroke-width=".8" d="M0 6.2H240"/>
+    <path fill="currentColor" opacity=".92" d="${motifs}"/>
+    <path fill="currentColor" opacity=".35" d="${hearts}"/>
+    <path fill="none" stroke="currentColor" stroke-width=".9" stroke-linecap="round" d="${vines}"/>
+    <path fill="currentColor" opacity=".9" d="${leaves}"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" d="${scal}"/>
+    <path fill="none" stroke="currentColor" stroke-width=".6" opacity=".85" d="${scal.replace(/33/g, '30.5')}"/>
+    <path fill="currentColor" d="${picots}"/></g>`];
+  // dentelle fine (picot) : 240 x 30, éventails dans chaque feston
+  const w = 20; let sc2 = 'M0 15'; for (let x = 0; x < 240; x += w) sc2 += `Q${x + w / 2} 31 ${x + w} 15`;
+  let pc2 = '', fans = ''; for (let x = 0; x < 240; x += w) { for (let k = 1; k < 6; k++) { const t = k / 6, px = x + t * w, py = 15 + 32 * t * (1 - t) + 1.35; pc2 += `M${f(px - .75)} ${f(py)}a.75 .75 0 1 0 1.5 0a.75 .75 0 1 0 -1.5 0z`; }
+    for (let k = 0; k < 5; k++) { const a = Math.PI * (.15 + .7 * k / 4); fans += `M${x + w / 2} 10.5l${f(-Math.cos(a) * 7.5)} ${f(Math.sin(a) * 8.5)}`; } fans += `M${x + w / 2 - 1.5} 10.5a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0`; }
+  const lace2 = ['0 0 240 30', `<defs>${relief('lr2')}</defs><g filter="url(#lr2)">
+    <path fill="currentColor" fill-rule="evenodd" d="M0 0h240v5H0z${eyelets(240, 2.5, .8, 4)}"/>
+    <path fill="none" stroke="currentColor" stroke-width=".7" d="M0 7.4H240"/>
+    <path fill="none" stroke="currentColor" stroke-width=".75" stroke-linecap="round" opacity=".9" d="${fans}"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" d="${sc2}"/>
+    <path fill="currentColor" d="${pc2}"/></g>`];
+  return { lace, lace2 };
+})();
 const DECOS = {
   bow1: ['0 0 120 90', `<path ${D_STROKE} stroke-width="3" d="M60 40c-14-18-40-30-46-18s20 26 46 18zM60 40c14-18 40-30 46-18s-20 26-46 18z"/><path ${D_STROKE} stroke-width="2" d="M60 40c-10-10-28-18-32-12M60 40c10-10 28-18 32-12"/><ellipse ${D_STROKE} stroke-width="3" cx="60" cy="40" rx="6" ry="7"/><path ${D_STROKE} stroke-width="3" d="M56 46c-6 12-16 24-24 36M64 46c6 12 16 24 26 34M28 80l6 2M88 80l4-4"/>`],
   bow2: ['0 0 120 90', `<path ${D_STROKE} stroke-width="3" d="M58 38C46 22 20 16 18 28s22 18 40 10zM62 38c12-16 38-22 40-10s-22 18-40 10z"/><circle ${D_STROKE} stroke-width="3" cx="60" cy="39" r="5"/><path ${D_STROKE} stroke-width="3" d="M57 43c-4 10-14 20-28 26-6 3-8 10-2 12M63 43c4 10 14 18 26 22 6 2 10 8 4 12"/>`],
@@ -41,8 +81,8 @@ const DECOS = {
   flourish1: ['0 0 160 30', `<path ${D_STROKE} stroke-width="2" d="M80 15c-10 0-14-8-22-8s-10 8-4 10 8-4 4-6M80 15c10 0 14-8 22-8s10 8 4 10-8-4-4-6M58 15H12c-6 0-8-6-3-7M102 15h46c6 0 8-6 3-7"/><circle fill="currentColor" cx="80" cy="15" r="2.5"/>`],
   flourish2: ['0 0 160 40', `<path ${D_STROKE} stroke-width="2" d="M10 28c20-14 40-14 60 0 4 3 8 3 10 0 2 3 6 3 10 0 20-14 40-14 60 0M80 28c0-8-6-14-12-12s-4 8 2 6M80 28c0-8 6-14 12-12s4 8-2 6M30 22c-2-6 4-10 7-6M130 22c2-6-4-10-7-6"/>`],
   heartline: ['0 0 160 40', `<path ${D_STROKE} stroke-width="2" d="M6 24c14 0 18-12 30-12s10 14 22 14 10-16 22-16 10 16 22 16 10-14 22-14 16 12 30 12"/><path fill="currentColor" d="M80 30c-6-4-9-6-9-10 0-2 2-4 4-4 2 0 4 1 5 3 1-2 3-3 5-3 2 0 4 2 4 4 0 4-3 6-9 10z"/>`],
-  lace: ['0 0 240 40', `<defs><pattern id="lc" width="20" height="40" patternUnits="userSpaceOnUse"><path fill="currentColor" d="M0 0h20v14H0z" opacity=".95"/><path fill="currentColor" d="M0 14a10 10 0 0 0 20 0z" opacity=".9"/><circle cx="10" cy="7" r="3" fill="#fff" opacity=".85"/><circle cx="3" cy="11" r="1.4" fill="#fff" opacity=".8"/><circle cx="17" cy="11" r="1.4" fill="#fff" opacity=".8"/><circle cx="10" cy="17" r="2" fill="#fff" opacity=".8"/><path d="M4 27a6 6 0 0 0 12 0" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="10" cy="31" r="1.3" fill="currentColor"/></pattern></defs><rect width="240" height="40" fill="url(#lc)"/>`],
-  lace2: ['0 0 240 34', `<defs><pattern id="lc2" width="24" height="34" patternUnits="userSpaceOnUse"><path fill="currentColor" d="M0 0h24v10H0zM0 10q6 14 12 0q6 14 12 0z"/><circle cx="6" cy="5" r="2" fill="#fff" opacity=".85"/><circle cx="18" cy="5" r="2" fill="#fff" opacity=".85"/><circle cx="12" cy="13" r="1.6" fill="#fff" opacity=".8"/><path d="M3 22q9 14 18 0" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="12" cy="27" r="1.4" fill="currentColor"/></pattern></defs><rect width="240" height="34" fill="url(#lc2)"/>`],
+  lace: LACE.lace,
+  lace2: LACE.lace2,
   corner: ['0 0 100 100', `<path ${D_STROKE} stroke-width="2" d="M6 94V40c0-18 16-34 34-34h54M14 94V46c0-18 14-32 32-32h48"/><path ${D_STROKE} stroke-width="1.8" d="M26 40c8-10 18-12 26-8-8 2-14 6-18 14M40 26c10-8 22-8 28-2-8 0-16 2-22 8M24 56c-4-6-2-12 4-14M56 24c6-4 12-2 14 4"/><circle fill="currentColor" cx="30" cy="30" r="4"/><circle fill="currentColor" cx="20" cy="70" r="2"/><circle fill="currentColor" cx="70" cy="20" r="2"/>`],
   stringlights: ['0 0 200 50', `<path ${D_STROKE} stroke-width="1.6" d="M4 8c30 24 66 24 96 0s66-24 96 0"/>${[20, 50, 80, 120, 150, 180].map((x, i) => `<circle fill="currentColor" cx="${x}" cy="${[16, 24, 18, 18, 24, 16][i]}" r="4" opacity=".85"/>`).join('')}`],
   frameoval: ['0 0 100 130', `<ellipse ${D_STROKE} stroke-width="2" cx="50" cy="65" rx="40" ry="54"/><ellipse ${D_STROKE} stroke-width="1.2" cx="50" cy="65" rx="34" ry="48"/><path ${D_STROKE} stroke-width="1.8" d="M40 10c4-6 16-6 20 0M44 8c2-4 10-4 12 0M40 120c4 6 16 6 20 0M8 58c-5 4-5 10 0 14M92 58c5 4 5 10 0 14"/><circle fill="currentColor" cx="50" cy="6" r="2.5"/>`],

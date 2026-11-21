@@ -38,6 +38,7 @@ function proItem(b) { // le bouton correspond-il à un élément réservé à PR
   if (d.lt) return !FREE.lt.includes(d.lt);
   if (d.act === 'bkSetColor' && d.k) return !FREE.bk.includes(d.k);
   if (d.add === 'e' && d.v) return typeof STK !== 'undefined' && STK.e.indexOf(d.v) >= FREE.emoji;
+  if (d.add === 'd' && d.v && window.STKI && STKI[d.v]) return true; // fleurs et nœuds en 3D : collection PRO
   if (d.add === 'd' && d.v) { if (typeof DOODLES !== 'undefined' && DOODLES[d.v]) return Object.keys(DOODLES).indexOf(d.v) >= FREE.doodle; if (typeof DECOS !== 'undefined' && DECOS[d.v]) return Object.keys(DECOS).indexOf(d.v) >= FREE.deco; }
   return false; }
 const PRO_SEL = '[data-font],[data-paper],[data-fr],[data-lt],[data-act="bkSetColor"],[data-add]';

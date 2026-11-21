@@ -110,6 +110,30 @@ const COLLAB_TRIPS = new Map();
       p.querySelector('#fp-cap').oninput = ev => { s.cap = ev.target.value.slice(0, 40); clearTimeout(p._t); p._t = setTimeout(() => { save(); bkRender(); }, 400); };
     }, { nofocus: true }); };
 
+  /* ---------- stickers en 3D (collection PRO) : fleurs, nœuds… rendus en images transparentes ---------- */
+  const STK_SETS = [
+    ['fleurs', 'Fleurs', { 'fl-pivoine-rose': 'Pivoine rose', 'fl-pivoine-poudre': 'Pivoine poudrée', 'fl-pivoine-blanche': 'Pivoine blanche', 'fl-cerisier': 'Fleurs de cerisier',
+      'fl-lys-rose': 'Lys rose', 'fl-lys-jaune': 'Lys jaune', 'fl-lys-bordeaux': 'Lys bordeaux', 'fl-hibiscus-rouge': 'Hibiscus rouge', 'fl-hibiscus-creme': 'Hibiscus crème',
+      'fl-fleur-rose': 'Fleur rose', 'fl-fleur-blanche': 'Fleur blanche', 'fl-fleur-bleue': 'Fleur bleue', 'fl-tournesol': 'Tournesol',
+      'fl-gypsophile': 'Gypsophile séché', 'fl-achillee': 'Achillée séchée', 'fl-bouquet': 'Bouquet sauvage' }],
+    ['noeuds', 'Nœuds', { 'nd-satin-rose': 'Nœud satin rose', 'nd-vichy-bleu': 'Nœud vichy bleu', 'nd-vichy-jaune': 'Nœud vichy jaune', 'nd-satin-chocolat': 'Nœud satin chocolat',
+      'nd-ruban-rouge': 'Ruban rouge', 'nd-ruban-bleu': 'Ruban bleu ciel', 'nd-ruban-creme': 'Ruban crème', 'nd-ruban-vichy': 'Ruban vichy' }],
+  ];
+  window.STKI = {}; STK_SETS.forEach(([, , items]) => Object.assign(STKI, items));
+  window.STK_SETS = STK_SETS;
+  { const sk0 = ACT.bkStickers; ACT.bkStickers = (...a) => { sk0(...a); const p = $('panel'), tabs = p.querySelector('.stk-tabs'); if (!tabs) return;
+    const first = tabs.querySelector('button');
+    STK_SETS.forEach(([id, name, items]) => {
+      const b = document.createElement('button'); b.dataset.tab = id; b.textContent = name; tabs.insertBefore(b, first);
+      const pane = document.createElement('div'); pane.className = 'stk-pane'; pane.dataset.pane = id; pane.hidden = true;
+      pane.innerHTML = `<div class="stk-grid imgs">${Object.entries(items).map(([k, n]) => `<button data-add="d" data-v="${k}" aria-label="${esc(n)}"><img src="icons/stickers/${k}.webp" alt="" loading="lazy" decoding="async"></button>`).join('')}</div>`;
+      p.querySelector('.stk-pane').before(pane);
+      pane.querySelectorAll('[data-add]').forEach(x => x.onclick = () => addSticker({ k: 'd', v: x.dataset.v }));
+    });
+    const all = [...tabs.querySelectorAll('button')];
+    all.forEach(b => { const old = b.onclick; b.onclick = () => { all.forEach(x => x.classList.toggle('on', x === b)); p.querySelectorAll('.stk-pane').forEach(x => x.hidden = x.dataset.pane !== b.dataset.tab); }; });
+  }; }
+
   /* ---------- plus de papiers, d'encres et de masking tapes ---------- */
   Object.assign(PAPERS, { ivoire: 'Ivoire', ciel: 'Bleu ciel', sauge: 'Sauge', lavande: 'Lavande', citron: 'Jaune pâle', peche: 'Pêche', menthe: 'Menthe', terracotta: 'Terracotta', nuit: 'Bleu nuit', noir: 'Noir', millimetre: 'Millimétré', aquarelle: 'Aquarelle', vintage: 'Vieux papier', calque: 'Carreaux colorés' });
   ['#3C6E8F', '#7A5C9E', '#E07A3F', '#5FA8A0', '#F2C14E'].forEach(c => { if (!INK.includes(c)) INK.splice(INK.length - 1, 0, c); });

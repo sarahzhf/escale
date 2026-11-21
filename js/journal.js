@@ -53,6 +53,7 @@ function stickerHTML(s, i, edit) {
     : s.k === 'w' ? `<span class="stape" style="--c:${esc(s.c || '#F3C979')}"></span>`
     : s.k === 't' ? letterHTML(s)
     : s.k === 'x' ? `${edit ? '<span class="sx-grip" aria-label="Déplacer le texte">⠿</span>' : ''}<div class="sx tf-${esc(s.f || 'carnet')}" style="--w:${+s.w || 38};color:${esc(s.c || '#20243A')}"${edit ? ' contenteditable="plaintext-only" spellcheck="true" data-ph="Écris ici…"' : ''}>${esc(s.v || '')}</div>`
+    : s.k === 'd' && window.STKI && STKI[s.v] ? `<span class="sd simg"><img src="icons/stickers/${esc(s.v)}.webp" alt="" draggable="false" decoding="async"></span>`
     : s.k === 'd' ? `<span class="sd ${DECOS[s.v] ? 'deco dv-' + esc(s.v) : 'doodle'}">${DECOS[s.v] ? decoSVG(s.v, esc(s.c || '#C0392B')) : doodleSVG(s.v, esc(s.c || '#20243A'))}</span>`
     : s.k === 'f' && typeof freePhotoHTML === 'function' ? freePhotoHTML(s)
     : `<span class="sp sh-${esc(s.sh || 'circle')}"><span class="cut">${IMG(s.p)}</span></span>`;

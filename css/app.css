@@ -2928,3 +2928,9 @@ html[data-theme="dark"] .itp-pickbar{background:#1E2320;color:#ECEBE6}html[data-
 .fp.fr-orn .orn{position:absolute;inset:0;width:100%;height:100%;display:block}
 .fp-frames .fp-demo .fp.fr-orn{width:66px}
 .fp-ed .fpc.orn{-webkit-mask-size:100% 100%;mask-size:100% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;box-shadow:none;border-radius:0}
+
+/* stickers en 3D (fleurs, nœuds) */
+.sd.simg img{display:block;width:118px;height:auto;pointer-events:none;-webkit-user-drag:none}
+.stk-grid.imgs{grid-template-columns:repeat(4,1fr);gap:8px}
+.stk-grid.imgs button{background:#f6f1e7;padding:6px;min-width:0;overflow:hidden}
+.stk-grid.imgs img{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;min-width:0}

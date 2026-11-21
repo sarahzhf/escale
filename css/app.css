@@ -2934,3 +2934,6 @@ html[data-theme="dark"] .itp-pickbar{background:#1E2320;color:#ECEBE6}html[data-
 .stk-grid.imgs{grid-template-columns:repeat(4,1fr);gap:8px}
 .stk-grid.imgs button{background:#f6f1e7;padding:6px;min-width:0;overflow:hidden}
 .stk-grid.imgs img{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;min-width:0}
+.sd.si-cire img{width:92px}.sd.si-empreinte img,.sd.si-baiser img{width:100px}.sd.si-erable img{width:120px}.sd.si-pomme img{width:84px}
+.sd.si-dentelle img{width:230px}.sd.si-nd2 img{width:104px}
+.stk-grid.imgs.wide{grid-template-columns:1fr}.stk-grid.imgs.wide button{aspect-ratio:auto;height:64px;padding:8px 10px}

@@ -116,8 +116,18 @@ const COLLAB_TRIPS = new Map();
       'fl-lys-rose': 'Lys rose', 'fl-lys-jaune': 'Lys jaune', 'fl-lys-bordeaux': 'Lys bordeaux', 'fl-hibiscus-rouge': 'Hibiscus rouge', 'fl-hibiscus-creme': 'Hibiscus crème',
       'fl-fleur-rose': 'Fleur rose', 'fl-fleur-blanche': 'Fleur blanche', 'fl-fleur-bleue': 'Fleur bleue', 'fl-tournesol': 'Tournesol',
       'fl-gypsophile': 'Gypsophile séché', 'fl-achillee': 'Achillée séchée', 'fl-bouquet': 'Bouquet sauvage' }],
-    ['noeuds', 'Nœuds', { 'nd-satin-rose': 'Nœud satin rose', 'nd-vichy-bleu': 'Nœud vichy bleu', 'nd-vichy-jaune': 'Nœud vichy jaune', 'nd-satin-chocolat': 'Nœud satin chocolat',
+    ['noeuds', 'Nœuds', { 'nd2-vichy-bleu-ciel': 'Vichy bleu ciel', 'nd2-vichy-jaune': 'Vichy jaune', 'nd2-vichy-sauge': 'Vichy vert sauge', 'nd2-vichy-rose': 'Vichy rose',
+      'nd2-vichy-lilas': 'Vichy lilas', 'nd2-vichy-terracotta': 'Vichy terracotta', 'nd2-chocolat': 'Brun chocolat', 'nd2-marine': 'Bleu marine', 'nd2-foret': 'Vert forêt',
+      'nd2-bourgogne': 'Rouge bourgogne', 'nd2-vieux-rose': 'Vieux rose', 'nd2-moutarde': 'Jaune moutarde', 'nd-satin-rose': 'Nœud satin rose', 'nd-vichy-bleu': 'Nœud vichy bleu', 'nd-vichy-jaune': 'Nœud vichy jaune', 'nd-satin-chocolat': 'Nœud satin chocolat',
       'nd-ruban-rouge': 'Ruban rouge', 'nd-ruban-bleu': 'Ruban bleu ciel', 'nd-ruban-creme': 'Ruban crème', 'nd-ruban-vichy': 'Ruban vichy' }],
+    ['cire', 'Cachets de cire', { 'cire-creme-noeud': 'Crème, nœud', 'cire-rose-cygne': 'Rose, cygne', 'cire-bordeaux-rose': 'Bordeaux, rose', 'cire-sauge-olivier': 'Sauge, olivier',
+      'cire-vieux-rose-blason': 'Vieux rose, blason', 'cire-or-lune': 'Or, lune et étoiles' }],
+    ['empreintes', 'Empreintes', { 'empreinte-cramoisi': 'Cœur empreinte cramoisi', 'empreinte-terracotta': 'Cœur empreinte terracotta', 'empreinte-prune': 'Cœur empreinte prune',
+      'baiser-bordeaux': 'Baiser bordeaux', 'baiser-framboise': 'Baiser framboise', 'baiser-cuivre': 'Baiser cuivré' }],
+    ['dentelles', 'Dentelles', { 'dentelle-ivoire-fleurs': 'Ivoire fleurie', 'dentelle-marine-fleurs': 'Marine fleurie', 'dentelle-rose-eventail': 'Rose éventail',
+      'dentelle-sauge-picot': 'Sauge picot', 'dentelle-creme-guipure': 'Guipure crème', 'dentelle-bordeaux-ornement': 'Bordeaux ornementale' }],
+    ['automne', 'Automne', { 'erable-ambre': 'Érable ambré', 'erable-rousse': 'Érable roux', 'erable-terracotta': 'Érable terracotta',
+      'pomme-pin-espresso': 'Pomme de pin foncée', 'pomme-pin-chataigne': 'Pomme de pin châtaigne', 'pomme-pin-givree': 'Pomme de pin givrée' }],
   ];
   window.STKI = {}; STK_SETS.forEach(([, , items]) => Object.assign(STKI, items));
   window.STK_SETS = STK_SETS;
@@ -126,7 +136,7 @@ const COLLAB_TRIPS = new Map();
     STK_SETS.forEach(([id, name, items]) => {
       const b = document.createElement('button'); b.dataset.tab = id; b.textContent = name; tabs.insertBefore(b, first);
       const pane = document.createElement('div'); pane.className = 'stk-pane'; pane.dataset.pane = id; pane.hidden = true;
-      pane.innerHTML = `<div class="stk-grid imgs">${Object.entries(items).map(([k, n]) => `<button data-add="d" data-v="${k}" aria-label="${esc(n)}"><img src="icons/stickers/${k}.webp" alt="" loading="lazy" decoding="async"></button>`).join('')}</div>`;
+      pane.innerHTML = `<div class="stk-grid imgs${id === 'dentelles' ? ' wide' : ''}">${Object.entries(items).map(([k, n]) => `<button data-add="d" data-v="${k}" aria-label="${esc(n)}"><img src="icons/stickers/${k}.webp" alt="" loading="lazy" decoding="async"></button>`).join('')}</div>`;
       p.querySelector('.stk-pane').before(pane);
       pane.querySelectorAll('[data-add]').forEach(x => x.onclick = () => addSticker({ k: 'd', v: x.dataset.v }));
     });

@@ -2983,3 +2983,6 @@ html[data-theme="dark"] .itp-pickbar{background:#1E2320;color:#ECEBE6}html[data-
 .rc-form input,.rc-form select,.rc-form textarea{width:100%;box-sizing:border-box;font-size:16px}.rc-form .btn{margin-top:4px}
 #feedbox.rc-busy .rc-list{opacity:.45;transition:opacity .15s}#feedbox .rc-list{transition:opacity .2s}
 .rc-cats button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.rc-cats button,.rc-top button,.rc-act button,.rc-th{display:inline-flex;align-items:center;gap:5px}
+.rc-cats svg,.rc-top svg,.rc-act svg,.rc-th svg{width:16px;height:16px;flex:none}.rc-ic svg{width:20px;height:20px;color:#2f5d43}
+.rc-act button.on svg,.rc-th svg{color:#b8452c}

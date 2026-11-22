@@ -61,6 +61,7 @@
       <div class="gd-ill" style="--c:${s.c}">${s.ill === 'book' ? BOOK : `<span>${SV[s.ic] || SV.star || ''}</span>`}</div>
       <p class="gd-n">${newsMode ? 'Nouveauté' : s.n}, ${i + 1} sur ${LIST.length}</p>${NEWS.has(s.t) ? '<em class="gd-new">Nouveau</em>' : ''}<h2 id="gdT">${s.t}</h2><p class="gd-d">${s.d}</p>
       ${s.tips && s.tips.length ? `<ul class="gd-tips">${s.tips.map(x => `<li>${x}</li>`).join('')}</ul>` : ''}
+      ${typeof tourFor === 'function' && tourFor(CH[s.ci][0]) ? `<button class="gd-show" data-g="tour">👆 Montre-moi dans l’appli</button>` : ''}
       <div class="gd-bar"><i style="width:${Math.round((i + 1) / LIST.length * 100)}%"></i></div>
       <div class="gd-acts">${i ? '<button class="btn2" data-g="prev">Retour</button>' : '<span></span>'}<button class="btn" data-g="${last ? 'end' : 'next'}">${last ? (none ? 'Créer mon premier voyage' : 'C’est parti') : 'Suivant'}<i>${SV.arrow}</i></button></div></div>`;
     const on = el.querySelector('.gd-chs .on'); if (on) on.scrollIntoView({ block: 'nearest', inline: 'center' });
@@ -71,7 +72,8 @@
     if (el) return; i = start || 0; newsMode = !!news; LIST = news ? STEPS.filter(x => NEWS.has(x.t)) : STEPS; el = document.createElement('div'); el.className = 'guide';
     (document.getElementById('phone') || document.body).appendChild(el); draw(); requestAnimationFrame(() => el.classList.add('on'));
     el.addEventListener('click', e => { const b = e.target.closest('[data-g]'); if (!b) return; const g = b.dataset.g;
-      if (g === 'skip') close(false); else if (g === 'end') close(true);
+      if (g === 'tour') { const nm = CH[LIST[i].ci][0]; mark(); el.classList.remove('on'); setTimeout(() => { if (el) { el.remove(); el = null; } startTour(nm); }, 250); }
+      else if (g === 'skip') close(false); else if (g === 'end') close(true);
       else if (g === 'ch') { if (newsMode) { newsMode = false; LIST = STEPS; } i = Math.max(0, LIST.findIndex(x => x.ci === +b.dataset.k)); draw(); }
       else { i += g === 'next' ? 1 : -1; draw(); } });
     let x0 = null; el.addEventListener('touchstart', e => { x0 = e.target.closest('.gd-chs') ? null : e.touches[0].clientX; }, { passive: true });

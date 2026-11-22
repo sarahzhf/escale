@@ -2065,7 +2065,7 @@ html[data-theme="dark"] .ntip{background:#232624}html[data-theme="dark"] .ntip p
 
 /* ===== v1.9 statistiques ===== */
 /* catégories : couleurs vérifiées (daltonismes, contraste) ; la version sombre est dans dark-extra.css */
-:root{--c-logement:#2F8556;--c-repas:#D99A1E;--c-transport:#3E7FC1;--c-activites:#D2603A;--c-shopping:#8A6CD0;
+:root{--c-logement:#2E6B4E;--c-repas:#E3A33B;--c-transport:#4C86BE;--c-activites:#D46A45;--c-shopping:#B072A8;
   --sx-acc:#2E5E3E;--sx-plan:#A3A69F;--sx-grid:rgba(21,23,20,.08);--sx-card:#FFFFFF;--sx-track:#EFEEE9;--sx-good:#2E5E3E;--sx-bad:#B8452C}
 #stwrap .st-head{margin-bottom:10px}
 .sx-filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
@@ -2956,3 +2956,26 @@ html[data-theme="dark"] .itp-pickbar{background:#1E2320;color:#ECEBE6}html[data-
 .cf-row,.cf-card{transition:transform .15s ease,box-shadow .15s ease}.cf-row:active,.cf-card:active{transform:scale(.98)}
 .cf-row:focus-visible,.cf-card:focus-visible,.cf-tabs button:focus-visible,.pill:focus-visible{outline:3px solid #2f5d43;outline-offset:2px}
 @media (prefers-reduced-motion:reduce){.cf-anim{animation:none}.cf-row,.cf-card{transition:none}}
+
+/* Budget, top catégories : donut plus doux, lignes plus lisibles */
+.sx-donut{width:164px;height:164px;filter:drop-shadow(0 6px 10px rgba(30,40,30,.08))}
+.sx-donut .seg{transition:opacity .2s,transform .2s;transform-origin:80px 80px}
+.sx-donut .seg:not(.dim):hover{transform:scale(1.03)}
+.sx-donut .dv{font-size:18px}
+.sx-rank .r{padding:8px 6px;min-height:40px;font-size:.84rem}
+.sx-rank .tr{height:8px;border-radius:99px;background:var(--sx-track);overflow:hidden}
+.sx-rank .tr i{display:block;height:100%;border-radius:99px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.sx-sw{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:-1px}
+.sx-rank button.r:focus-visible,.sx-donut .seg:focus-visible{outline:3px solid var(--sx-acc);outline-offset:2px}
+.pbud .t b{font-size:1.35rem}
+
+/* visite guidée dans l'appli */
+.tour{position:fixed;inset:0;z-index:9000;opacity:0;transition:opacity .25s;pointer-events:none}
+.tour.on{opacity:1}
+.tr-hole{position:fixed;border-radius:16px;box-shadow:0 0 0 9999px rgba(18,22,18,.62);transition:all .35s cubic-bezier(.2,.8,.2,1);pointer-events:none;outline:2px solid #fff;outline-offset:2px;animation:trPulse 1.6s ease-in-out infinite}
+@keyframes trPulse{50%{outline-color:rgba(255,255,255,.35)}}
+.tr-bub{position:fixed;left:14px;right:14px;max-width:420px;margin:0 auto;background:#fffdf8;color:#1f241f;border-radius:20px;padding:16px 16px 12px;box-shadow:0 16px 40px -12px rgba(0,0,0,.45);pointer-events:auto;transition:top .35s,bottom .35s}
+.tr-bub h3{margin:2px 0 6px;font-size:1.05rem}.tr-bub p{margin:0;font-size:.92rem;line-height:1.4}.tr-n{font-size:.74rem!important;opacity:.6}
+.tr-a{display:flex;gap:8px;align-items:center;margin-top:12px}.tr-a .btn{margin-left:auto;padding:9px 16px}.tr-skip{background:none;border:0;opacity:.65;font-size:.85rem;padding:8px 4px}
+.gd-show{display:block;margin:10px auto 0;border:1px solid rgba(0,0,0,.12);background:#fff;border-radius:999px;padding:9px 14px;font-size:.88rem}
+@media (prefers-reduced-motion:reduce){.tr-hole{transition:none;animation:none}.tour{transition:none}}

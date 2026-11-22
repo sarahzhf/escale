@@ -7,7 +7,7 @@ const VIS = { public: { n: 'Public', d: 'Tout le monde', ic: () => SV.globeS }, 
 const visTag = v => `<span class="vis">${VIS[v].ic()}${VIS[v].n}</span>`;
 const RX = ['❤️', '😍', '😭', '🙌', '🔥'];
 const AVC = ['#2E5E3E', '#B8452C', '#3C6E8F', '#8A6A3B', '#6B4E8A', '#2F7C78', '#9A4E64'];
-const CC = { logement: '#2E5E3E', repas: '#6E9A78', transport: '#A9C4AF', activites: '#3C6E8F', shopping: '#B9D2E6' };
+const CC = { logement: 'var(--c-logement)', repas: 'var(--c-repas)', transport: 'var(--c-transport)', activites: 'var(--c-activites)', shopping: 'var(--c-shopping)' };
 const POSTS = new Map();
 function ago(iso) { const m = Math.round((Date.now() - new Date(iso)) / 6e4); if (m < 1) return "à l'instant"; if (m < 60) return `il y a ${m} min`; const h = Math.round(m / 60); if (h < 24) return `il y a ${h} h`; const d = Math.round(h / 24); if (d < 7) return `il y a ${d} j`; return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }); }
 const hue = id => { let h = 0; for (const c of String(id || '')) h = (h * 31 + c.charCodeAt(0)) | 0; return AVC[Math.abs(h) % AVC.length]; };
@@ -43,10 +43,8 @@ function postCard(p) {
    <form class="cform" data-cform="${p.id}">${avatar(meUser(), 'sm')}<input aria-label="Commenter" maxlength="1000" placeholder="Ajouter un commentaire…" autocomplete="off"><button>Publier</button></form>
   </article>`;
 }
-function budHTML(p) { const b = p.budget_summary, ent = Object.entries(b.cats || {}).filter(([, v]) => v > 0).sort((a, c) => c[1] - a[1]);
-  return `<div class="pbud"><div class="t"><b class="num">${fmt(b.total)}</b><span>${b.jours} jour${b.jours > 1 ? 's' : ''}, ${fmt(b.total / Math.max(1, b.jours))} par jour</span></div>
-   <div class="bar">${ent.map(([k, v]) => `<i style="flex:${+v};background:${CC[k]}"></i>`).join('')}</div>
-   <div class="lg">${ent.slice(0, 4).map(([k, v]) => `<span><i style="background:${CC[k]}"></i>${CATS[k].n} ${fmt(v)}</span>`).join('')}</div>
+function budHTML(p) { const b = p.budget_summary, n = Math.max(1, +b.pers || 1), pp = b.total / n;
+  return `<div class="pbud"><div class="t"><b class="num">${fmt(n > 1 ? pp : b.total)}</b><span>${n > 1 ? `par personne · ${n} voyageurs, ${fmt(b.total)} au total` : 'au total'} · ${b.jours} jour${b.jours > 1 ? 's' : ''}</span></div>
    ${p.author_id !== ME.id ? `<button class="cmp" data-act="compareBud" data-p="${p.id}">${SV.scale}Comparer avec mes voyages</button>` : ''}</div>`; }
 function rerenderPost(id) { const p = POSTS.get(id); if (!p) return; document.querySelectorAll(`[data-post="${id}"]`).forEach(el => { const tmp = document.createElement('div'); tmp.innerHTML = postCard(p); el.replaceWith(tmp.firstElementChild); }); }
 async function reloadPost(id) { const r = await rpc('feed', { p_scope: 'one', p_user: id }); if (r && r[0]) { POSTS.set(id, r[0]); rerenderPost(id); } else { POSTS.delete(id); document.querySelectorAll(`[data-post="${id}"]`).forEach(el => el.remove()); } }
@@ -126,7 +124,7 @@ ACT.emojiPick = d => { const p = POSTS.get(d.p), rec = recentEmo().filter(e => !
 ACT.pickEmoji = d => { try { localStorage.setItem('escale:emo', JSON.stringify([d.e, ...recentEmo().filter(x => x !== d.e)].slice(0, 8))); } catch (e) { } closePanel(); const p = POSTS.get(d.p); if (p.my_reaction !== d.e) ACT.react(d); };
 
 /* comparaison de budget */
-function bilanOf(t) { const c = catsOf(t), f = info(t), j = f.enCours ? Math.max(1, f.jour) : f.jours; return { total: Math.round(Object.values(c).reduce((a, b) => a + b, 0)), jours: j, cats: Object.fromEntries(Object.entries(c).map(([k, v]) => [k, Math.round(v)])) }; }
+function bilanOf(t) { const c = catsOf(t), f = info(t), j = f.enCours ? Math.max(1, f.jour) : f.jours; return { total: Math.round(Object.values(c).reduce((a, b) => a + b, 0)), jours: j, pers: 1 + ((t.membres || []).length), cats: Object.fromEntries(Object.entries(c).map(([k, v]) => [k, Math.round(v)])) }; }
 ACT.compareBud = d => { const p = POSTS.get(d.p), b = p.budget_summary, u = first(p.author.display_name);
   const past = S.trips.filter(t => !info(t).futur && spentOf(t) > 0), same = past.filter(t => t.pays === p.country_code), ref = same.length ? same : past;
   if (!ref.length) { toast('Ajoute des dépenses à un voyage pour comparer'); return; }
@@ -184,7 +182,7 @@ ACT.compose = fromPanel(d => {
    <label class="fld"><span>Voyage</span><select id="cp-trip">${sorted().map(x => `<option value="${x.id}" ${x.id === t.id ? 'selected' : ''}>${esc(place(x))}</option>`).join('')}</select></label>
    <div class="fld"><span>Photos (6 maximum)</span><div class="pick-grid" id="cp-grid"></div></div>
    <label class="fld"><span>Légende</span><textarea id="cp-cap" maxlength="2200" placeholder="Raconte ce moment">${ch ? esc(`Défi de ${String(ch.other.display_name).split(' ')[0]} relevé : ${ch.place}.`) : ''}</textarea></label>
-   <button type="button" class="togrow" id="cp-bud" aria-pressed="false"><div><b>Joindre le bilan des dépenses</b><span>Total, coût par jour et répartition par catégorie</span></div><i class="sw"></i></button>
+   <button type="button" class="togrow" id="cp-bud" aria-pressed="false"><div><b>Joindre le bilan des dépenses</b><span>Le total par personne, sans le détail de tes dépenses</span></div><i class="sw"></i></button>
    <div class="fld"><span>Qui peut voir ?</span><div class="visopts" id="cp-vis"></div></div>
    <button class="btn full" id="cp-ok">Publier<i>${SV.right}</i></button>${CLOSE()}`, p => {
     p.querySelector('#cp-trip').onchange = e => { comp.trip = e.target.value; comp.sel = []; renderCompGrid(); };

@@ -19,11 +19,17 @@ grant select, insert, delete on public.recommendations to authenticated;
 grant update (country_code, city, name, category, note, link, visibility) on public.recommendations to authenticated;
 
 drop policy if exists reco_read on public.recommendations;
-create policy reco_read on public.recommendations for select to authenticated using (
-  owner_id = (select auth.uid())
-  or (not public.is_blocked(owner_id, (select auth.uid())) and (
-    visibility = 'public'
-    or (visibility = 'friends' and owner_id in (select f.id from public.my_friends() f where f.relation = 'friend')))));
+-- la fonction de blocage n'a pas le même nom partout : on cherche celle qui existe
+do $$
+declare blk text := (select format('%I.%I', n.nspname, p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+  where p.proname = 'is_blocked' and pg_get_function_identity_arguments(p.oid) ~ 'uuid.*uuid' order by n.nspname = 'public' desc limit 1);
+begin
+  execute format($p$create policy reco_read on public.recommendations for select to authenticated using (
+    owner_id = (select auth.uid())
+    or (%s (visibility = 'public'
+      or (visibility = 'friends' and owner_id in (select f.id from public.my_friends() f where f.relation = 'friend')))))$p$,
+    case when blk is null then '' else format('not %s(owner_id, (select auth.uid())) and', blk) end);
+end $$;
 drop policy if exists reco_write on public.recommendations;
 create policy reco_write on public.recommendations for insert to authenticated with check (owner_id = (select auth.uid()));
 drop policy if exists reco_update on public.recommendations;

@@ -14,7 +14,7 @@ async function renderRecos() {
     const ppl = ids.length ? (await sb.from('profiles').select('id,display_name,handle,avatar_path').in('id', ids)).data || [] : [];
     const P = Object.fromEntries(ppl.map(p => [p.id, p]));
     if (current !== 'fil' || fView !== 'recos') return;
-    box.innerHTML = `<div class="rc-top"><button class="btn2 g" data-act="recoNew">${SV.plus}Partager une adresse</button></div>
+    box.innerHTML = `<div class="rc-top"><button class="btn2 g" data-act="recoNew">${SV.plus}Partager une adresse</button><button class="btn2" data-act="recoAsk">💬 Demander des conseils</button></div>
       <div class="rc-cats">${[['', 'Tout'], ...Object.entries(RC_CAT).map(([k, [e, n]]) => [k, e + ' ' + n])].map(([k, n]) => `<button class="${RC_CATF === k ? 'on' : ''}" data-act="recoCat" data-k="${k}">${n}</button>`).join('')}</div>
       <div class="rc-list">${data.map(r => { const u = P[r.owner_id] || {}, c = RC_CAT[r.category] || RC_CAT.autre, mine = r.owner_id === ME.id;
         return `<article class="rc"><div class="rc-h"><span class="rc-ic">${c[0]}</span><div><b>${esc(r.name)}</b><span>${c[1]} · ${esc(r.city ? r.city + ', ' : '')}${esc((COUNTRIES[r.country_code] || {}).n || r.country_code)}</span></div></div>
@@ -44,3 +44,23 @@ ACT.recoNew = () => {
     closePanel(); toast(`Adresse partagée, visibilité : ${VIS[f.visibility].n}`); renderRecos(); };
 };
 ACT.recoDel = async d => { if (!confirm('Supprimer cette recommandation ?')) return; const { error } = await sb.from('recommendations').delete().eq('id', d.id); if (error) toast('Suppression impossible'); else renderRecos(); };
+
+const rcCountries = sel => Object.entries(COUNTRIES).sort((a, b) => a[1].n.localeCompare(b[1].n, 'fr')).map(([k, c]) => `<option value="${k}"${k === sel ? ' selected' : ''}>${esc(c.n)}</option>`).join('');
+ACT.recoAsk = () => {
+  const t = fQ.trim(), cc = t.length >= 2 ? countryCodes(t) : null, pre = cc && cc.length === 1 ? cc[0] : '';
+  openPanel(`<h2>Demander des conseils</h2><p class="small">Tes amis qui sont déjà allés dans ce pays recevront ta demande et pourront te partager leurs bonnes adresses.</p>
+    <form id="raF" class="form"><label>Pays<select name="c" required><option value="">Choisir</option>${rcCountries(pre)}</select></label>
+    <label>Ville ou quartier (facultatif)<input name="v" maxlength="80" value="${pre ? '' : esc(t)}" placeholder="Ex. Lisbonne"></label>
+    <button class="btn" type="submit">Envoyer la demande</button></form>`);
+  $('raF').onsubmit = async e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target));
+    try { const n = await rpc('reco_ask', { p_country: f.c, p_city: f.v || null }); closePanel();
+      toast(n ? `Demande envoyée à ${n} ami${n > 1 ? 's' : ''} déjà allé${n > 1 ? 's' : ''} là-bas` : 'Aucun de tes amis n’a encore de voyage dans ce pays');
+    } catch (err) { toast(String(err.message || 'La demande n’a pas pu être envoyée').slice(0, 120)); } };
+};
+/* notification reçue : on ouvre les adresses de ce pays et on propose d'en partager une */
+async function openRecoAsk(u) {
+  const { data } = await sb.from('reco_asks').select('country_code,city').eq('from_id', u).eq('to_id', ME.id).order('created_at', { ascending: false }).limit(1);
+  const a = data && data[0]; fView = 'recos'; fQ = a ? (COUNTRIES[a.country_code] || {}).n || '' : '';
+  if (current === 'fil') await renderFil(); else go('fil');
+  if (a) setTimeout(() => { ACT.recoNew(); const f = $('rcF'); if (f) { f.country_code.value = a.country_code; if (a.city) f.city.value = a.city; } }, 600);
+}

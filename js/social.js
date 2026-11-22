@@ -452,7 +452,7 @@ ACT.newChal = fromPanel(async d => {
 });
 
 /* ---------- notifications ---------- */
-const NK = { friend_request: 'veut devenir ton ami', friend_accept: 'a accepté ta demande', reaction: 'a réagi à ta publication', comment: 'a commenté ta publication', challenge: "t'a lancé un défi", challenge_done: 'a relevé ton défi', carnet_invite: 't’invite à remplir son carnet de voyage avec toi', reco_ask: 'te demande tes bonnes adresses pour son prochain voyage' };
+const NK = { friend_request: 'veut devenir ton ami', friend_accept: 'a accepté ta demande', reaction: 'a réagi à ta publication', comment: 'a commenté ta publication', challenge: "t'a lancé un défi", challenge_done: 'a relevé ton défi', carnet_invite: 't’invite à remplir son carnet de voyage avec toi', reco_ask: 'te demande tes bonnes adresses pour son prochain voyage', reco_new: 'a partagé une adresse pour ton prochain voyage', reco_thanks: 'te dit merci pour ton adresse' };
 let lastBadge = 0;
 async function updateBadges(force) {
   if (!ME || (!force && Date.now() - lastBadge < 20000)) return; lastBadge = Date.now();
@@ -465,7 +465,7 @@ async function updateBadges(force) {
 ACT.notifs = async () => { const list = await rpc('my_notifications', { p_limit: 50 });
   openPanel(`<h2>Notifications</h2><div class="flist">${list.map(n => `<button class="frow nrow ${n.read ? '' : 'unread'}" data-act="openNotif" data-k="${n.kind}" data-u="${n.actor ? n.actor.id : ''}" data-p="${n.post_id || ''}">${avatar(n.actor || {})}<span class="m"><b>${esc(n.actor ? n.actor.display_name : 'Un membre')}</b><span>${NK[n.kind]}, ${ago(n.created_at)}</span></span></button>`).join('') || '<p class="small">Rien de nouveau pour le moment.</p>'}</div>${CLOSE('Fermer')}`, null, { nofocus: true });
   if (list.some(n => !n.read)) { await sb.from('notifications').update({ read_at: new Date().toISOString() }).is('read_at', null); lastBadge = 0; updateBadges(true); } };
-ACT.openNotif = d => { closePanel(); setTimeout(() => { if (d.p) ACT.openPost({ p: d.p }); else if (d.k === 'challenge' || d.k === 'challenge_done') ACT.openChals(); else if (d.k === 'carnet_invite') go('journal'); else if (d.k === 'reco_ask' && d.u) openRecoAsk(d.u); else if (d.u) ACT.openUser({ u: d.u }); }, 380); };
+ACT.openNotif = d => { closePanel(); setTimeout(() => { if (d.p) ACT.openPost({ p: d.p }); else if (d.k === 'challenge' || d.k === 'challenge_done') ACT.openChals(); else if (d.k === 'carnet_invite') go('journal'); else if (d.k === 'reco_ask' && d.u) openRecoAsk(d.u); else if ((d.k === 'reco_new' || d.k === 'reco_thanks') && d.u) openRecoFrom(d.u, d.k); else if (d.u) ACT.openUser({ u: d.u }); }, 380); };
 setInterval(() => { if (document.visibilityState === 'visible') updateBadges(true); }, 60000);
 
 SCREENS.fil = () => renderFil(); SCREENS.profil = () => renderProfil(); SCREENS.ami = () => renderAmi();

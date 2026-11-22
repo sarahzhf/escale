@@ -2946,3 +2946,5 @@ html[data-theme="dark"] .itp-pickbar{background:#1E2320;color:#ECEBE6}html[data-
 .rc-h{display:flex;gap:10px;align-items:center}.rc-ic{width:36px;height:36px;border-radius:12px;background:#f3ecdf;display:grid;place-items:center;flex:none}
 .rc-h b{display:block}.rc-h span{font-size:.8rem;opacity:.65}.rc p{margin:8px 0 4px;font-size:.92rem}.rc a{font-size:.85rem;color:#2f5d43}
 .rc-f{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:.8rem;opacity:.85}.rc-f i{margin-left:auto;font-style:normal;opacity:.6}.rc-f button{border:0;background:none;opacity:.5}
+.rc-act{display:flex;gap:6px;margin-left:auto}.rc-act button{border:1px solid rgba(0,0,0,.1);background:none;border-radius:999px;padding:5px 9px;font-size:.78rem;opacity:1}
+.rc-act button.on{background:#f3ecdf;border-color:#d8c7a6}.rc-th{margin-left:auto;font-size:.78rem}

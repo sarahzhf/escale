@@ -132,8 +132,10 @@ function presHTML() {
   const L = keys.map(k => ({ n: placeName(k), km: kmBetween(H.ll, PLACES[H.cc][k]) })).filter(x => x.km >= 40 && norm(x.n) !== norm(H.n)).sort((a, b) => a.km - b.km).slice(0, 30);
   const inc = (INC[H.cc] || []).slice(0, 6);
   const hTxt = km => { const h = Math.max(.5, Math.round(km / 85 * 2) / 2); return `environ ${String(h).replace('.', ',')} h de train ou de voiture`; };
-  return `${inc.length ? `<div class="cf-inc pres-inc">${inc.map(([n]) => `<span>${esc(n)}</span>`).join('')}</div>` : ''}
-   ${L.map(x => `<button class="cf-row" data-act="simu" data-c="${H.cc}" data-v="${esc(x.n)}">${SV.pin || flag(H.cc)}<span><b>${esc(x.n)}</b><em>${Math.round(x.km).toLocaleString('fr-FR')} km, ${hTxt(x.km)}</em></span>${SV.chev}</button>`).join('')
+  return `${L.map((x, i) => { const ci = typeof cityInc === 'function' ? cityInc(H.cc, x.n).slice(0, 3) : [];
+     return `<button class="cf-row cf-anim" style="--d:${Math.min(i, 12) * 35}ms" data-act="simu" data-c="${H.cc}" data-v="${esc(x.n)}" aria-label="${esc(x.n)}, ${Math.round(x.km)} kilomètres. Préparer ce voyage">${SV.pin || flag(H.cc)}<span><b>${esc(x.n)}</b><em>${Math.round(x.km).toLocaleString('fr-FR')} km, ${hTxt(x.km)}</em>${ci.length ? `<small class="cf-ci">${ci.map(([n]) => esc(n)).join(' · ')}</small>` : ''}</span>${SV.chev}</button>`; }).join('')
      || `<p class="small" style="padding:24px 4px">Pas encore de villes connues dans ton pays. Vérifie ton lieu de vie dans En chiffres.</p>`}
    <button class="btn2 wide" data-act="homeSet" style="margin:14px 0 0">${SV.pin || ''}Tu habites à ${esc(H.n)} : modifier</button>`;
 }
+/* l'onglet choisi reste toujours visible (barre d'onglets qui défile) */
+{ const t0 = ACT.cfTab; ACT.cfTab = d => { t0(d); requestAnimationFrame(() => { const b = document.querySelector('.cf-tabs button.on'); if (b) { b.scrollIntoView({ inline: 'center', block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); b.setAttribute('aria-current', 'true'); } }); }; }

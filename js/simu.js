@@ -27,7 +27,7 @@ function newSim(cc, city, du) {
   if (m && !du) { const now = D(TODAY).getMonth() + 1; start = `${D(TODAY).getFullYear() + (m < now ? 1 : 0)}-${String(m).padStart(2, '0')}-10`;
     if (diffDays(TODAY, start) < 7) start = m === now && diffDays(TODAY, addDays(TODAY, 7)) >= 0 && D(addDays(TODAY, 7)).getMonth() + 1 === m ? addDays(TODAY, 7) : `${D(TODAY).getFullYear() + 1}-${String(m).padStart(2, '0')}-10`; }
   const main = city || (placesOf(cc)[0] && Object.keys(PLACES[cc] || {})[0] ? placeName(Object.keys(PLACES[cc])[0]) : '');
-  return { id: uid(), cc, city: main, du: start, au: addDays(start, 6), n: 1, style: 'confort', repas: 'mix', acts: (INC[cc] || []).map(([n, dsc]) => ({ n, d: dsc || '', p: null, on: false })), vol: null, log: null, at: Date.now() };
+  return { id: uid(), cc, city: main, du: start, au: addDays(start, 6), n: 1, style: 'confort', repas: 'mix', acts: (typeof cityInc === 'function' ? cityInc(cc, main) : INC[cc] || []).map(([n, dsc]) => ({ n, d: dsc || '', p: null, on: false })), vol: null, log: null, at: Date.now() };
 }
 
 /** Le calcul, par personne puis pour le groupe. */

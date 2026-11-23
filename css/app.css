@@ -3000,3 +3000,4 @@ html[data-theme="dark"] .itp-pickbar{background:#1E2320;color:#ECEBE6}html[data-
 .ch-il{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;scroll-snap-type:x mandatory}
 .ch-il button{flex:0 0 46%;scroll-snap-align:start;text-align:left;border:1px solid rgba(0,0,0,.08);background:#fff;border-radius:16px;padding:11px 12px;display:grid;gap:3px;transition:transform .15s}
 .ch-il button:active{transform:scale(.97)}.ch-il b{font-size:.86rem}.ch-il span{font-size:.76rem;color:var(--muted);line-height:1.3}
+.cf-facts em{display:block;font-style:normal;font-size:.74rem;color:var(--muted);margin-top:2px}

@@ -138,20 +138,21 @@ ACT.todoTick = d => { const t = trip(d.trip), x = todoOf(t)[+d.i]; if (!x) retur
 function prepSheet(tid, fresh) {
   const t = trip(tid); if (!t) return; const cur = todoOf(t), has = l => cur.some(x => x.l === l);
   const near = [t.ville, ...(t.lieux || [])].join(',').split(/[,;/]|\bet\b/).map(norm).filter(w => w.length > 3), hit = x => near.some(w => norm(x.l + ' ' + x.d).includes(w)) ? 0 : 1;
-  const inc = (INC[t.pays] || []).map(([n, dsc, r]) => ({ k: 'inc', l: n, d: dsc, r: !!r })).sort((a, b) => hit(a) - hit(b)), pra = todoFor(t.pays).map(x => ({ k: x.k, l: x.l }));
+  const inc = (INC[t.pays] || []).map(([n, dsc, r]) => ({ k: 'inc', l: n, d: dsc, r: !!r })).sort((a, b) => hit(a) - hit(b)), pra = todoFor(t.pays).map(x => ({ k: x.k, l: x.l })), val = typeof valiseFor === 'function' ? valiseFor(t) : [];
   const sel = new Set(cur.length ? cur.map(x => x.l) : pra.map(x => x.l));
   const item = x => `<button type="button" class="prp ${sel.has(x.l) ? 'on' : ''}" data-l="${esc(x.l)}"><i>${SV.check}</i><span><b>${esc(x.l)}</b>${x.d ? `<em>${esc(x.d)}</em>` : ''}</span>${x.r ? '<span class="tagr">À réserver</span>' : ''}</button>`;
   openPanel(`<h2>${fresh ? 'Prépare ton voyage' : 'À préparer'}</h2><p class="small">Coche ce que tu veux suivre pour ${esc(place(t))}. Tu pourras cocher chaque point une fois fait, depuis la page du voyage.</p>
    ${inc.length ? `<div class="sec"><h2>Les incontournables</h2></div><div class="prps">${inc.map(item).join('')}</div>` : ''}
    <div class="sec"><h2>Checklist pratique</h2></div><div class="prps">${pra.map(item).join('')}</div>
+   ${val.length ? `<div class="sec"><h2>Ma valise</h2></div><p class="small">Selon la saison, la durée et le pays. Touche ce que tu veux emporter.</p><div class="prps">${val.map(item).join('')}</div>` : ''}
    <label class="fld"><span>Ajouter ton idée <i class="opt">facultatif</i></span><input id="pr-own" maxlength="80" placeholder="Ex. Dîner chez Da Michele"></label>
    <button class="btn full" id="pr-ok">Enregistrer<i>${SV.arrow}</i></button>${CLOSE(fresh ? 'Plus tard' : 'Annuler')}`, p => {
     p.querySelectorAll('.prp').forEach(b => b.onclick = () => { const l = b.dataset.l; sel.has(l) ? sel.delete(l) : sel.add(l); b.classList.toggle('on'); });
     p.querySelector('#pr-ok').onclick = () => {
       const keep = cur.filter(x => sel.has(x.l) || x.k === 'own'), out = keep.slice();
-      [...inc, ...pra].forEach(x => { if (sel.has(x.l) && !has(x.l)) out.push({ id: uid(), k: x.k, l: x.l, r: x.r || false, ok: false }); });
+      [...inc, ...pra, ...val].forEach(x => { if (sel.has(x.l) && !has(x.l)) out.push({ id: uid(), k: x.k, l: x.l, r: x.r || false, ok: false }); });
       const own = p.querySelector('#pr-own').value.trim().slice(0, 80); if (own && !out.some(x => x.l === own)) out.push({ id: uid(), k: 'own', l: own, r: false, ok: false });
-      const order = x => x.k === 'inc' ? 0 : x.k === 'own' ? 1 : 2; t.todo = out.sort((a, b) => order(a) - order(b)).slice(0, 40);
+      const order = x => x.k === 'inc' ? 0 : x.k === 'own' ? 1 : x.k === 'val' ? 3 : 2; t.todo = out.sort((a, b) => order(a) - order(b)).slice(0, 40);
       save(); closePanel(); refresh(); toast(t.todo.length ? `${t.todo.length} point${t.todo.length > 1 ? 's' : ''} à préparer` : 'Liste vidée'); };
   }, { nofocus: true });
 }

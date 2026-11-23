@@ -262,7 +262,7 @@ async function friendsTab() {
    ${rec.length ? `<div class="sec"><h2>Demandes reçues (${rec.length})</h2></div><div class="flist">${rec.map(friendRow).join('')}</div>` : ''}
    <div class="sec"><h2>Mes amis (${fr.length})</h2></div><div class="flist">${fr.map(friendRow).join('') || '<p class="small">Cherche tes amis par leur nom ou leur @identifiant.</p>'}</div>
    ${sent.length ? `<div class="sec"><h2>Demandes envoyées</h2></div><div class="flist">${sent.map(friendRow).join('')}</div>` : ''}
-   <button class="btn2 wide" data-act="inviteFriend" style="margin-top:16px">${SV.send}Inviter un ami sur Eskalys</button>`;
+   <button class="btn2 wide" data-act="inviteFriend" style="margin-top:16px">${SV.send}Inviter un ami, un mois de PRO offert</button>`;
 }
 function friendRow(x) {
   const btn = x.relation === 'friend' ? `<button class="btn2" data-act="unfriend" data-u="${x.id}">Retirer</button>`
@@ -293,7 +293,12 @@ ACT.declineReq = d => relAct(() => rpc('respond_friend', { p_requester: d.u, p_a
 ACT.cancelReq = d => relAct(() => rpc('remove_friend', { p_other: d.u }), 'Demande annulée');
 ACT.unfriend = d => openPanel(`<h2>Retirer de tes amis ?</h2><p class="small" style="line-height:1.5">Cette personne ne verra plus tes publications réservées aux amis, et tu ne verras plus les siennes. Les défis en cours entre vous seront annulés.</p><button class="danger" data-act="unfriendOk" data-u="${d.u}" style="margin-top:16px">Retirer de mes amis</button>${CLOSE()}`, null, { nofocus: true });
 ACT.unfriendOk = d => { closePanel(); relAct(() => rpc('remove_friend', { p_other: d.u }), 'Retiré de tes amis'); };
-ACT.inviteFriend = () => { const txt = `Je tiens mes carnets de voyage sur Eskalys. Rejoins-moi : ${CFG.siteUrl || location.origin} (mon identifiant : @${PROFILE.handle})`; if (navigator.share) navigator.share({ title: 'Eskalys', text: txt }).catch(() => { }); else copyText(txt, 'Invitation copiée, colle-la dans un message'); };
+ACT.inviteFriend = () => { const url = `${CFG.siteUrl || location.origin}/?ami=${encodeURIComponent(PROFILE.handle || '')}`, txt = `Je tiens mes carnets de voyage sur Eskalys. Inscris-toi avec mon lien, on reçoit chacun un mois de PRO offert : ${url}`;
+  openPanel(`<h2>Inviter un ami</h2><p class="small">Envoie ton lien. Quand ton ami crée son compte avec, vous recevez chacun <b>un mois de PRO offert</b>.</p>
+    <div class="inv-link"><input readonly value="${esc(url)}" aria-label="Ton lien d’invitation"><button class="btn2" id="invCopy">Copier</button></div>
+    <button class="btn full" id="invShare">${SV.send}Partager mon lien</button>${CLOSE('Fermer')}`, p => {
+    p.querySelector('#invCopy').onclick = async () => { try { await navigator.clipboard.writeText(url); toast('Lien copié'); } catch (_) { p.querySelector('input').select(); } };
+    p.querySelector('#invShare').onclick = () => { if (navigator.share) navigator.share({ title: 'Eskalys', text: txt }).catch(() => { }); else { navigator.clipboard && navigator.clipboard.writeText(txt); toast('Message copié'); } }; }); };
 ACT.userMenu = d => openPanel(`<h2>Options</h2><div class="menulist"><button data-act="report" data-kind="user" data-id="${d.u}">${SV.warn}Signaler ce profil</button><button data-act="blockUser" data-u="${d.u}" class="red">${SV.lock}Bloquer</button></div>${CLOSE('Fermer')}`, null, { nofocus: true });
 ACT.blockUser = d => openPanel(`<h2>Bloquer ce membre ?</h2><p class="small" style="line-height:1.5">Vous ne verrez plus vos profils, publications et commentaires respectifs, et cette personne ne pourra plus te contacter. Votre amitié et vos défis seront supprimés. Tu peux débloquer depuis tes réglages.</p><button class="danger" data-act="blockOk" data-u="${d.u}" style="margin-top:16px">Bloquer</button>${CLOSE()}`, null, { nofocus: true });
 ACT.blockOk = async d => { closePanel(); try { await rpc('block_user', { p_target: d.u }); toast('Membre bloqué'); if (current === 'ami') go('fil'); else refreshSocial(); } catch (e) { toast(errMsg(e)); } };
@@ -466,7 +471,7 @@ ACT.newChal = fromPanel(async d => {
 });
 
 /* ---------- notifications ---------- */
-const NK = { friend_request: 'veut devenir ton ami', friend_accept: 'a accepté ta demande', reaction: 'a réagi à ta publication', comment: 'a commenté ta publication', challenge: "t'a lancé un défi", challenge_done: 'a relevé ton défi', carnet_invite: 't’invite à remplir son carnet de voyage avec toi', reco_ask: 'te demande tes bonnes adresses pour son prochain voyage', reco_new: 'a partagé une adresse pour ton prochain voyage', reco_thanks: 'te dit merci pour ton adresse' };
+const NK = { friend_request: 'veut devenir ton ami', friend_accept: 'a accepté ta demande', reaction: 'a réagi à ta publication', comment: 'a commenté ta publication', challenge: "t'a lancé un défi", challenge_done: 'a relevé ton défi', carnet_invite: 't’invite à remplir son carnet de voyage avec toi', reco_ask: 'te demande tes bonnes adresses pour son prochain voyage', reco_new: 'a partagé une adresse pour ton prochain voyage', reco_thanks: 'te dit merci pour ton adresse', referral: 'a rejoint Eskalys grâce à toi : un mois de PRO offert pour vous deux' };
 let lastBadge = 0;
 async function updateBadges(force) {
   if (!ME || (!force && Date.now() - lastBadge < 20000)) return; lastBadge = Date.now();

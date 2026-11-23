@@ -3018,3 +3018,8 @@ html[data-theme="dark"] .itp-pickbar{background:#1E2320;color:#ECEBE6}html[data-
 .cf-facts em{display:block;font-style:normal;font-size:.74rem;color:var(--muted);margin-top:2px}
 .inv-link{display:flex;gap:8px;margin:12px 0}.inv-link input{flex:1;min-width:0;font-size:14px}
 .tc-acts{display:flex;gap:6px;flex:none}.pill.pp{background:#e8f0fb;color:#1f4f8f;border-color:#c7d8f0}
+/* l'appli ne doit jamais glisser vers le haut et laisser voir un panneau fermé en dessous */
+.phone{overflow:clip}
+html,body{overscroll-behavior:none}
+.panel:not(.open){visibility:hidden;transition:transform .38s cubic-bezier(.2,.8,.2,1),visibility 0s .38s}
+.panel.open{visibility:visible}

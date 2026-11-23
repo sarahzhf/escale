@@ -63,7 +63,7 @@
     if (!ov) return;
     const s = steps[k], el = find(s.sel) || [...document.querySelectorAll(s.sel)].find(e => { const r = e.getBoundingClientRect(); return r.width > 4 && r.height > 4; });
     if (!el) { k += dir; return k >= 0 && k < steps.length ? show() : end(); }   // élément absent (ex. pas encore de voyage) : on passe
-    el.scrollIntoView({ block: 'center' });
+    el.scrollIntoView({ block: 'center' }); const ph = document.querySelector('.phone'); if (ph) ph.scrollTop = 0; scrollTo(0, 0);
     setTimeout(() => requestAnimationFrame(() => {
       if (!ov) return;
       const host = ov.getBoundingClientRect(), r0 = el.getBoundingClientRect(), H = host.height || innerHeight;
@@ -89,4 +89,12 @@
     show(); return true;
   };
   window.TOURS = TOURS; window.tourFor = tourFor;
+})();
+/* garde-fou : sur iPhone, un focus ou un scrollIntoView pouvait faire glisser tout l'écran vers le haut
+   et laisser voir un panneau fermé sous la barre d'onglets. On remet l'écran en place aussitôt. */
+(() => {
+  const fix = el => () => { if (el.scrollTop || el.scrollLeft) { el.scrollTop = 0; el.scrollLeft = 0; } };
+  const hook = () => { const ph = document.querySelector('.phone'); if (ph) ph.addEventListener('scroll', fix(ph), { passive: true });
+    addEventListener('scroll', () => { if (scrollY || scrollX) scrollTo(0, 0); }, { passive: true }); };
+  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', hook) : hook();
 })();

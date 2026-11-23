@@ -29,19 +29,22 @@ function worldStats() {
 const kmTxt = v => Math.round(v).toLocaleString('fr-FR') + ' km';
 function renderMonde() {
   const W = worldStats(), sc = $('s-monde');
-  const tile = (v, l, sub) => `<div class="mw-tile"><b class="num">${v}</b><span>${l}</span>${sub ? `<em>${sub}</em>` : ''}</div>`;
+  const tile = (v, l, sub, ic, cl) => `<div class="mw-tile ${cl || ''}">${ic ? `<i class="mw-ic">${ic}</i>` : ''}<b class="num" data-count>${v}</b><span>${l}</span>${sub ? `<em>${sub}</em>` : ''}</div>`;
   sc.innerHTML = `<div class="vtop"><button class="iconbtn" data-act="back" aria-label="Retour">${SV.back}</button><h1>En chiffres</h1><div class="r"></div></div>
    <section class="mw-hero"><div><b class="num">${W.n}</b><span>pays visité${W.n > 1 ? 's' : ''}</span></div><div class="mw-pct"><svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="18"/><circle cx="22" cy="22" r="18" class="on" stroke-dasharray="${(Math.min(100, W.pct) / 100 * 113.1).toFixed(1)} 113.1"/></svg><span class="num">${W.pct < 1 && W.n ? W.pct.toFixed(1).replace('.', ',') : Math.round(W.pct)} %</span><em>du monde</em></div></section>
    <p class="small mw-base">Sur les ${UN_COUNTRIES} pays reconnus par l'ONU.</p>
-   <div class="mw-grid">${tile(W.days, 'jours de voyage', W.days >= 30 ? `soit ${(W.days / 30.4).toFixed(1).replace('.', ',')} mois` : '')}${tile(kmTxt(W.km), 'parcourus', W.km ? `${(W.km / EARTH_KM).toFixed(2).replace('.', ',')} fois le tour de la Terre` : 'aller et retour depuis chez toi')}${tile(W.trips, `voyage${W.trips > 1 ? 's' : ''}`, W.trips ? `${Math.round(W.days / W.trips)} jours en moyenne` : '')}
-     ${W.far ? `<div class="mw-tile far">${flag(W.far.t.pays)}<b class="num">${kmTxt(W.far.km)}</b><span>le plus loin de chez toi</span><em>${esc(W.far.n)}</em></div>` : tile('–', 'le plus loin de chez toi', '')}</div>
+   <div class="mw-grid">${tile(W.days, 'jours de voyage', W.days >= 30 ? `soit ${(W.days / 30.4).toFixed(1).replace('.', ',')} mois` : '', SV.cal, 't-cal')}${tile(kmTxt(W.km), 'parcourus', W.km ? `${(W.km / EARTH_KM).toFixed(2).replace('.', ',')} fois le tour de la Terre` : 'aller et retour depuis chez toi', SV.plane, 't-km')}${tile(W.trips, `voyage${W.trips > 1 ? 's' : ''}`, W.trips ? `${Math.round(W.days / W.trips)} jours en moyenne` : '', SV.book, 't-trip')}
+     ${W.far ? `<div class="mw-tile far t-far">${flag(W.far.t.pays)}<b class="num">${kmTxt(W.far.km)}</b><span>le plus loin de chez toi</span><em>${esc(W.far.n)}</em></div>` : tile('–', 'le plus loin de chez toi', '')}</div>
    <button class="mw-home" data-act="homeSet">${SV.place}<span>Tu habites à <b>${esc(W.H.n)}</b>, ${esc(C({ pays: W.H.cc }).n)}</span><em>Modifier</em></button>
-   <div class="sec"><h2>Drapeaux collectés</h2><span class="small">${W.n} / ${Object.keys(COUNTRIES).length}</span></div>
+   <div class="sec mw-sec"><h2>Ta collection de drapeaux</h2><span class="small">${W.n} / ${Object.keys(COUNTRIES).length}</span></div>
    <div class="flagbox" id="flagbox">${W.n ? '' : '<p class="small">Tes drapeaux tomberont ici après ton premier voyage.</p>'}<canvas id="flagcv" aria-label="${W.n} drapeaux collectés : ${W.cc.map(k => C({ pays: k }).n).join(', ')}" role="img"></canvas></div>
    <p class="small mw-tip">Lance les drapeaux du doigt, ou penche ton téléphone.</p>
    <div class="sec"><h2>Continents</h2></div>
-   <div class="mw-conts">${Object.entries(CONT_N).map(([c, tot]) => { const v = W.conts[c] || 0; return `<div class="mw-ct ${v ? 'on' : ''}"><span>${c}</span><span class="bar"><i style="width:${Math.max(v ? 4 : 0, v / tot * 100)}%"></i></span><b class="num">${v}/${tot}</b></div>`; }).join('')}</div>`;
+   <div class="mw-conts">${Object.entries(CONT_N).map(([c, tot], i) => { const v = W.conts[c] || 0, pc = Math.round(v / tot * 100); return `<div class="mw-ct ${v ? 'on' : ''}" style="--i:${i}"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16"/><circle cx="20" cy="20" r="16" class="on" style="stroke-dasharray:${(Math.max(v ? 3 : 0, pc) / 100 * 100.5).toFixed(1)} 100.5"/></svg><b class="num">${v}</b><span>${c}</span><em>sur ${tot}</em></div>`; }).join('')}</div>`;
   if (W.n) setTimeout(() => flagBalls($('flagcv'), W.cc), 30);
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) sc.querySelectorAll('.mw-hero b.num, [data-count]').forEach(el => { const m = el.textContent.match(/^(\d[\d\s\u202f]*?)(\s*\D.*)?$/); if (!m) return;
+    const end = +m[1].replace(/\D/g, ''), tail = m[2] || '', t0 = performance.now(); if (!end) return;
+    const step = now => { const k = Math.min(1, (now - t0) / 900), v = Math.round(end * (1 - Math.pow(1 - k, 3))); el.textContent = v.toLocaleString('fr-FR') + tail; if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); });
 }
 SCREENS.monde = renderMonde;
 ACT.homeSet = () => { const H = homeOf();

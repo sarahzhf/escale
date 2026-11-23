@@ -383,7 +383,7 @@ function scoreHTML() {
   const full = Math.floor(m.points / JAR_CAP) - (m.points && m.points % JAR_CAP === 0 ? 1 : 0), left = JAR_CAP - (m.points % JAR_CAP || (m.points ? JAR_CAP : 0)), grew = m.points > jarSeen;
   if (grew) { jarSeen = m.points; try { localStorage.setItem('escale:jar', String(m.points)); } catch (e) { } }
   return `<div class="score jarbox"><button class="jar-w" data-act="jar3d" aria-label="Voir ton bocal en grand">${jarSVG(m.points, grew && !REDUCED)}${full > 0 ? `<div class="jars-full" aria-label="${full} bocal${full > 1 ? 'x' : ''} rempli${full > 1 ? 's' : ''}">${Array.from({ length: Math.min(full, 5) }, () => '<i></i>').join('')}${full > 5 ? `<b class="num">+${full - 5}</b>` : ''}</div>` : ''}<span class="jar-zoom">Toucher pour agrandir</span></button>
-    <div class="jar-side"><p class="jar-t">${m.points ? (left === JAR_CAP ? 'Bocal rempli, bravo !' : `Encore <b class="num">${left}</b> points pour remplir ton bocal`) : 'Relève ton premier défi pour y déposer tes premières billes'}</p>
+    <div class="jar-side"><p class="jar-t">${m.points ? (left === JAR_CAP ? 'Bocal rempli, bravo !' : `Encore <b class="num">${left}</b> points pour remplir ton bocal`) : 'Relève ton premier défi pour y déposer tes premières pièces'}</p>
       <div class="jar-st"><div><b class="num">${m.streak}${m.streak ? ' 🔥' : ''}</b><span>série</span></div><div><b class="num">${m.countries || 0}</b><span>pays</span></div><div><b class="num">${m.done}</b><span>relevé${m.done > 1 ? 's' : ''}</span></div></div>
       <div class="jar-bar"><i style="width:${m.points ? 100 - left : 0}%"></i></div></div>
     <button class="sc-badges" data-act="badges" aria-label="Voir tous les badges">${BADGES.map(b => `<i class="${got.includes(b) ? 'on' : ''}" title="${b[2]}">${b[1]}</i>`).join('')}<span>${got.length}/${BADGES.length} badges</span></button></div>`;
@@ -406,12 +406,27 @@ async function renderDefis() {
   const inc = CHALS.filter(c => c.to_id === ME.id), open = inc.filter(c => c.status === 'open');
   const seen = new Set(), out = CHALS.filter(c => c.from_id === ME.id && (!c.group_id || (!seen.has(c.group_id) && seen.add(c.group_id))));
   $('feedbox').innerHTML = `${typeof notifCardHTML === 'function' ? notifCardHTML() : ''}${scoreHTML()}
+   ${dailyHTML()}
    <button class="btn2 g newchal" data-act="newChal">${SV.target}Défier un ou plusieurs amis</button>
+   ${ideasHTML()}
    ${travelHTML()}
-   <div class="sec"><h2>À relever</h2></div>${open.map(chalCard).join('') || `<div class="emptyfeed">Aucun défi en cours. Tes amis peuvent t'en lancer depuis ton profil.</div>`}
-   <div class="sec"><h2>Envoyés</h2></div>${out.map(c => c.group_id ? sentGroupCard(c) : chalCard(c)).join('') || `<div class="emptyfeed">Lance un défi à un ami : un lieu, une photo, un délai.</div>`}
+   <div class="sec"><h2>À relever${open.length ? ` <i class="cnt">${open.length}</i>` : ''}</h2></div>${open.sort((a, b) => String(a.deadline || a.expires_at || '').localeCompare(String(b.deadline || b.expires_at || ''))).map(chalCard).join('') || `<div class="emptyfeed">Aucun défi en cours. Tes amis peuvent t'en lancer depuis ton profil.</div>`}
+   ${boardHTML()}
+   <div class="sec"><h2>Envoyés${out.length ? ` <i class="cnt">${out.length}</i>` : ''}</h2></div>${out.map(c => c.group_id ? sentGroupCard(c) : chalCard(c)).join('') || `<div class="emptyfeed">Lance un défi à un ami : un lieu, une photo, un délai.</div>`}
    ${inc.filter(c => c.status !== 'open').length ? `<div class="sec"><h2>Historique</h2></div>${inc.filter(c => c.status !== 'open').map(chalCard).join('')}` : ''}`;
 }
+/* idées de défis prêtes à lancer, et un défi du jour */
+const CH_IDEAS = [['Un coucher de soleil', 'Le plus beau coucher de soleil de ton voyage'], ['Un plat local', 'Le plat que tu n’avais jamais goûté avant'], ['Une porte colorée', 'La porte la plus jolie de la ville'],
+  ['Un marché', 'Les couleurs d’un marché du matin'], ['Un selfie avec un monument', 'Toi devant le monument le plus connu'], ['Une rue la nuit', 'Une rue éclairée, sans flash'],
+  ['Un panneau dans la langue du pays', 'Le panneau le plus drôle que tu croises'], ['Un café', 'Ton café ou ton thé avec une vue'], ['Un animal', 'Le premier animal croisé dans la journée'],
+  ['Un reflet', 'Un reflet dans l’eau ou une vitre'], ['La vue d’en haut', 'Le point de vue le plus haut où tu montes'], ['Un souvenir', 'L’objet que tu ramènes, avant de l’emballer']];
+let IDEA_OFF = Math.floor(Math.random() * CH_IDEAS.length);
+function ideasHTML() { const L = [0, 1, 2, 3].map(i => CH_IDEAS[(IDEA_OFF + i * 3) % CH_IDEAS.length]);
+  return `<div class="ch-ideas"><div class="ch-ih"><b>Idées de défis</b><button data-act="chIdeasMore" aria-label="Autres idées">${SV.refresh || '↻'}</button></div>
+    <div class="ch-il">${L.map(([t, n]) => `<button data-act="newChal" data-place="${esc(t)}" data-note="${esc(n)}"><b>${esc(t)}</b><span>${esc(n)}</span></button>`).join('')}</div></div>`; }
+ACT.chIdeasMore = () => { IDEA_OFF = (IDEA_OFF + 4) % CH_IDEAS.length; const el = document.querySelector('.ch-ideas'); if (el) el.outerHTML = ideasHTML(); };
+function dailyHTML() { const d = new Date(), k = (d.getFullYear() * 400 + d.getMonth() * 31 + d.getDate()) % CH_IDEAS.length, [t, n] = CH_IDEAS[k];
+  return `<div class="ch-day"><span class="ch-dl">Défi du jour</span><b>${esc(t)}</b><span>${esc(n)}</span><button class="btn2" data-act="newChal" data-place="${esc(t)}" data-note="${esc(n)}">Le lancer à un ami</button></div>`; }
 /** Défi de groupe envoyé : un seul cadre pour tout le groupe. */
 function sentGroupCard(c) { const M = (c.group && c.group.members) || [], open = M.some(m => m.status === 'open');
   return `<div class="chal ${open ? 'open' : 'done'}"><div class="h"><span class="av grp-av">${SV.users}</span><div class="m"><b>Défi envoyé à ${M.length} amis</b><span>${ago(c.created_at)}</span></div>${dueTag(c)}</div>
@@ -432,7 +447,7 @@ ACT.newChal = fromPanel(async d => {
    <div class="fld"><span>Qui défier ?</span><div class="frchips" id="nc-to">${fr.map(f => `<button type="button" data-u="${f.id}" class="${to.has(f.id) ? 'on' : ''}" aria-pressed="${to.has(f.id)}">${avatar(f)}${first(f.display_name)}</button>`).join('')}</div></div>
    <label class="fld"><span>Le lieu à photographier</span><input id="nc-place" maxlength="120" placeholder="Ex. le pont de Galata à Istanbul" autocomplete="off" value="${esc(d.place || '')}"></label>
    <label class="fld"><span>Pays (facultatif)</span><input id="nc-pays" maxlength="40" autocomplete="off" placeholder="Tape un pays" value="${esc(d.pays && COUNTRIES[d.pays] ? COUNTRIES[d.pays].n : '')}">${paysList()}</label>
-   <label class="fld"><span>La consigne</span><textarea id="nc-note" maxlength="300" placeholder="Ex. au lever du soleil, sans personne dans le cadre"></textarea></label>
+   <label class="fld"><span>La consigne</span><textarea id="nc-note" maxlength="300" placeholder="Ex. au lever du soleil, sans personne dans le cadre">${esc(d.note || '')}</textarea></label>
    <div class="fld"><span>Délai</span><div class="dlseg" id="nc-dl">${[[3, '3 jours'], [7, '1 semaine'], [30, '1 mois']].map(([v, l]) => `<button type="button" data-v="${v}" class="${v === dl ? 'on' : ''}">${l}</button>`).join('')}</div></div>
    <button class="btn full" id="nc-ok">Envoyer le défi<i>${SV.right}</i></button>${CLOSE()}`, p => {
     combo(p.querySelector('#nc-pays'), countryItems);

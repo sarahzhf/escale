@@ -2989,3 +2989,14 @@ html[data-theme="dark"] .itp-pickbar{background:#1E2320;color:#ECEBE6}html[data-
 .rc-cats button,.rc-top button,.rc-act button,.rc-th{display:inline-flex;align-items:center;gap:5px}
 .rc-cats svg,.rc-top svg,.rc-act svg,.rc-th svg{width:16px;height:16px;flex:none}.rc-ic svg{width:20px;height:20px;color:#2f5d43}
 .rc-act button.on svg,.rc-th svg{color:#b8452c}
+
+/* Défis : accroches */
+.sec h2 .cnt{font-style:normal;font-size:.72rem;background:#b8452c;color:#fff;border-radius:99px;padding:2px 8px;margin-left:6px;vertical-align:2px}
+.ch-day{display:grid;gap:3px;margin:12px 0 4px;padding:14px 16px;border-radius:20px;background:#fbf3e4;border:1px dashed #d9b45a;position:relative}
+.ch-day .ch-dl{font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:#a0762a;font-weight:600}.ch-day b{font-size:1.02rem}.ch-day>span:not(.ch-dl){font-size:.85rem;color:var(--muted)}
+.ch-day .btn2{justify-self:start;margin-top:8px}
+.ch-ideas{margin:14px 0 4px}.ch-ih{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.ch-ih b{font-size:.92rem}
+.ch-ih button{border:0;background:var(--gray,#f1ede6);border-radius:99px;width:34px;height:34px;display:grid;place-items:center}.ch-ih svg{width:16px;height:16px}
+.ch-il{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;scroll-snap-type:x mandatory}
+.ch-il button{flex:0 0 46%;scroll-snap-align:start;text-align:left;border:1px solid rgba(0,0,0,.08);background:#fff;border-radius:16px;padding:11px 12px;display:grid;gap:3px;transition:transform .15s}
+.ch-il button:active{transform:scale(.97)}.ch-il b{font-size:.86rem}.ch-il span{font-size:.76rem;color:var(--muted);line-height:1.3}

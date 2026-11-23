@@ -2988,11 +2988,11 @@ html[data-theme="dark"] .itp-pickbar{background:#1E2320;color:#ECEBE6}html[data-
 .pbud .t b{font-size:1.35rem}
 
 /* visite guidée dans l'appli */
-.tour{position:fixed;inset:0;z-index:9000;opacity:0;transition:opacity .25s;pointer-events:none}
+.tour{position:fixed;inset:0;z-index:9000;opacity:0;transition:opacity .25s;pointer-events:auto;touch-action:none}
 .tour.on{opacity:1}
-.tr-hole{position:fixed;border-radius:16px;box-shadow:0 0 0 9999px rgba(18,22,18,.62);transition:all .35s cubic-bezier(.2,.8,.2,1);pointer-events:none;outline:2px solid #fff;outline-offset:2px;animation:trPulse 1.6s ease-in-out infinite}
+.tr-hole{position:absolute;border-radius:16px;box-shadow:0 0 0 9999px rgba(18,22,18,.62);transition:all .35s cubic-bezier(.2,.8,.2,1);pointer-events:none;outline:2px solid #fff;outline-offset:2px;animation:trPulse 1.6s ease-in-out infinite}
 @keyframes trPulse{50%{outline-color:rgba(255,255,255,.35)}}
-.tr-bub{position:fixed;left:14px;right:14px;max-width:420px;margin:0 auto;background:#fffdf8;color:#1f241f;border-radius:20px;padding:16px 16px 12px;box-shadow:0 16px 40px -12px rgba(0,0,0,.45);pointer-events:auto;transition:top .35s,bottom .35s}
+.tr-bub{position:absolute;left:14px;right:14px;max-width:420px;margin:0 auto;background:#fffdf8;color:#1f241f;border-radius:20px;padding:16px 16px 12px;box-shadow:0 16px 40px -12px rgba(0,0,0,.45);pointer-events:auto;transition:top .35s,bottom .35s}
 .tr-bub h3{margin:2px 0 6px;font-size:1.05rem}.tr-bub p{margin:0;font-size:.92rem;line-height:1.4}.tr-n{font-size:.74rem!important;opacity:.6}
 .tr-a{display:flex;gap:8px;align-items:center;margin-top:12px}.tr-a .btn{margin-left:auto;padding:9px 16px}.tr-skip{background:none;border:0;opacity:.65;font-size:.85rem;padding:8px 4px}
 .gd-show{display:block;margin:10px auto 0;border:1px solid rgba(0,0,0,.12);background:#fff;border-radius:999px;padding:9px 14px;font-size:.88rem}

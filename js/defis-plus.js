@@ -38,11 +38,13 @@ ACT.jar3d = () => { const pts = (typeof withMissions === 'function' ? withMissio
   const cv = ov.querySelector('canvas'), dpr = Math.min(2, devicePixelRatio || 1), W = Math.min(innerWidth, 440), H = Math.min(innerHeight * .62, 520);
   cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px'; const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
   // billes rangées en couches dans un cylindre : rayon RJ, du fond vers le haut
-  const inJar = pts % JAR_CAP === 0 && pts ? JAR_CAP : pts % JAR_CAP, n = Math.max(0, Math.round(inJar / 2)), RJ = W * .27, rb = RJ * .2, cx = W / 2, base = H * .86, top = H * .2;
-  const M = []; let layer = 0, k = 0;
-  while (k < n) { const y = base - rb - layer * rb * 1.62, ring = [[0, 0]], R1 = RJ - rb * .98;
-    for (let r = rb * 2.05, ri = 0; r <= R1 + .1; r += rb * 1.98, ri++) { const c = Math.floor(2 * Math.PI * r / (rb * 2.05)); for (let i = 0; i < c; i++) ring.push([r, i / c * 2 * Math.PI + layer * .4 + ri * .2]); }
-    for (const [r, a] of ring) { if (k >= n) break; M.push({ r, a, y: y - ((k * 13) % 5) * .6, c: JAR_COLS[(k * 7 + layer) % JAR_COLS.length] }); k++; } layer++; }
+  const inJar = pts % JAR_CAP === 0 && pts ? JAR_CAP : pts % JAR_CAP, n = Math.max(0, Math.round(inJar / 2)), RJ = W * .27, rb = RJ * .21, cx = W / 2, base = H * .86, top = H * .2;
+  const M = [], CL = coinCountries(); let k = 0, layer = 0;
+  // pièces posées à plat, en tas qui remplit toute la largeur du bocal
+  while (k < n) { const y = base - rb * .6 - layer * rb * .55;
+    for (let i = 0; i < 7 && k < n; i++, k++) { const h = (k * 2654435761 % 1000) / 1000, h2 = (k * 40503 % 997) / 997;
+      M.push({ r: (RJ - rb * .9) * Math.sqrt(h), a: h2 * Math.PI * 2, y: y - h * rb * .25, co: coinAt(k, CL), sp: (h2 - .5) * 1.2 }); }
+    layer++; }
   let rot = 0, vel = .004, drag = null, alive = true, tilt = .32;
   const shade = (hex, f) => { const v = parseInt(hex.slice(1), 16), r = v >> 16, g = v >> 8 & 255, b = v & 255; return `rgb(${Math.round(r * f)},${Math.round(g * f)},${Math.round(b * f)})`; };
   const ell = (y, rx, ry) => { ctx.beginPath(); ctx.ellipse(cx, y, rx, ry, 0, 0, 7); };
@@ -51,18 +53,24 @@ ACT.jar3d = () => { const pts = (typeof withMissions === 'function' ? withMissio
     // ombre
     ctx.save(); ctx.filter = 'blur(10px)'; ell(base + 10, RJ * 1.05, ry * .9); ctx.fillStyle = 'rgba(60,40,15,.25)'; ctx.fill(); ctx.restore();
     // paroi arrière
-    ell(base, RJ, ry); ctx.fillStyle = 'rgba(200,222,228,.25)'; ctx.fill();
-    ctx.fillStyle = 'rgba(210,228,232,.18)'; ctx.fillRect(cx - RJ, top, RJ * 2, base - top);
+    ell(base, RJ, ry); ctx.fillStyle = 'rgba(232,244,246,.22)'; ctx.fill();
+    ctx.fillStyle = 'rgba(236,246,248,.1)'; ctx.fillRect(cx - RJ, top, RJ * 2, base - top);
     // billes triées par profondeur
-    const P = M.map(m => { const a = m.a + rot, z = Math.cos(a) * m.r; return { x: cx + Math.sin(a) * m.r, y: m.y + z * tilt * .9, z, c: m.c }; }).sort((a, b) => a.z - b.z);
-    P.forEach(p => { const f = .78 + (p.z / RJ + 1) * .14, g = ctx.createRadialGradient(p.x - rb * .35, p.y - rb * .4, rb * .1, p.x, p.y, rb);
-      g.addColorStop(0, '#fff'); g.addColorStop(.25, shade(p.c, f + .08)); g.addColorStop(1, shade(p.c, f * .72));
-      ctx.beginPath(); ctx.arc(p.x, p.y, rb * (1 + p.z / RJ * .06), 0, 7); ctx.fillStyle = g; ctx.fill(); });
+    const P = M.map(m => { const a = m.a + rot, z = Math.cos(a) * m.r; return { x: cx + Math.sin(a) * m.r, y: m.y + z * tilt * .9, z, co: m.co, sp: m.sp, a }; }).sort((a, b) => a.z - b.z);
+    P.forEach(p => { const f = .8 + (p.z / RJ + 1) * .13, R = rb * (1 + p.z / RJ * .06), ry = R * (tilt * .9 + .1 + .12 * Math.abs(Math.sin(p.a * 1.3 + p.sp))), co = p.co;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.sp * .5);
+      ctx.beginPath(); ctx.ellipse(0, R * .14, R, ry, 0, 0, 7); ctx.fillStyle = coinShade(co.o, f * .58); ctx.fill();                 // tranche
+      const g = ctx.createLinearGradient(-R, -ry, R, ry); g.addColorStop(0, coinShade(co.o, f * 1.25)); g.addColorStop(.45, coinShade(co.o, f)); g.addColorStop(1, coinShade(co.o, f * .72));
+      ctx.beginPath(); ctx.ellipse(0, 0, R, ry, 0, 0, 7); ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = coinShade(co.o, f * .6); ctx.lineWidth = .8; ctx.stroke();
+      const gi = ctx.createLinearGradient(-R, -ry, R, ry); gi.addColorStop(0, coinShade(co.i, f * 1.2)); gi.addColorStop(1, coinShade(co.i, f * .78));
+      ctx.beginPath(); ctx.ellipse(0, 0, R * .66, ry * .66, 0, 0, 7); ctx.fillStyle = gi; ctx.fill(); ctx.strokeStyle = coinShade(co.i, f * .65); ctx.stroke();
+      ctx.scale(1, ry / R); ctx.fillStyle = coinShade(co.i, f * .45); ctx.font = `${Math.round(R * (co.s.length > 1 ? .55 : .8))}px Georgia,serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(co.s, 0, R * .04);
+      ctx.restore(); });
     // verre avant : reflets et bords
-    const gl = ctx.createLinearGradient(cx - RJ, 0, cx + RJ, 0); gl.addColorStop(0, 'rgba(255,255,255,.45)'); gl.addColorStop(.18, 'rgba(255,255,255,.06)'); gl.addColorStop(.7, 'rgba(255,255,255,.02)'); gl.addColorStop(.92, 'rgba(255,255,255,.3)'); gl.addColorStop(1, 'rgba(255,255,255,.1)');
+    const gl = ctx.createLinearGradient(cx - RJ, 0, cx + RJ, 0); gl.addColorStop(0, 'rgba(255,255,255,.55)'); gl.addColorStop(.12, 'rgba(255,255,255,.12)'); gl.addColorStop(.3, 'rgba(255,255,255,0)'); gl.addColorStop(.75, 'rgba(255,255,255,0)'); gl.addColorStop(.9, 'rgba(255,255,255,.35)'); gl.addColorStop(1, 'rgba(255,255,255,.1)');
     ctx.fillStyle = gl; ctx.fillRect(cx - RJ, top, RJ * 2, base - top); ctx.beginPath(); ctx.ellipse(cx, base, RJ, ry, 0, 0, Math.PI); ctx.fill();
-    const hx = cx - RJ * .62 + Math.sin(rot) * 3; ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.beginPath(); ctx.roundRect(hx, top + 26, 7, (base - top) * .62, 4); ctx.fill();
-    ctx.strokeStyle = 'rgba(120,145,155,.55)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx - RJ, top); ctx.lineTo(cx - RJ, base); ctx.moveTo(cx + RJ, top); ctx.lineTo(cx + RJ, base); ctx.stroke();
+    const hx = cx - RJ * .62 + Math.sin(rot) * 3; ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.beginPath(); ctx.roundRect(hx, top + 26, 8, (base - top) * .62, 4); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.4)'; ctx.beginPath(); ctx.roundRect(cx + RJ * .7, top + 40, 3, (base - top) * .3, 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(150,178,188,.55)'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(cx - RJ, top); ctx.lineTo(cx - RJ, base); ctx.moveTo(cx + RJ, top); ctx.lineTo(cx + RJ, base); ctx.stroke();
     ctx.beginPath(); ctx.ellipse(cx, base, RJ, ry, 0, 0, Math.PI); ctx.stroke(); ell(top, RJ, ry); ctx.stroke();
     // col et couvercle doré
     ell(neckY, RJ * .82, ry * .82); ctx.fillStyle = '#E9E2D6'; ctx.fill();

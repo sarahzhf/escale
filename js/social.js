@@ -363,17 +363,18 @@ const myStats = () => BOARD.find(b => b.me) || { done: 0, fast: 0, streak: 0, co
 /* bocal de points : une bille par 2 points, un bocal plein tous les 100 points */
 const JAR_CAP = 100, JAR_COLS = ['#E3A585', '#A9C2A3', '#F3C979', '#A9BFD6', '#F1C6CF', '#C9B4E0'];
 function jarSVG(pts, animate) {
-  const inJar = pts % JAR_CAP === 0 && pts ? JAR_CAP : pts % JAR_CAP, n = Math.round(inJar / 2), r = 6.2, L = [];
+  const inJar = pts % JAR_CAP === 0 && pts ? JAR_CAP : pts % JAR_CAP, n = Math.round(inJar / 2), r = 6.2, L = [], CL = typeof coinCountries === 'function' ? coinCountries() : ['FR'];
   // billes rangées du fond vers le haut, rangs décalés, à l'intérieur du bocal (x 22 à 118)
   for (let i = 0, row = 0; i < n; row++) { const off = row % 2 ? r : 0, cols = row % 2 ? 7 : 8;
     for (let c = 0; c < cols && i < n; c++, i++) { const x = 26 + off + c * r * 2 + ((i * 37) % 5) * .4, y = 168 - row * r * 1.75 - ((i * 13) % 3) * .5;
-      L.push(`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${JAR_COLS[(i * 7 + row) % JAR_COLS.length]}" ${animate ? `style="animation-delay:${(i * 18) % 900}ms"` : ''}/>`); } }
+      const co = typeof coinAt === 'function' ? coinAt(i, CL) : { s: '', o: JAR_COLS[i % 6], i: JAR_COLS[i % 6] }, rot = ((i * 47) % 50) - 25, ry = r * (.62 + ((i * 11) % 4) * .08);
+      L.push(`<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rot})" ${animate ? `style="animation-delay:${(i * 18) % 900}ms"` : ''}><ellipse rx="${r}" ry="${ry.toFixed(2)}" cy="1.1" fill="${coinShade(co.o, .62)}"/><ellipse rx="${r}" ry="${ry.toFixed(2)}" fill="${co.o}" stroke="${coinShade(co.o, .7)}" stroke-width=".6"/><ellipse rx="${(r * .62).toFixed(2)}" ry="${(ry * .62).toFixed(2)}" fill="${co.i}" stroke="${coinShade(co.i, .78)}" stroke-width=".4"/><text y="${(ry * .28).toFixed(2)}" text-anchor="middle" font-size="${co.s.length > 1 ? 3.4 : 5}" font-family="Georgia,serif" fill="${coinShade(co.i, .5)}">${co.s}</text></g>`); } }
   return `<svg class="jar ${animate ? 'drop' : ''}" viewBox="0 0 140 190" aria-hidden="true"><defs><linearGradient id="jg" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".25" stop-color="#fff" stop-opacity=".08"/><stop offset=".8" stop-color="#fff" stop-opacity=".05"/><stop offset="1" stop-color="#fff" stop-opacity=".35"/></linearGradient><clipPath id="jc"><path d="M24 46c-8 6-12 14-12 26v92c0 10 6 16 16 16h84c10 0 16-6 16-16V72c0-12-4-20-12-26z"/></clipPath></defs>
     <rect x="34" y="14" width="72" height="20" rx="5" fill="#C9A55A"/><rect x="34" y="20" width="72" height="3" fill="#B98F3C"/><rect x="34" y="27" width="72" height="3" fill="#B98F3C"/>
     <path d="M30 34h80v12H30z" fill="#E9E2D6" opacity=".9"/>
-    <path d="M24 46c-8 6-12 14-12 26v92c0 10 6 16 16 16h84c10 0 16-6 16-16V72c0-12-4-20-12-26z" fill="rgba(210,228,232,.35)" stroke="rgba(120,140,150,.45)" stroke-width="2"/>
+    <path d="M24 46c-8 6-12 14-12 26v92c0 10 6 16 16 16h84c10 0 16-6 16-16V72c0-12-4-20-12-26z" fill="rgba(240,248,250,.22)" stroke="rgba(150,175,185,.5)" stroke-width="2"/>
     <g clip-path="url(#jc)">${L.join('')}</g>
-    <path d="M24 46c-8 6-12 14-12 26v92c0 10 6 16 16 16h84c10 0 16-6 16-16V72c0-12-4-20-12-26z" fill="url(#jg)"/><path d="M22 80v70" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".55"/>
+    <path d="M24 46c-8 6-12 14-12 26v92c0 10 6 16 16 16h84c10 0 16-6 16-16V72c0-12-4-20-12-26z" fill="url(#jg)"/><path d="M22 80v70" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".75"/><path d="M118 90v40" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".55"/><path d="M26 49c-4 3-7 7-8 12" stroke="#fff" stroke-width="2" fill="none" opacity=".7"/>
     <rect x="40" y="56" width="60" height="34" rx="4" fill="#FBF7F0" stroke="#D9CEBC"/><text x="70" y="73" text-anchor="middle" font-family="Georgia,serif" font-size="15" fill="#3A3226">${pts}</text><text x="70" y="85" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" letter-spacing="1" fill="#8A7A62">POINTS</text></svg>`;
 }
 let jarSeen = (() => { try { return +localStorage.getItem('escale:jar') || 0; } catch (e) { return 0; } })();

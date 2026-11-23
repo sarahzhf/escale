@@ -75,7 +75,7 @@ function comptesHTML(t) {
    <div class="tc-who">${['me', ...M.map(m => m.id)].map(id => { const v = bal[id] || 0; return `<div class="tc-wb"><span class="av">${esc(memberName(t, id).slice(0, 1).toUpperCase())}</span><b>${esc(memberName(t, id))}</b><em class="num ${v > 0.005 ? 'pos' : v < -0.005 ? 'neg' : ''}">${v > 0.005 ? '+ ' : v < -0.005 ? '− ' : ''}${fmt(Math.abs(v))}</em></div>`; }).join('')}</div>
    <p class="small">Dépenses communes : <b class="num">${fmt(group)}</b>. En vert, ce qu'on doit à la personne, en rouge ce qu'elle doit.</p>
    <div class="sec"><h2>Pour être quittes</h2></div>
-   ${tr.length ? `<div class="group">${tr.map(x => `<div class="tc-row"><span>${x.from === 'me' ? `Tu dois <b class="num">${fmt(x.eur)}</b> à <b>${esc(memberName(t, x.to))}</b>` : x.to === 'me' ? `<b>${esc(memberName(t, x.from))}</b> te doit <b class="num">${fmt(x.eur)}</b>` : `<b>${esc(memberName(t, x.from))}</b> doit <b class="num">${fmt(x.eur)}</b> à <b>${esc(memberName(t, x.to))}</b>`}</span><button class="pill" data-act="settle" data-trip="${t.id}" data-from="${x.from}" data-to="${x.to}" data-eur="${x.eur}">Remboursé</button></div>`).join('')}</div>`
+   ${tr.length ? `<div class="group">${tr.map(x => `<div class="tc-row"><span>${x.from === 'me' ? `Tu dois <b class="num">${fmt(x.eur)}</b> à <b>${esc(memberName(t, x.to))}</b>` : x.to === 'me' ? `<b>${esc(memberName(t, x.from))}</b> te doit <b class="num">${fmt(x.eur)}</b>` : `<b>${esc(memberName(t, x.from))}</b> doit <b class="num">${fmt(x.eur)}</b> à <b>${esc(memberName(t, x.to))}</b>`}</span><span class="tc-acts">${x.from === 'me' || x.to === 'me' ? `<button class="pill pp" data-act="paypal" data-trip="${t.id}" data-from="${x.from}" data-to="${x.to}" data-eur="${x.eur}" aria-label="${x.from === 'me' ? 'Payer' : 'Demander'} avec PayPal">PayPal</button>` : ''}<button class="pill" data-act="settle" data-trip="${t.id}" data-from="${x.from}" data-to="${x.to}" data-eur="${x.eur}">Remboursé</button></span></div>`).join('')}</div>`
      : `<div class="emptyj">Tout le monde est quitte.</div>`}
    <div class="sec"><h2>Dépenses partagées</h2><button class="pill dark" data-act="addExp" data-trip="${t.id}">${SV.plus}Dépense</button></div>
    <div class="group dexp">${shared.map(d => `<button class="exp" data-act="editExp" data-trip="${t.id}" data-id="${d.id}"><span class="ic">${ico(d.c)}</span><span class="m"><b>${esc(d.l)}</b><span>${esc(memberName(t, d.by || 'me'))} a payé pour ${d.split ? (d.split.length === M.length + 1 ? 'tout le monde' : d.split.map(i => esc(memberName(t, i))).join(', ')) : 'toi'}</span></span><span class="p num">${fmt(d.eur)}<span>ta part ${fmt(myPart(d))}</span></span></button>`).join('') || `<p class="small" style="padding:14px">Aucune dépense partagée. Quand tu ajoutes une dépense, choisis qui a payé et pour qui.</p>`}</div>
@@ -105,3 +105,21 @@ ACT.members = d => membersSheet(d.trip);
 ACT.settle = d => { const t = trip(d.trip); t.reglements = t.reglements || []; t.reglements.push({ id: uid().slice(0, 8), from: d.from, to: d.to, eur: +d.eur, at: new Date().toISOString().slice(0, 10) }); save(); refresh(); toast(`${memberName(t, d.from)} a remboursé ${fmt(+d.eur)}`); };
 ACT.unsettle = d => { const t = trip(d.trip); t.reglements = (t.reglements || []).filter(r => r.id !== d.id); save(); refresh(); toast('Remboursement annulé'); };
 ['members'].forEach(k => { const f = ACT[k]; ACT[k] = fromPanel(f); });
+
+/* PayPal.me : payer quelqu'un ou lui envoyer une demande, sans partenariat (simple lien PayPal) */
+const ppClean = v => String(v || '').trim().replace(/^https?:\/\/(www\.)?paypal\.(me|com\/paypalme)\//i, '').replace(/^@/, '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40);
+const ppUrl = (h, eur) => `https://www.paypal.com/paypalme/${encodeURIComponent(h)}/${(Math.round(eur * 100) / 100).toFixed(2)}EUR`;
+ACT.paypal = d => { const t = trip(d.trip); if (!t) return; const eur = +d.eur, pay = d.from === 'me', other = pay ? d.to : d.from, m = (t.membres || []).find(x => x.id === other) || {};
+  let mine = ''; try { mine = localStorage.getItem('escale:paypal') || ''; } catch (_) { }
+  const known = pay ? m.pp : mine, who = esc(memberName(t, other));
+  const go = h => { if (pay) { m.pp = h; save(); open(ppUrl(h, eur), '_blank', 'noopener'); closePanel(); toast('Une fois payé, touche « Remboursé »'); }
+    else { try { localStorage.setItem('escale:paypal', h); } catch (_) { } const txt = `Pour me rembourser ${fmt(eur)} (${place(t)}) : ${ppUrl(h, eur)}`;
+      closePanel(); if (navigator.share) navigator.share({ title: 'Remboursement', text: txt }).catch(() => { }); else { navigator.clipboard && navigator.clipboard.writeText(txt); toast('Lien copié, envoie-le à ' + memberName(t, other)); } } };
+  if (known) return go(known);
+  openPanel(`<h2>${pay ? `Payer ${who} avec PayPal` : `Demander ${fmt(eur)} à ${who}`}</h2>
+    <p class="small">${pay ? `Indique l’identifiant PayPal.me de ${who} : c’est ce qui suit paypal.me/ dans son lien. Eskalys le retient pour la prochaine fois.` : 'Indique ton identifiant PayPal.me (ce qui suit paypal.me/ dans ton lien). Ton ami recevra un lien avec le montant déjà rempli.'}</p>
+    <label class="fld"><span>Identifiant PayPal.me</span><input id="ppH" maxlength="60" autocomplete="off" placeholder="Ex. sarahvoyage"></label>
+    <button class="btn full" id="ppOk">${pay ? `Payer ${fmt(eur)}` : 'Envoyer la demande'}</button>
+    <p class="small cf-note">Le paiement se fait sur PayPal. Eskalys ne voit ni ne garde aucune donnée bancaire.</p>${CLOSE('Annuler')}`, p => {
+    p.querySelector('#ppOk').onclick = () => { const h = ppClean(p.querySelector('#ppH').value); if (h.length < 2) { toast('Indique un identifiant PayPal.me'); return; } go(h); }; });
+};

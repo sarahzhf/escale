@@ -8,7 +8,7 @@ if (!SV.pencil) SV.pencil = '<svg viewBox="0 0 24 24" fill="none" stroke="curren
 const NOTE_COL = { jaune: '#FCEFA1', rose: '#F9CFD7', bleu: '#CDE3F5', vert: '#D4EDC9', blanc: '#FFFFFF' };
 const noteOf = (x, i) => x.w ? x.w : x.k === 'inc' || x.k === 'own' ? 'note' : 'pen';
 let boardNew = null; // id du point à animer (écriture ou punaise)
-const PEN_SVG = '<svg class="pen" viewBox="0 0 60 60" aria-hidden="true"><g transform="rotate(35 30 30)"><rect x="24" y="2" width="12" height="40" rx="3" fill="#2E5E3E"/><rect x="24" y="2" width="12" height="9" rx="3" fill="#1F3F2A"/><rect x="25" y="40" width="10" height="6" fill="#D9D9D9"/><path d="M26 46h8l-4 9z" fill="#1F3F2A"/></g><path d="M14 54c6-6 12-4 16-10" stroke="#E8C9A8" stroke-width="10" stroke-linecap="round" fill="none" opacity=".95"/></svg>';
+const PEN_SVG = '<svg class="pen" viewBox="0 0 60 60" aria-hidden="true"><g transform="rotate(35 30 30)"><rect x="24" y="2" width="12" height="40" rx="3" fill="#264D33"/><rect x="24" y="2" width="12" height="9" rx="3" fill="#1F3F2A"/><rect x="25" y="40" width="10" height="6" fill="#D9D9D9"/><path d="M26 46h8l-4 9z" fill="#1F3F2A"/></g><path d="M14 54c6-6 12-4 16-10" stroke="#E8C9A8" stroke-width="10" stroke-linecap="round" fill="none" opacity=".95"/></svg>';
 function prepHTML(t) {
   const L = todoOf(t), f = info(t); if (!L.length) return f.futur || f.enCours ? `<div class="sec"><h2>À préparer</h2></div><button class="prep-cta" data-act="prep" data-trip="${t.id}"><i>${SV.star}</i><span><b>Incontournables et checklist</b><em>Les lieux à ne pas rater et ce qu'il faut réserver</em></span>${SV.right}</button>` : '';
   const done = L.filter(x => x.ok).length, pens = [], notes = [];

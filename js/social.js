@@ -6,7 +6,7 @@
 const VIS = { public: { n: 'Public', d: 'Tout le monde', ic: () => SV.globeS }, friends: { n: 'Amis', d: 'Tes amis seulement', ic: () => SV.users }, private: { n: 'Privé', d: 'Toi seule', ic: () => SV.lock } };
 const visTag = v => `<span class="vis">${VIS[v].ic()}${VIS[v].n}</span>`;
 const RX = ['❤️', '😍', '😭', '🙌', '🔥'];
-const AVC = ['#2E5E3E', '#B8452C', '#3C6E8F', '#8A6A3B', '#6B4E8A', '#2F7C78', '#9A4E64'];
+const AVC = ['#264D33', '#B8452C', '#3C6E8F', '#8A6A3B', '#6B4E8A', '#2F7C78', '#9A4E64'];
 const CC = { logement: 'var(--c-logement)', repas: 'var(--c-repas)', transport: 'var(--c-transport)', activites: 'var(--c-activites)', shopping: 'var(--c-shopping)' };
 const POSTS = new Map();
 function ago(iso) { const m = Math.round((Date.now() - new Date(iso)) / 6e4); if (m < 1) return "à l'instant"; if (m < 60) return `il y a ${m} min`; const h = Math.round(m / 60); if (h < 24) return `il y a ${h} h`; const d = Math.round(h / 24); if (d < 7) return `il y a ${d} j`; return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }); }

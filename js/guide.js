@@ -3,7 +3,7 @@
  * Chaque étape dit ce que fait la fonction et le geste pour s'en servir. */
 (() => {
   const CH = [
-    ['Bienvenue', '#2E5E3E', [
+    ['Bienvenue', '#264D33', [
       ['plane', 'Bienvenue dans Eskalys', 'Un carnet par voyage pour garder au même endroit tes souvenirs, tes photos et ce que tu as dépensé. Ce guide te montre tout en deux minutes.', ['Balaye vers la gauche ou touche Suivant pour avancer', 'Touche un chapitre en haut pour y aller directement']],
       ['menu', 'Se repérer', 'En bas, cinq onglets : Accueil, Voyages, Posts, Budget et Profil. Le bouton rond + ajoute ce dont tu as besoin, où que tu sois.', ['+ : une dépense, une page, une photo, un voyage', 'Balaye depuis le bord gauche pour revenir en arrière']],
     ]],

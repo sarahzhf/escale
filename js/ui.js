@@ -824,12 +824,12 @@ function glDraw() {
   const W = glW, H = glH; if (!W) return; const R = Math.min(W * .46, H * .36) * GL.z, cx = W / 2, cy = H * .5, ctx = glCtx;
   glProj.scale(R).translate([cx, cy]).rotate(GL.rot);
   ctx.setTransform(glDpr, 0, 0, glDpr, 0, 0); ctx.clearRect(0, 0, W, H);
-  let g = ctx.createRadialGradient(cx, cy, R * .95, cx, cy, R * 1.22); g.addColorStop(0, 'rgba(46,94,62,.16)'); g.addColorStop(1, 'rgba(46,94,62,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.22, 0, 7); ctx.fill();
+  let g = ctx.createRadialGradient(cx, cy, R * .95, cx, cy, R * 1.22); g.addColorStop(0, 'rgba(38,77,51,.16)'); g.addColorStop(1, 'rgba(38,77,51,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.22, 0, 7); ctx.fill();
   g = ctx.createRadialGradient(cx - R * .35, cy - R * .4, R * .1, cx, cy, R); g.addColorStop(0, '#EEF4F3'); g.addColorStop(1, '#C2D4D3');
   ctx.beginPath(); glPath({ type: 'Sphere' }); ctx.fillStyle = g; ctx.fill();
   ctx.beginPath(); glPath(glGrat); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = .6; ctx.stroke();
   const visited = new Set(S.trips.map(t => C(t).iso)), cur = currentTrip(), curIso = cur ? C(cur).iso : null, wish = new Set(S.envies.map(w => C(w).iso));
-  glFeats.forEach(f => { ctx.beginPath(); glPath(f); const isW = !visited.has(f.id) && f.id !== curIso && wish.has(f.id); ctx.fillStyle = f.id === curIso ? '#2E5E3E' : visited.has(f.id) ? '#6FA882' : isW ? '#F3C979' : '#FBFAF7'; ctx.fill(); ctx.strokeStyle = isW ? '#D9962B' : 'rgba(120,125,115,.35)'; ctx.lineWidth = isW ? 1.1 : .5; ctx.stroke(); });
+  glFeats.forEach(f => { ctx.beginPath(); glPath(f); const isW = !visited.has(f.id) && f.id !== curIso && wish.has(f.id); ctx.fillStyle = f.id === curIso ? '#264D33' : visited.has(f.id) ? '#6FA882' : isW ? '#F3C979' : '#FBFAF7'; ctx.fill(); ctx.strokeStyle = isW ? '#D9962B' : 'rgba(120,125,115,.35)'; ctx.lineWidth = isW ? 1.1 : .5; ctx.stroke(); });
   g = ctx.createRadialGradient(cx - R * .3, cy - R * .35, R * .2, cx, cy, R * 1.02); g.addColorStop(0, 'rgba(255,255,255,.14)'); g.addColorStop(.7, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(15,25,20,.25)');
   ctx.beginPath(); glPath({ type: 'Sphere' }); ctx.fillStyle = g; ctx.fill();
   const center = [-GL.rot[0], -GL.rot[1]];
@@ -837,7 +837,7 @@ function glDraw() {
   ctx.font = '600 10px Inter, sans-serif'; ctx.textBaseline = 'middle';
   const boxes = [];
   glDots.forEach(c => { if (d3.geoDistance(c.ll, center) > 1.35) return; const [x, y] = glProj(c.ll);
-    ctx.beginPath(); ctx.arc(x, y, c.on ? 3.6 : 2.8, 0, 7); ctx.fillStyle = c.on ? '#C65D3B' : '#2E5E3E'; ctx.fill(); ctx.lineWidth = 1.4; ctx.strokeStyle = '#fff'; ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, c.on ? 3.6 : 2.8, 0, 7); ctx.fillStyle = c.on ? '#C65D3B' : '#264D33'; ctx.fill(); ctx.lineWidth = 1.4; ctx.strokeStyle = '#fff'; ctx.stroke();
     const w = ctx.measureText(c.n).width, bx = [x + 5, y - 7, x + 9 + w, y + 7]; if (GL.z >= 3 && !boxes.some(o => bx[0] < o[2] && bx[2] > o[0] && bx[1] < o[3] && bx[3] > o[1])) { boxes.push(bx); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.strokeText(c.n, x + 6, y); ctx.fillStyle = '#1F2A24'; ctx.fillText(c.n, x + 6, y); } });
   glPins.forEach(({ b, ll }) => { const dist = d3.geoDistance(ll, center), vis = dist < 1.45, [x, y] = glProj(ll), depth = Math.cos(Math.min(dist, 1.57));
     b.style.transform = `translate(${x}px,${y}px) scale(${.55 + .45 * depth})`; b.style.opacity = vis ? Math.min(1, depth * 1.8) : 0; b.style.pointerEvents = vis ? 'auto' : 'none'; b.style.zIndex = Math.round(depth * 100) + (b.classList.contains('on') ? 100 : 0); });

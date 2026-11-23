@@ -313,14 +313,17 @@ ACT.paysList = async d => { const me = d.u === ME.id;
 ACT.editProfile = () => { const m = PROFILE;
   openPanel(`<h2>Modifier le profil</h2>
    <label class="fld"><span>Nom affiché</span><input id="ep-n" maxlength="40" value="${esc(m.display_name)}"></label>
-   <label class="fld"><span>Identifiant</span><input id="ep-h" maxlength="24" value="${esc(m.handle)}" autocapitalize="none" spellcheck="false"></label>
+   <label class="fld"><span>Identifiant</span><div class="handle"><b>@</b><input id="ep-h" maxlength="24" value="${esc(m.handle)}" autocapitalize="none" spellcheck="false"></div><ul class="pwrules" id="ep-hr" aria-live="polite"></ul></label>
    <label class="fld"><span>Bio</span><textarea id="ep-b" maxlength="200">${esc(m.bio)}</textarea></label>
    <div class="fld"><span>Visibilité par défaut de tes publications</span><div class="visopts" id="ep-v">${Object.entries(VIS).map(([k, v]) => `<button class="${SETTINGS.default_visibility === k ? 'on' : ''}" data-v="${k}" type="button">${v.ic()}${v.n}<span>${v.d}</span></button>`).join('')}</div></div>
    <button class="btn full" id="ep-ok">Enregistrer<i>${SV.right}</i></button>${CLOSE()}`, p => {
+    const hi = p.querySelector('#ep-h'), hr = () => { p.querySelector('#ep-hr').innerHTML = hRules(hi.value).map(([ok, l]) => `<li class="${ok ? 'ok' : ''}">${ok ? SV.check : ''}${l}</li>`).join(''); };
+    hi.oninput = () => { hi.value = hi.value.toLowerCase().replace(/[^a-z0-9._]/g, ''); hr(); }; hr();
     let dv = SETTINGS.default_visibility; p.querySelectorAll('#ep-v button').forEach(b => b.onclick = () => { dv = b.dataset.v; p.querySelectorAll('#ep-v button').forEach(x => x.classList.toggle('on', x === b)); });
     p.querySelector('#ep-ok').onclick = async () => {
       const name = p.querySelector('#ep-n').value.trim(), h = p.querySelector('#ep-h').value.trim().replace(/^@/, '').toLowerCase(), bio = p.querySelector('#ep-b').value.trim();
       if (!name) { toast('Indique un nom'); return; }
+      if (!/^[a-z0-9._]{3,24}$/.test(h)) { hi.focus(); toast('Ton identifiant doit faire au moins 3 caractères'); return; }
       try {
         if (h !== m.handle) await rpc('set_handle', { p_handle: h });
         const a = await sb.from('profiles').update({ display_name: name.slice(0, 40), bio: bio.slice(0, 200) }).eq('id', ME.id); if (a.error) throw a.error;

@@ -3028,3 +3028,4 @@ html,body{overscroll-behavior:none}
 .handle:focus-within{border-color:var(--green);box-shadow:0 0 0 2px var(--green)}
 #su-hr{margin-top:8px}
 .gok{margin:0 0 12px;padding:12px 14px;border-radius:14px;background:#EAF1EC;color:var(--green);font-size:.9rem;line-height:1.4}
+#ep-hr{margin-top:8px}

@@ -30,12 +30,13 @@ function authError(e) {
   if (isNetwork(e)) return 'Pas de connexion internet.';
   return 'Une erreur est survenue, réessaie.';
 }
-const googleBtn = () => CFG.googleEnabled ? `<button class="gbtn google" data-auth="google" type="button"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continuer avec Google</button><div class="gor"><span>ou</span></div>` : '';
+const googleBtn = () => CFG.googleEnabled ? `<button class="gbtn google" data-auth="google" type="button"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continuer avec Google</button>${appleBtn()}<div class="gor"><span>ou</span></div>` : (CFG.appleEnabled ? appleBtn() + '<div class="gor"><span>ou</span></div>' : '');
+const appleBtn = () => CFG.appleEnabled ? `<button class="gbtn apple" data-auth="apple" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M16.4 12.6c0-2.4 2-3.6 2.1-3.7-1.2-1.7-3-1.9-3.6-2-1.5-.2-3 .9-3.8.9-.8 0-2-.9-3.3-.9-1.7 0-3.3 1-4.2 2.5-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.3.8 1.4 0 2.3-1.2 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.8-1.1-2.8-4.2zM14 5.3c.7-.9 1.2-2.1 1.1-3.3-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.2 1.1.1 2.3-.6 3-1.5z"/></svg>Continuer avec Apple</button>` : '';
 
 /* ---------- écrans d'accès ---------- */
 function welcome() {
   const shot = (n, alt) => `<figure class="lp-ph"><img src="icons/landing/${n}.webp" alt="${alt}" loading="lazy" decoding="async" width="270" height="585"></figure>`;
-  const cta = `<div class="lp-cta"><button class="gbtn primary" data-auth="signup">Commencer gratuitement</button><button class="gbtn" data-auth="login">J'ai déjà un compte</button>${CFG.googleEnabled ? googleBtn().replace('<div class="gor"><span>ou</span></div>', '') : ''}</div>`;
+  const cta = `<div class="lp-cta"><button class="gbtn primary" data-auth="signup">Commencer gratuitement</button><button class="gbtn" data-auth="login">J'ai déjà un compte</button>${(googleBtn() || appleBtn()).replace('<div class="gor"><span>ou</span></div>', '')}</div>`;
   const feat = (n, k, t, d, alt) => `<section class="lp-f ${k}"><div class="lp-tx"><h2>${t}</h2><p>${d}</p></div>${shot(n, alt)}</section>`;
   showGate(`<div class="lp">
     <section class="lp-hero"><h1>Tes voyages,<br>ton histoire.</h1><p>Le carnet de voyage qui garde tes souvenirs, tes photos et ton budget au même endroit, de la préparation au retour. Privé par défaut, à partager avec tes amis si tu veux.</p>${cta}${shot('home', "L'accueil d'Eskalys avec tes voyages")}</section>
@@ -154,17 +155,23 @@ async function mfaForm() {
 function termsScreen() {
   let pend = {}; try { pend = JSON.parse(sessionStorage.getItem('escale:pending-terms') || '{}'); } catch (_) { }
   const update = SETTINGS && SETTINGS.terms_version && SETTINGS.terms_version !== TERMS;
+  const prov = ME && ME.app_metadata && ME.app_metadata.provider, oauthNew = !update && prov && prov !== 'email';
   showGate(`<h2>${update ? 'Nos conditions évoluent' : 'Avant de commencer'}</h2><p class="gtext">${update ? "Merci de relire et d'accepter la nouvelle version pour continuer." : 'Quelques choix rapides sur tes données. Tu pourras les changer à tout moment dans les réglages.'}</p>
     <div class="gcard"><b>Ce que nous faisons de tes données</b><ul><li>Tes voyages, dépenses et notes sont privés par défaut.</li><li>Tu choisis pour chaque publication et chaque album qui peut les voir.</li><li>Nous ne vendons pas tes données et il n'y a pas de publicité.</li><li>Tu peux télécharger ou effacer toutes tes données quand tu veux.</li></ul></div>
+    ${oauthNew ? `<label class="fld"><span>Ton identifiant (pour que tes amis te trouvent)</span><div class="handle"><b>@</b><input id="tm-h" maxlength="24" autocapitalize="none" spellcheck="false" value="${esc((PROFILE && PROFILE.handle) || '')}"></div><ul class="pwrules" id="tm-hr" aria-live="polite"></ul></label>` : ''}
     <label class="check"><input type="checkbox" id="tm-age" ${pend.age ? 'checked' : ''}><span>J'ai 15 ans ou plus.</span></label>
     <label class="check"><input type="checkbox" id="tm-cgu" ${pend.v === TERMS ? 'checked' : ''}><span>J'accepte les <a href="legal/cgu.html" target="_blank" rel="noopener">conditions d'utilisation</a> et j'ai lu la <a href="legal/confidentialite.html" target="_blank" rel="noopener">politique de confidentialité</a>.</span></label>
     <label class="check"><input type="checkbox" id="tm-disc" checked><span>Mes amis peuvent me trouver en cherchant mon nom ou mon identifiant. <small>(facultatif)</small></span></label>
     <p class="gerr" id="tm-err" role="alert"></p><button class="gbtn primary" id="tm-ok">Continuer</button><p class="gswitch"><button data-auth="logout" class="lnk">Se déconnecter</button></p>`, g => {
     bindAuth(g);
+    const hi = g.querySelector('#tm-h'); if (hi) { const hr = () => { g.querySelector('#tm-hr').innerHTML = hRules(hi.value).map(([ok, l]) => `<li class="${ok ? 'ok' : ''}">${ok ? SV.check : ''}${l}</li>`).join(''); };
+      hi.oninput = () => { hi.value = hi.value.toLowerCase().replace(/[^a-z0-9._]/g, ''); hr(); }; hr(); }
     g.querySelector('#tm-ok').onclick = async () => { const err = g.querySelector('#tm-err');
+      if (hi && !/^[a-z0-9._]{3,24}$/.test(hi.value)) { hi.focus(); return err.textContent = 'Ton identifiant doit faire au moins 3 caractères.'; }
       if (!g.querySelector('#tm-age').checked) return err.textContent = 'Eskalys est réservée aux personnes de 15 ans ou plus.';
       if (!g.querySelector('#tm-cgu').checked) return err.textContent = "Tu dois accepter les conditions d'utilisation pour continuer.";
-      try { await rpc('accept_terms', { p_version: TERMS, p_age_ok: true, p_discoverable: g.querySelector('#tm-disc').checked }); try { sessionStorage.removeItem('escale:pending-terms'); } catch (_) { }
+      try { if (hi && PROFILE && hi.value !== PROFILE.handle) await rpc('set_handle', { p_handle: hi.value });
+        await rpc('accept_terms', { p_version: TERMS, p_age_ok: true, p_discoverable: g.querySelector('#tm-disc').checked }); try { sessionStorage.removeItem('escale:pending-terms'); } catch (_) { }
         await loadProfile(); await afterLogin(true); } catch (e) { err.textContent = errMsg(e); } };
   });
 }
@@ -186,6 +193,7 @@ function bindAuth(g) { g.querySelectorAll('[data-auth]').forEach(b => b.onclick 
   if (a === 'welcome') welcome(); else if (a === 'signup') signupForm(); else if (a === 'login') loginForm(); else if (a === 'forgot') forgotForm();
   else if (a === 'logout') logout();
   else if (a === 'eye') { const i = b.parentNode.querySelector('input'); i.type = i.type === 'password' ? 'text' : 'password'; b.setAttribute('aria-label', i.type === 'password' ? 'Afficher le mot de passe' : 'Masquer le mot de passe'); }
+  else if (a === 'apple') { const { error } = await sb.auth.signInWithOAuth({ provider: 'apple', options: { redirectTo: CFG.siteUrl || location.origin } }); if (error) toast(authError(error)); }
   else if (a === 'google') { const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: CFG.siteUrl || location.origin } }); if (error) toast(authError(error)); } }); }
 
 /* ---------- après connexion ---------- */

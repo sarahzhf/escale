@@ -64,5 +64,5 @@
   const go0 = go;
   go = (s, mode) => { go0(s, mode); if (s !== 'home' || typeof ME === 'undefined' || !ME) return;
     if (!counted) { counted = true; put('opens', (get('opens') || 0) + 1); }
-    if (get('opens') > 1 || (S.trips || []).length) setTimeout(() => { if (current === 'home') maybeAsk(); }, 2500); };
+    if (get('opens') > 1 || (S.trips || []).length) setTimeout(() => { const gt = document.querySelector('.gate'); if (current === 'home' && (!gt || gt.hidden) && !document.querySelector('.tour, .guide')) maybeAsk(); }, 2500); };
 })();

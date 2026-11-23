@@ -42,7 +42,7 @@ function renderMonde() {
    <div class="sec"><h2>Continents</h2></div>
    <div class="mw-conts">${Object.entries(CONT_N).map(([c, tot], i) => { const v = W.conts[c] || 0, pc = Math.round(v / tot * 100); return `<div class="mw-ct ${v ? 'on' : ''}" style="--i:${i}"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16"/><circle cx="20" cy="20" r="16" class="on" style="stroke-dasharray:${(Math.max(v ? 3 : 0, pc) / 100 * 100.5).toFixed(1)} 100.5"/></svg><b class="num">${v}</b><span>${c}</span><em>sur ${tot}</em></div>`; }).join('')}</div>`;
   if (W.n) setTimeout(() => flagBalls($('flagcv'), W.cc), 30);
-  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) sc.querySelectorAll('.mw-hero b.num, [data-count]').forEach(el => { const m = el.textContent.match(/^(\d[\d\s\u202f]*?)(\s*\D.*)?$/); if (!m) return;
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) sc.querySelectorAll('.mw-hero b.num, [data-count]').forEach(el => { const m = el.textContent.match(/^(\d{1,3}(?:[\s\u202f\u00a0]\d{3})*)(.*)$/); if (!m) return;
     const end = +m[1].replace(/\D/g, ''), tail = m[2] || '', t0 = performance.now(); if (!end) return;
     const step = now => { const k = Math.min(1, (now - t0) / 900), v = Math.round(end * (1 - Math.pow(1 - k, 3))); el.textContent = v.toLocaleString('fr-FR') + tail; if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); });
 }

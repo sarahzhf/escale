@@ -14,6 +14,7 @@ function cooldown(btn, s) { if (!btn || !(s > 0)) return; const txt = btn.datase
   const tick = () => { if (!btn.isConnected) return; if (n <= 0) { btn.disabled = false; btn.textContent = txt; return; } btn.textContent = `${txt} (${n} s)`; n--; setTimeout(tick, 1000); }; tick(); }
 const pwRules = p => [[p.length >= 10, '10 caractères minimum'], [/[a-z]/.test(p), 'une minuscule'], [/[A-Z]/.test(p), 'une majuscule'], [/[0-9]/.test(p), 'un chiffre']];
 const pwOk = p => pwRules(p).every(r => r[0]);
+const hRules = h => [[h.length >= 3, '3 caractères minimum'], [!!h && /^[a-z0-9._]+$/.test(h), 'lettres, chiffres, point ou tiret bas']];
 const emailOk = e => /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/.test(e);
 function authError(e) {
   const m = (e && e.message || '').toLowerCase();
@@ -53,7 +54,7 @@ function signupForm(prefill = {}) {
   showGate(`<button class="gback" data-auth="welcome" aria-label="Retour">${SV.back}</button><h2>Créer un compte</h2>${googleBtn()}
     <form id="su" novalidate>
       <label class="fld"><span>Prénom ou nom affiché</span><input id="su-n" maxlength="40" autocomplete="given-name" required value="${esc(prefill.n || '')}"></label>
-      <label class="fld"><span>Identifiant (pour que tes amis te trouvent)</span><div class="handle"><b>@</b><input id="su-h" maxlength="24" autocapitalize="none" spellcheck="false" autocomplete="username" placeholder="ex. sarah.voyage" value="${esc(prefill.h || '')}"></div></label>
+      <label class="fld"><span>Identifiant (pour que tes amis te trouvent)</span><div class="handle"><b>@</b><input id="su-h" maxlength="24" autocapitalize="none" spellcheck="false" autocomplete="username" placeholder="ex. sarah.voyage" value="${esc(prefill.h || '')}"></div><ul class="pwrules" id="su-hr" aria-live="polite"></ul></label>
       <label class="fld"><span>E-mail</span><input id="su-e" type="email" maxlength="254" autocomplete="email" required value="${esc(prefill.e || '')}"></label>
       <label class="fld"><span>Mot de passe</span><div class="pw"><input id="su-p" type="password" maxlength="72" autocomplete="new-password" required><button type="button" class="eye" data-auth="eye" aria-label="Afficher le mot de passe">${SV.eye}</button></div></label>
       <ul class="pwrules" id="su-r"></ul>
@@ -63,6 +64,8 @@ function signupForm(prefill = {}) {
       <button class="gbtn primary" id="su-ok">Créer mon compte</button>
     </form><p class="gswitch">Déjà inscrite ? <button data-auth="login" class="lnk">Se connecter</button></p>`, g => {
     bindAuth(g);
+    const hi = g.querySelector('#su-h'), hr = () => { const v = hi.value; g.querySelector('#su-hr').innerHTML = hRules(v).map(([ok, l]) => `<li class="${ok ? 'ok' : ''}">${ok ? SV.check : ''}${l}</li>`).join(''); };
+    hi.addEventListener('input', () => setTimeout(hr)); g.querySelector('#su-n').addEventListener('input', () => setTimeout(hr)); hr();
     const p = g.querySelector('#su-p'), rules = () => { g.querySelector('#su-r').innerHTML = pwRules(p.value).map(([ok, l]) => `<li class="${ok ? 'ok' : ''}">${ok ? SV.check : ''}${l}</li>`).join(''); };
     p.oninput = rules; rules();
     g.querySelector('#su-n').oninput = e => { const h = g.querySelector('#su-h'); if (!h.dataset.touched) h.value = norm(e.target.value).replace(/ /g, '.').slice(0, 20); };
@@ -71,7 +74,7 @@ function signupForm(prefill = {}) {
       const n = g.querySelector('#su-n').value.trim(), h = g.querySelector('#su-h').value.trim(), e = g.querySelector('#su-e').value.trim().toLowerCase(), pw = p.value, err = g.querySelector('#su-err');
       err.textContent = '';
       if (!n) return err.textContent = 'Indique ton prénom.';
-      if (!/^[a-z0-9._]{3,24}$/.test(h)) return err.textContent = 'Identifiant : 3 à 24 caractères, lettres minuscules, chiffres, point ou tiret bas.';
+      if (!/^[a-z0-9._]{3,24}$/.test(h)) { g.querySelector('#su-h').focus(); return err.textContent = 'Ton identifiant doit faire au moins 3 caractères.'; }
       if (!emailOk(e)) return err.textContent = 'Adresse e-mail invalide.';
       if (!pwOk(pw)) return err.textContent = 'Le mot de passe ne respecte pas les règles.';
       if (!g.querySelector('#su-age').checked) return err.textContent = 'Eskalys est réservée aux personnes de 15 ans ou plus.';
@@ -361,9 +364,9 @@ ACT.deleteAccount = () => { const hasPw = (ME.app_metadata && (ME.app_metadata.p
   } else if (!session && h.get('access_token') && h.get('refresh_token')) {
     const { data, error } = await sb.auth.setSession({ access_token: h.get('access_token'), refresh_token: h.get('refresh_token') }); clean();
     if (error) return linkProblem(); session = data.session;
-  } else if (!session && q.has('code')) { clean(); return linkProblem(true); }
+  } else if (!session && q.has('code')) { clean(); if (q.has('confirmed')) { loginForm(); const n = document.querySelector('#li'); if (n) n.insertAdjacentHTML('beforebegin', '<p class="gok">Ton compte est confirmé. Connecte-toi une première fois ici, ensuite tu n’auras plus à le refaire.</p>'); return; } return linkProblem(true); }
   if (isReset && session) return newPasswordForm();
   if (INV_TOKEN) return guestBoot();
-  if (session) { if (new URLSearchParams(location.search).has('code')) history.replaceState(null, '', location.pathname); await afterLogin(); }
+  if (session) { if (new URLSearchParams(location.search).has('code')) history.replaceState(null, '', location.pathname); await afterLogin(); if (q.has('confirmed') && typeof toast === 'function') toast('Compte confirmé, bienvenue sur Eskalys'); }
   else welcome();
 })();

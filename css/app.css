@@ -3023,3 +3023,8 @@ html[data-theme="dark"] .itp-pickbar{background:#1E2320;color:#ECEBE6}html[data-
 html,body{overscroll-behavior:none}
 .panel:not(.open){visibility:hidden;transition:transform .38s cubic-bezier(.2,.8,.2,1),visibility 0s .38s}
 .panel.open{visibility:visible}
+/* champ identifiant : le contour de focus entoure tout le champ, @ compris */
+.handle input,.handle input:focus,.handle input:focus-visible{outline:0!important;box-shadow:none!important;background:transparent}
+.handle:focus-within{border-color:var(--green);box-shadow:0 0 0 2px var(--green)}
+#su-hr{margin-top:8px}
+.gok{margin:0 0 12px;padding:12px 14px;border-radius:14px;background:#EAF1EC;color:var(--green);font-size:.9rem;line-height:1.4}

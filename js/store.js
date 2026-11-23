@@ -13,7 +13,7 @@
 'use strict';
 const CFG = window.ESCALE_CONFIG || {};
 const sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce', storageKey: 'escale-auth' },
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit', storageKey: 'escale-auth' },
 });
 
 let ME = null;            // utilisateur connecté (auth)

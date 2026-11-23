@@ -7,6 +7,7 @@
   const bad = q.get('error') || h.get('error') || q.get('error_code') || h.get('error_code');
   // Lien avec token_hash (marche dans n'importe quel navigateur) ou code (même navigateur) :
   // on file dans l'appli, qui connecte la personne sans lui redemander son mot de passe.
+  if (!bad && h.get('access_token')) { location.replace('./?confirmed=1' + location.hash); return; }   // lien classique : les jetons sont dans l'adresse, marche dans n'importe quel navigateur
   const th = q.get('token_hash'), code = q.get('code');
   if (!bad && (th || code)) {
     const to = new URLSearchParams(); if (th) { to.set('token_hash', th); to.set('type', q.get('type') || 'email'); } else to.set('code', code);

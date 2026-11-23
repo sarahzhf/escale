@@ -367,6 +367,6 @@ ACT.deleteAccount = () => { const hasPw = (ME.app_metadata && (ME.app_metadata.p
   } else if (!session && q.has('code')) { clean(); if (q.has('confirmed')) { loginForm(); const n = document.querySelector('#li'); if (n) n.insertAdjacentHTML('beforebegin', '<p class="gok">Ton compte est confirmé. Connecte-toi une première fois ici, ensuite tu n’auras plus à le refaire.</p>'); return; } return linkProblem(true); }
   if (isReset && session) return newPasswordForm();
   if (INV_TOKEN) return guestBoot();
-  if (session) { if (new URLSearchParams(location.search).has('code')) history.replaceState(null, '', location.pathname); await afterLogin(); if (q.has('confirmed') && typeof toast === 'function') toast('Compte confirmé, bienvenue sur Eskalys'); }
+  if (session) { if (new URLSearchParams(location.search).has('code')) history.replaceState(null, '', location.pathname); await afterLogin(); if (q.has('confirmed') && typeof toast === 'function') setTimeout(() => toast('Compte confirmé, bienvenue sur Eskalys'), 600); }
   else welcome();
 })();

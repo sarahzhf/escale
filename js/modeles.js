@@ -349,12 +349,12 @@
         if (th.pro && proLock()) { ACT.carnetPaywall(); return; } closePanel(); setTimeout(() => applyTheme(th), 300); });
       p.querySelectorAll('[data-mdl]').forEach(b => b.onclick = () => { const m = MODELES.find(x => x.k === b.dataset.mdl); if (!m) return;
         if (m.pro && proLock()) { ACT.carnetPaywall(); return; }
-        if (!en) return; if (t.entrees.length < 2) { closePanel(); setTimeout(() => apply(m), 300); return; }
+        if (!en) return;
         // plusieurs pages : juste celle-ci, ou tout le carnet dans ce style
         const home = THEMES.find(x => x.k !== 'classique' && x.mods.includes(m) && !(x.pro && proLock())), n = t.entrees.length;
         openPanel(`<h2>${esc(m.n)}</h2><p class="small">Tu le mets où ?</p><div class="flist">
           <button type="button" class="togrow" id="md-one"><div><b>Juste cette page</b><span>Les autres pages ne changent pas</span></div></button>
-          <button type="button" class="togrow" id="md-all"><div><b>Tout le carnet (${n} pages)</b><span>${home ? `Chaque page reçoit une mise en page du thème « ${esc(home.n)} », dans les mêmes couleurs` : 'Toutes les pages prennent ce modèle'}. Les pages ajoutées ensuite suivent aussi.</span></div></button></div>${CLOSE('Annuler')}`, q => {
+          <button type="button" class="togrow" id="md-all"><div><b>Tout le carnet${n > 1 ? ` (${n} pages)` : ''}</b><span>${home ? `Chaque page reçoit une mise en page du thème « ${esc(home.n)} », dans les mêmes couleurs` : 'Toutes les pages prennent ce modèle'}. La couverture et le sommaire aussi, et les pages que tu ajouteras ensuite.</span></div></button></div>${CLOSE('Annuler')}`, q => {
           q.querySelector('#md-one').onclick = () => { closePanel(); setTimeout(() => apply(m), 300); };
           q.querySelector('#md-all').onclick = () => { closePanel(); const th = home ? Object.assign({}, home, { mods: [m, ...home.mods.filter(x => x !== m)] }) : themeOf('m-' + m.k);
             setTimeout(() => applyTheme(th), 300); }; }, { nofocus: true }); }); }, { nofocus: true });

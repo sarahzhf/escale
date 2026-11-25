@@ -348,7 +348,16 @@
       p.querySelectorAll('[data-th]').forEach(b => b.onclick = () => { const th = THEMES.find(x => x.k === b.dataset.th); if (!th) return;
         if (th.pro && proLock()) { ACT.carnetPaywall(); return; } closePanel(); setTimeout(() => applyTheme(th), 300); });
       p.querySelectorAll('[data-mdl]').forEach(b => b.onclick = () => { const m = MODELES.find(x => x.k === b.dataset.mdl); if (!m) return;
-        if (m.pro && proLock()) { ACT.carnetPaywall(); return; } closePanel(); setTimeout(() => apply(m), 300); }); }, { nofocus: true });
+        if (m.pro && proLock()) { ACT.carnetPaywall(); return; }
+        if (!en) return; if (t.entrees.length < 2) { closePanel(); setTimeout(() => apply(m), 300); return; }
+        // plusieurs pages : juste celle-ci, ou tout le carnet dans ce style
+        const home = THEMES.find(x => x.k !== 'classique' && x.mods.includes(m) && !(x.pro && proLock())), n = t.entrees.length;
+        openPanel(`<h2>${esc(m.n)}</h2><p class="small">Tu le mets où ?</p><div class="flist">
+          <button type="button" class="togrow" id="md-one"><div><b>Juste cette page</b><span>Les autres pages ne changent pas</span></div></button>
+          <button type="button" class="togrow" id="md-all"><div><b>Tout le carnet (${n} pages)</b><span>${home ? `Chaque page reçoit une mise en page du thème « ${esc(home.n)} », dans les mêmes couleurs` : 'Toutes les pages prennent ce modèle'}. Les pages ajoutées ensuite suivent aussi.</span></div></button></div>${CLOSE('Annuler')}`, q => {
+          q.querySelector('#md-one').onclick = () => { closePanel(); setTimeout(() => apply(m), 300); };
+          q.querySelector('#md-all').onclick = () => { closePanel(); const th = home ? Object.assign({}, home, { mods: [m, ...home.mods.filter(x => x !== m)] }) : themeOf('m-' + m.k);
+            setTimeout(() => applyTheme(th), 300); }; }, { nofocus: true }); }); }, { nofocus: true });
   };
   // pose un modèle sur une page (sans redessiner) ; th : le thème de carnet, qui impose le même papier et la même écriture partout
   function applyTo(en, m, th) {
@@ -396,10 +405,24 @@
     BK.sel = null; save(); bkRender(); enterEdit(); toast(`Thème « ${th.n} » posé sur ${ents.length} page${ents.length > 1 ? 's' : ''}`);
   }
   window.CARNET_THEMES = THEMES;
+  // un thème par sa clé ; « m-xxx » = un seul modèle répété sur toutes les pages
+  const themeOf = k => THEMES.find(x => x.k === k) || (/^m-/.test(k || '') && (m => m && { k, n: m.n, paper: m.paper, font: m.font, mods: [m], pro: m.pro })(MODELES.find(x => x.k === k.slice(2)))) || null;
+  // le thème d'un carnet ouvert (celui posé sur ses pages)
+  const bookTheme = b => { const d = (b.spreads || []).find(x => x.kind === 'day' && x.e.lay && x.e.lay.th); return d ? themeOf(d.e.lay.th) : null; };
+  // décor de la couverture, du sommaire et de la page « nouvelle journée » : le papier, l'écriture et les stickers du thème
+  const decoOf = th => { if (th.deco) return th.deco; const all = th.mods.flatMap(m => m.el()).filter(x => x.k === 'd' && window.STKI && STKI[x.v]).map(x => x.v);
+    const one = re => all.find(v => re.test(v)); th.deco = { bow: one(/^nd/), lace: one(/^dentelle/), wax: one(/^(cire|empreinte)/), fl: one(/^(fl|erable|pomme)/) }; return th.deco; };
+  const img = (v, l, t, w, r) => v ? `<img class="thd" src="icons/stickers/${v}.webp" alt="" style="left:${l}px;top:${t}px;width:${w}px;--r:${r}deg">` : '';
+  { const p0 = pageHTML; pageHTML = function (b, sp, side) { const h = p0.apply(this, arguments);
+      if (!sp || (sp.kind !== 'intro' && sp.kind !== 'add')) return h; const th = bookTheme(b); if (!th) return h;
+      const d = decoOf(th), cls = `${th.font ? ' ft-' + th.font : ''}${th.paper ? ' pp-' + th.paper : ''}`;
+      const deco = side === 'l' ? img(d.bow, 236, 8, 54, 14) + img(d.fl, 10, 340, 56, -12) + img(d.lace, 90, 380, 130, 0)
+        : img(d.bow, 236, 8, 54, 14) + img(d.wax, 236, 352, 46, 8) + img(d.lace, 70, 380, 130, 0);
+      return h.replace(/^<div class="pg( center)?">/, (_, c) => `<div class="pg${c || ''}${cls}">${deco}`); }; }
   // une nouvelle page dans un carnet qui a un thème le reçoit toute seule, avec la mise en page suivante
   { const r0 = bkRender; bkRender = function () { try { const t = bookTrip();
       if (t && t.entrees.length > 1) { const ents = [...t.entrees].sort((a, b) => a.j - b.j), thk = (ents.find(e => e.lay && e.lay.th) || {}).lay;
-        const th = thk && THEMES.find(x => x.k === thk.th);
+        const th = thk && themeOf(thk.th);
         if (th) { let ch = 0; ents.forEach((en, i) => { if (en.lay && en.lay.mdl) return;
           const prev = i ? th.mods.findIndex(x => x.k === (ents[i - 1].lay || {}).mdl) : -1; // la mise en page qui suit celle de la page d'avant
           let m = th.mods[(prev + 1) % th.mods.length]; if (m.full && String(en.n || '').trim()) m = pick(th, prev + 1, en);

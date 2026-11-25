@@ -3089,3 +3089,5 @@ html,body{overscroll-behavior:none}
 .th-pp img{position:absolute;width:118px;aspect-ratio:1040/760;object-fit:cover;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.14);background:#efe8dc}
 .th-pp img:nth-child(1){left:0;top:20px;transform:rotate(-4deg);z-index:1}.th-pp img:nth-child(2){left:22px;top:10px;z-index:2}.th-pp img:nth-child(3){left:40px;top:2px;transform:rotate(4deg);z-index:3}
 .th b{font-size:14px}.th em{font-style:normal;font-size:12px;opacity:.6}.th .pro-tag{position:absolute;top:10px;right:10px;z-index:4}
+
+.pg>.thd{position:absolute;height:auto;transform:rotate(var(--r,0deg));pointer-events:none;z-index:-1;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.18))}

@@ -237,7 +237,7 @@
       st('l', 150, 400, 'fl-achillee', 30), st('l', 266, 398, 'cire-sauge-olivier', 32),
       tx('r', 82, 26, 'Mes adresses', 'Ton titre', 'carnet', '#3f5240', 20, 24), ...polas([W.sauge, W.jaune, W.peche]),
       st('r', 22, 30, 'nd2-foret', 40, -14), st('r', 280, 30, 'nd2-foret', 40, 14), dd('r', 150, 400, 'leaf', 24, '#6f8a6c')] },
-    { k: 'duo', n: 'Nous deux', pro: 1, full: 1, paper: 'rose', font: 'romantique', pal: ['#F8E7E5', '#b05a6a', '#C9A15A'], el: () => [
+    { k: 'duo', n: 'Rien que nous', pro: 1, full: 1, paper: 'rose', font: 'romantique', pal: ['#F8E7E5', '#b05a6a', '#C9A15A'], el: () => [
       tx('l', 22, 44, 'Nous deux', 'Ton titre', 'romantique', '#b05a6a', 34, 20), st('l', 266, 60, 'baiser-framboise', 40, -10),
       ph('l', 90, 176, 112, 'o', 'coeur-rose', -5), ph('l', 214, 196, 104, 'o', 'coeur-or', 5), st('l', 152, 126, 'nd-satin-rose', 44),
       tx('l', 24, 274, '', 'notre plus beau souvenir…', 'carnet', '#5a3a42', 15, 44),
@@ -335,22 +335,68 @@
   const proLock = () => typeof PRO !== 'undefined' && PRO.lock && !PRO.has();
   ACT.bkModeles = () => { const en = curEntry(); if (!en) { toast('Ouvre une page de journée pour choisir un modèle'); return; }
     openPanel(`<h2>Modèles</h2><p class="small">La page arrive décorée. Touche ensuite chaque emplacement pour y mettre ta photo. Tes photos déjà posées prennent place toutes seules, et ton texte est gardé.</p>
+      <h3 class="mdl-h">Tout le carnet</h3><p class="small">Un thème décore toutes les pages, chacune avec sa mise en page, dans les mêmes couleurs. Les pages que tu ajoutes ensuite le suivent aussi.</p>
+      <div class="th-row">${THEMES.map(th => `<button class="th" data-th="${th.k}"><span class="th-pp">${th.mods.slice(0, 3).map(m => `<img src="icons/modeles/${m.k}.webp" alt="" loading="lazy" onerror="this.remove()">`).join('')}</span><b>${esc(th.n)}</b><em>${th.mods.length} mises en page</em>${th.pro ? '<span class="pro-tag">PRO</span>' : ''}</button>`).join('')}</div>
+      <h3 class="mdl-h">Juste cette page</h3>
       <div class="mdl-grid">${MODELES.map(m => `<button class="mdl" data-mdl="${m.k}"><img src="icons/modeles/${m.k}.webp" alt="" loading="lazy" onerror="this.remove()"><span class="mdl-pal">${m.pal.map(c => `<i style="background:${c}"></i>`).join('')}</span><b>${esc(m.n)}</b>${m.pro ? '<span class="pro-tag">PRO</span>' : ''}</button>`).join('')}</div>${CLOSE('Fermer')}`, p => {
+      p.querySelectorAll('[data-th]').forEach(b => b.onclick = () => { const th = THEMES.find(x => x.k === b.dataset.th); if (!th) return;
+        if (th.pro && proLock()) { ACT.carnetPaywall(); return; } closePanel(); setTimeout(() => applyTheme(th), 300); });
       p.querySelectorAll('[data-mdl]').forEach(b => b.onclick = () => { const m = MODELES.find(x => x.k === b.dataset.mdl); if (!m) return;
         if (m.pro && proLock()) { ACT.carnetPaywall(); return; } closePanel(); setTimeout(() => apply(m), 300); }); }, { nofocus: true });
   };
-  function apply(m) {
-    const en = curEntry(); if (!en) return; en.st = en.st || [];
-    const deco = en.st.filter(s => !(s.k === 'f' && s.p) && !(s.k === 'x' && String(s.v || '').trim() && !s.tpl));
-    if (deco.length && !confirm('Ce modèle remplace la décoration de cette page. Tes photos et ton texte sont gardés. Continuer ?')) return;
+  // pose un modèle sur une page (sans redessiner) ; th : le thème de carnet, qui impose le même papier et la même écriture partout
+  function applyTo(en, m, th) {
+    en.st = en.st || [];
     const keepTx = en.st.filter(s => s.k === 'x' && String(s.v || '').trim() && !s.tpl);
-    const photos = [...new Set([...en.st.filter(s => s.k === 'f' && s.p).map(s => s.p), ...en.photos.filter(Boolean)])];
+    const photos = [...new Set([...en.st.filter(s => s.k === 'f' && s.p).map(s => s.p), ...(en.photos || []).filter(Boolean)])];
     const el = m.el(); let k = 0;
     el.forEach(s => { if (s.k === 'f' && k < photos.length) s.p = photos[k++]; });
     // les photos en trop restent sur la page, en polaroïd dans un coin
     const extra = photos.slice(k).map((p, i) => ({ k: 'f', p, x: r1(8 + i * 6), y: r1(90 - i * 4), s: .5, r: i % 2 ? 6 : -6, fr: 'polaroid', ar: 'carre', cx: 50, cy: 50, cz: 1 }));
     en.st = [...el, ...extra, ...keepTx]; en.photos = photos;
-    en.lay = Object.assign({}, en.lay, { paper: m.paper, font: m.font, free: 1, mdl: m.k }); delete en.lay.fr; if (m.full) en.lay.full = 1; else delete en.lay.full;
-    BK.sel = null; save(); bkRender(); toast(`Modèle « ${m.n} » posé : touche un emplacement pour ta photo`);
+    en.lay = Object.assign({}, en.lay, { paper: (th && th.paper) || m.paper, font: (th && th.font) || m.font, free: 1, mdl: m.k }); delete en.lay.fr;
+    if (m.full) en.lay.full = 1; else delete en.lay.full;
+    if (th) en.lay.th = th.k; else delete en.lay.th;
   }
+  const hasDeco = en => (en.st || []).some(s => !(s.k === 'f' && s.p) && !(s.k === 'x' && String(s.v || '').trim() && !s.tpl));
+  function apply(m) {
+    const en = curEntry(); if (!en) return;
+    if (hasDeco(en) && !confirm('Ce modèle remplace la décoration de cette page. Tes photos et ton texte sont gardés. Continuer ?')) return;
+    applyTo(en, m); BK.sel = null; save(); bkRender(); toast(`Modèle « ${m.n} » posé : touche un emplacement pour ta photo`);
+  }
+
+  /* ---------- thèmes : tout le carnet d'un coup, chaque page avec sa propre mise en page ---------- */
+  const THEMES = [
+    { k: 'classique', n: 'Classique', paper: '', font: '', m: ['moodboard', 'polaroids', 'sauge', 'journal', 'ete', 'bleu'] },
+    { k: 'rose', n: 'Rose poudré', paper: 'blanc', font: 'romantique', m: ['quatre', 'rose', 'duo', 'raisons', 'moodboard'] },
+    { k: 'oldmoney', n: 'Bordeaux et or', paper: 'blanc', font: 'oldmoney', m: ['arefaire', 'bordeaux', 'galerie', 'hiver', 'podium'] },
+    { k: 'sauge', n: 'Jardin sauge', paper: 'quadrille', font: 'carnet', m: ['coups', 'sauge', 'coins', 'polaroids'] },
+    { k: 'bleu', n: 'Bleu Méditerranée', paper: 'blanc', font: 'carnet', m: ['aime', 'bleu', 'plage', 'ete'] },
+    { k: 'lilas', n: 'Lilas', paper: 'points', font: 'romantique', m: ['bonheurs', 'lilas', 'moodboard'] },
+    { k: 'terracotta', n: 'Terracotta', paper: 'blanc', font: 'carnet', m: ['baisers', 'terracotta', 'vrac', 'automne'] },
+    { k: 'vintage', n: 'Vintage', paper: 'kraft', font: 'carnet', m: ['carte', 'vintage', 'top5', 'journal'] },
+  ].map(t => Object.assign(t, { mods: t.m.map(k => MODELES.find(x => x.k === k)).filter(Boolean) }))
+   .map(t => Object.assign(t, { pro: t.mods.some(x => x.pro) }));
+  // la mise en page de la page n° i du thème ; une page qui a déjà un texte écrit garde de la place pour lui
+  const pick = (th, i, en) => { const ok = String(en.n || '').trim() ? th.mods.filter(x => !x.full) : th.mods; const L = ok.length ? ok : th.mods; return L[i % L.length]; };
+  function applyTheme(th) {
+    const t = bookTrip(); if (!t) return; const ents = [...t.entrees].sort((a, b) => a.j - b.j);
+    if (!ents.length) { toast('Ajoute d’abord une page à ton carnet'); return; }
+    if (ents.some(hasDeco) && !confirm(`Le thème « ${th.n} » va décorer les ${ents.length} pages du carnet, chacune avec sa mise en page. Tes photos et ton texte sont gardés. Continuer ?`)) return;
+    // on fait tourner les mises en page du thème ; une page qui a déjà du texte prend la prochaine qui lui laisse de la place, sans faire sauter les autres
+    const file = [...th.mods];
+    ents.forEach(en => { const txt = String(en.n || '').trim(), k = txt ? file.findIndex(x => !x.full) : 0;
+      const m = k < 0 ? pick(th, 0, en) : file.splice(k, 1)[0]; if (k >= 0) file.push(m); applyTo(en, m, th); });
+    BK.sel = null; save(); bkRender(); toast(`Thème « ${th.n} » posé sur ${ents.length} page${ents.length > 1 ? 's' : ''}`);
+  }
+  window.CARNET_THEMES = THEMES;
+  // une nouvelle page dans un carnet qui a un thème le reçoit toute seule, avec la mise en page suivante
+  { const r0 = bkRender; bkRender = function () { try { const t = bookTrip();
+      if (t && t.entrees.length > 1) { const ents = [...t.entrees].sort((a, b) => a.j - b.j), thk = (ents.find(e => e.lay && e.lay.th) || {}).lay;
+        const th = thk && THEMES.find(x => x.k === thk.th);
+        if (th) { let ch = 0; ents.forEach((en, i) => { if (en.lay && en.lay.mdl) return;
+          const prev = i ? th.mods.findIndex(x => x.k === (ents[i - 1].lay || {}).mdl) : -1; // la mise en page qui suit celle de la page d'avant
+          let m = th.mods[(prev + 1) % th.mods.length]; if (m.full && String(en.n || '').trim()) m = pick(th, prev + 1, en);
+          applyTo(en, m, th); ch = 1; }); if (ch) save(); } } } catch (e) { console.warn(e); }
+    return r0.apply(this, arguments); }; }
 })();

@@ -3030,3 +3030,13 @@ html,body{overscroll-behavior:none}
 .gok{margin:0 0 12px;padding:12px 14px;border-radius:14px;background:#EAF1EC;color:var(--green);font-size:.9rem;line-height:1.4}
 #ep-hr{margin-top:8px}
 .gbtn.apple{background:#000;color:#fff;border-color:#000;margin-top:10px}.gbtn.apple svg{width:19px;height:19px}
+/* le petit mot d'Eskalys */
+.mot{position:relative;margin:14px 0 6px;padding:16px 16px 12px;border-radius:18px;background:var(--paper,#FBF6EA);border:1px solid rgba(139,107,74,.25);box-shadow:0 10px 22px -18px rgba(60,40,20,.6);overflow:hidden}
+.mot::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 25px,rgba(76,134,190,.09) 25px 26px);pointer-events:none}
+.mot-h{position:relative;display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.mot-st{display:grid;place-items:center;width:40px;height:40px;flex:none;border-radius:50%;border:2px dashed #B8452C;color:#B8452C;transform:rotate(-12deg)}.mot-st svg{width:18px;height:18px}
+.mot-h b{display:block;font-family:var(--hand,'Caveat',serif);font-size:25px;line-height:1;font-weight:600;color:#2b3a55}.mot-h em{font-style:normal;font-size:12.5px;color:var(--muted,#6e716a)}
+.mot ul{position:relative;margin:6px 0 0;padding:0;list-style:none;display:grid;gap:8px}
+.mot li{position:relative;padding-left:20px;font-size:14px;line-height:1.45;color:#2f3a2f}
+.mot li::before{content:"";position:absolute;left:3px;top:.55em;width:9px;height:9px;border:2px solid #2E6B4E;border-radius:3px;transform:rotate(8deg)}
+.mot-sig{position:relative;margin:10px 0 0;text-align:right;font-family:var(--hand,'Caveat',serif);font-size:18px;color:#B8452C}

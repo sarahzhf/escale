@@ -139,9 +139,11 @@ function prepSheet(tid, fresh) {
   const t = trip(tid); if (!t) return; const cur = todoOf(t), has = l => cur.some(x => x.l === l);
   const near = [t.ville, ...(t.lieux || [])].join(',').split(/[,;/]|\bet\b/).map(norm).filter(w => w.length > 3), hit = x => near.some(w => norm(x.l + ' ' + x.d).includes(w)) ? 0 : 1;
   const inc = (INC[t.pays] || []).map(([n, dsc, r]) => ({ k: 'inc', l: n, d: dsc, r: !!r })).sort((a, b) => hit(a) - hit(b)), pra = todoFor(t.pays).map(x => ({ k: x.k, l: x.l })), val = typeof valiseFor === 'function' ? valiseFor(t) : [];
+  if (typeof motItems === 'function') motItems(t).forEach(x => { if (!val.some(v => v.l.toLowerCase().split(' ')[0] === x.l.toLowerCase().split(' ')[0])) val.push(x); });
   const sel = new Set(cur.length ? cur.map(x => x.l) : pra.map(x => x.l));
   const item = x => `<button type="button" class="prp ${sel.has(x.l) ? 'on' : ''}" data-l="${esc(x.l)}"><i>${SV.check}</i><span><b>${esc(x.l)}</b>${x.d ? `<em>${esc(x.d)}</em>` : ''}</span>${x.r ? '<span class="tagr">À réserver</span>' : ''}</button>`;
   openPanel(`<h2>${fresh ? 'Prépare ton voyage' : 'À préparer'}</h2><p class="small">Coche ce que tu veux suivre pour ${esc(place(t))}. Tu pourras cocher chaque point une fois fait, depuis la page du voyage.</p>
+   ${fresh && typeof motCard === 'function' ? motCard(t) : ''}
    ${inc.length ? `<div class="sec"><h2>Les incontournables</h2></div><div class="prps">${inc.map(item).join('')}</div>` : ''}
    <div class="sec"><h2>Checklist pratique</h2></div><div class="prps">${pra.map(item).join('')}</div>
    ${val.length ? `<div class="sec"><h2>Ma valise</h2></div><p class="small">Selon la saison, la durée et le pays. Touche ce que tu veux emporter.</p><div class="prps">${val.map(item).join('')}</div>` : ''}

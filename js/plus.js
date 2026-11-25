@@ -29,6 +29,7 @@
     : c <= 67 || (c >= 80 && c <= 82) ? ['rain', c <= 57 ? 'Bruine' : 'Pluie'] : c <= 77 || c === 85 || c === 86 ? ['snow', 'Neige'] : ['storm', 'Orages'];
 
   /** Coordonnées [lon, lat] de la ville du voyage, sinon de la capitale du pays. */
+  window.coordsOf = t => coordsOf(t);
   function coordsOf(t) {
     const P = (typeof PLACES !== 'undefined' && PLACES[t.pays]) || {};
     if (t.ville) { const k = norm(t.ville); if (P[k]) return P[k]; const hit = Object.keys(P).find(x => k.startsWith(x) || x.startsWith(k)); if (hit) return P[hit]; }

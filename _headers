@@ -1,5 +1,5 @@
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://api.maptiler.com https://lorjjzookmefpjxmgyar.supabase.co; font-src 'self'; connect-src 'self' https://api.maptiler.com https://lorjjzookmefpjxmgyar.supabase.co wss://lorjjzookmefpjxmgyar.supabase.co https://open.er-api.com https://api.open-meteo.com https://photon.komoot.io; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://api.maptiler.com https://lorjjzookmefpjxmgyar.supabase.co; font-src 'self'; connect-src 'self' https://api.maptiler.com https://lorjjzookmefpjxmgyar.supabase.co wss://lorjjzookmefpjxmgyar.supabase.co https://open.er-api.com https://api.open-meteo.com https://archive-api.open-meteo.com https://photon.komoot.io; manifest-src 'self'; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY

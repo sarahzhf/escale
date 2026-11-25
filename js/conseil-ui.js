@@ -116,8 +116,10 @@ ACT.cfOpen = d => { const cc = d.c, c = COUNTRIES[cc], D0 = DEST[cc], inc = INC[
     <div class="cf-months">${MOIS.map((m, i) => `<span class="${D0.mois.includes(i + 1) ? 'ok' : ''} ${i + 1 === now ? 'now' : ''}" title="${m}">${m[0].toUpperCase()}</span>`).join('')}</div>
     <p class="small">Meilleure période : ${esc(moisTxt(D0.mois))}${D0.mois.includes(now) ? '. C\'est le bon moment.' : '.'}</p>
     ${inc.length ? `<div class="sec"><h2>Les incontournables</h2></div><div class="cf-incl">${inc.map(([n, dsc, r]) => `<div><b>${esc(n)}</b>${dsc ? `<span>${esc(dsc)}</span>` : ''}${r ? '<em class="tagr">À réserver</em>' : ''}</div>`).join('')}</div>` : ''}
+    <div class="sec"><h2>Entrer dans le pays</h2></div>
+    <div class="ip-slot" data-c="${cc}"></div>
     <div class="sec"><h2>Bon à savoir</h2></div>
-    <div class="cf-facts"><div><span>Monnaie</span><b>${c.code === 'EUR' || c.rate === 1 ? 'Euro' : `${esc(c.code || c.cur)}, 1 € ≈ ${fmtRate(c.rate)} ${esc(c.cur)}`}</b></div><div><span>Papiers</span><b>${esc(papers)}</b></div>${typeof pratiqueHTML === 'function' ? pratiqueHTML(cc) : ''}</div>
+    <div class="cf-facts"><div><span>Monnaie</span><b>${c.code === 'EUR' || c.rate === 1 ? 'Euro' : `${esc(c.code || c.cur)}, 1 € ≈ ${fmtRate(c.rate)} ${esc(c.cur)}`}</b></div><div class="cf-pap"><span>Papiers</span><b>${esc(papers)}</b></div>${typeof pratiqueHTML === 'function' ? pratiqueHTML(cc) : ''}</div>
     <p class="small cf-note">Les formalités changent : vérifie toujours sur diplomatie.gouv.fr avant de réserver.</p>
     <div class="sec"><h2>Combien ça coûterait</h2></div>
     ${(() => { const sv = simFor(cc); return sv ? `<button class="cf-simus" data-act="simu" data-id="${sv.id}">${SV.wallet || SV.star}<span><b>Ta simulation : ${fmt(simCalc(sv).pp)} par personne</b><em>${esc(sv.city || c.n)}, ${fd(sv.du)} au ${fd(sv.au)}</em></span>${SV.chev}</button>`

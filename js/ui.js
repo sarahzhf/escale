@@ -144,6 +144,7 @@ function prepSheet(tid, fresh) {
   const item = x => `<button type="button" class="prp ${sel.has(x.l) ? 'on' : ''}" data-l="${esc(x.l)}"><i>${SV.check}</i><span><b>${esc(x.l)}</b>${x.d ? `<em>${esc(x.d)}</em>` : ''}</span>${x.r ? '<span class="tagr">À réserver</span>' : ''}</button>`;
   openPanel(`<h2>${fresh ? 'Prépare ton voyage' : 'À préparer'}</h2><p class="small">Coche ce que tu veux suivre pour ${esc(place(t))}. Tu pourras cocher chaque point une fois fait, depuis la page du voyage.</p>
    ${fresh && typeof motCard === 'function' ? motCard(t) : ''}
+   <div class="ip-slot" data-c="${t.pays}"></div>
    ${inc.length ? `<div class="sec"><h2>Les incontournables</h2></div><div class="prps">${inc.map(item).join('')}</div>` : ''}
    <div class="sec"><h2>Checklist pratique</h2></div><div class="prps">${pra.map(item).join('')}</div>
    ${val.length ? `<div class="sec"><h2>Ma valise</h2></div><p class="small">Selon la saison, la durée et le pays. Touche ce que tu veux emporter.</p><div class="prps">${val.map(item).join('')}</div>` : ''}

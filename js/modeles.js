@@ -24,10 +24,20 @@
     return out; };
   const C1 = [['portrait', 'carre', 'portrait', 'carre'], ['carre', 'portrait', 'carre', 'portrait'], ['portrait', 'portrait', 'carre', 'carre'], ['carre', 'carre', 'portrait', 'portrait']];
   const C2 = [['carre', 'portrait', 'carre', 'portrait'], ['portrait', 'carre', 'portrait', 'carre'], ['carre', 'carre', 'portrait', 'portrait'], ['portrait', 'portrait', 'carre', 'carre']];
-  const liste = (n, y0, gap, frames, col, numC, ph_ = 'ta raison…', fw = 74) => Array.from({ length: n }).flatMap((_, i) => { const y = y0 + i * gap, R = i % 2;
-    return [tx('l', 16, y - 24, String(i + 1), '', 'oldmoney', numC, 30, 3), tx('l', R ? 150 : 52, y - 14, '', ph_, 'carnet', col, 14, 17),
-      ph('l', R ? 86 : 236, y, fw, 'o', frames[i % frames.length], R ? -4 : 4)]; });
+  const liste = (n, y0, gap, frames, col, numC, ph_ = 'ta raison…', fw = 74, sd = 'l') => Array.from({ length: n }).flatMap((_, i) => { const y = y0 + i * gap, R = i % 2;
+    return [tx(sd, 16, y - 24, String(i + 1), '', 'oldmoney', numC, 30, 3), tx(sd, R ? 150 : 52, y - 14, '', ph_, 'carnet', col, 14, 17),
+      ph(sd, R ? 86 : 236, y, fw, 'o', frames[i % frames.length], R ? -4 : 4)]; });
 
+
+  // autres murs de photos : une grande et des petites, 3 colonnes, des ronds, des polaroïds scotchés, et le mur côté gauche
+  const hero = fr => [ph('r', 76, 130, 132, 'carre', fr), ...[[184, 95], [252, 95], [184, 165], [252, 165]].map(([x, y]) => ph('r', x, y, 62, 'carre', fr)),
+    ...[235, 305, 375].flatMap(y => [42, 112, 182, 252].map(x => ph('r', x, y, 62, 'carre', fr)))];
+  const grid3 = (fr, top = 66) => { const out = []; [52, 150, 248].forEach((x, ci) => { let y = top + (ci === 1 ? 14 : 0);
+    (ci === 1 ? ['carre', 'portrait', 'carre'] : ['portrait', 'carre', 'portrait']).forEach(a => { const h = a === 'portrait' ? 112 : 84; out.push(ph('r', x, y + h / 2, 84, a, fr)); y += h + 8; }); }); return out; };
+  const ronds = () => [95, 165, 235, 305, 375].flatMap(y => [42, 112, 182, 252].map(x => ph('r', x, y, 62, 'carre', 'rond')));
+  const polas = tapes => [116, 222, 328].flatMap((y, ri) => [54, 150, 246].flatMap((x, ci) => { const r = ((ri + ci) % 2 ? 5 : -5); return [ph('r', x, y, 76, 'carre', 'polaroid', r), tp('r', x, y - 50, tapes[(ri + ci) % tapes.length], 40, -r)]; }));
+  const wallL = (cols, fr = 'arrondi', top = 84) => { const out = [], w = 62, xs = [42, 112, 182, 252];
+    cols.forEach((col, ci) => { let y = top; col.forEach(a => { const h = a === 'portrait' ? w * 4 / 3 : w; out.push(ph('l', xs[ci], y + h / 2, w, a, fr)); y += h + 8; }); }); return out; };
   const MODELES = [
     { k: 'moodboard', n: 'Mood board', pro: 0, paper: 'blanc', font: 'carnet', pal: ['#E8A9B8', '#20243A', '#FBF6EA'], el: () => [
       tx('l', 52, 40, 'Mood board', 'Ton titre', 'carnet', '#20243A', 32, 18), dd('l', 34, 58, 'sparkles', 22, '#C26B7A'), dd('l', 268, 58, 'sparkles', 22, '#C26B7A'),
@@ -201,6 +211,39 @@
       st('l', 150, 400, 'dentelle-ivoire-fleurs', 150), st('l', 40, 392, 'cire-creme-noeud', 34),
       ...wall('Mon mood board', 'oldmoney', '#2a2320', C2, 'blanc'), st('r', 22, 30, 'nd-ruban-creme', 40, -14), st('r', 280, 30, 'nd-ruban-creme', 40, 14),
       st('r', 272, 400, 'cire-or-lune', 34)] },
+    { k: 'baisers', n: 'Bons baisers', pro: 1, full: 1, paper: 'blanc', font: 'romantique', pal: ['#F6E0D6', '#B8452C', '#C9A15A'], el: () => [
+      tx('l', 22, 44, 'Bons baisers', 'Ton titre', 'romantique', '#B8452C', 30, 26), tx('l', 128, 86, 'de voyage', '', 'oldmoney', '#9a7a3a', 17, 20),
+      ph('l', 112, 196, 156, 'paysage', 'timbre', -3), ph('l', 250, 150, 66, 'o', 'or-rond', 6), st('l', 206, 262, 'empreinte-terracotta', 40, 8),
+      tx('l', 24, 290, '', 'Chère toi, ici tout est…', 'carnet', '#5a4a42', 15, 44),
+      st('l', 40, 398, 'erable-terracotta', 34, -12), dd('l', 150, 400, 'plane', 26, '#B8452C', -10), dd('l', 262, 398, 'heartf', 22, '#E8A9B8'),
+      tx('r', 70, 26, 'Mes cartes postales', 'Ton titre', 'carnet', '#B8452C', 18, 30), ...hero('arrondi'),
+      st('r', 22, 30, 'nd2-vichy-terracotta', 40, -14), st('r', 280, 30, 'nd2-vichy-terracotta', 40, 14)] },
+    { k: 'podium', n: 'Mon top 3', pro: 1, full: 1, paper: 'blanc', font: 'oldmoney', pal: ['#FBF3DF', '#C9A15A', '#2a2320'], el: () => [
+      tx('l', 22, 44, 'Mon top 3', 'Ton titre', 'oldmoney', '#2a2320', 30, 18), tx('l', 150, 76, 'du voyage', '', 'romantique', '#C9A15A', 20, 20),
+      st('l', 150, 128, 'nd-ruban-creme', 36), ph('l', 150, 178, 104, 'o', 'coeur-or'), ph('l', 62, 254, 74, 'o', 'or-ovale', -4), ph('l', 238, 254, 74, 'o', 'or-rond', 4),
+      lt('l', 150, 238, '1', 'bead', '#2a2320'), lt('l', 62, 310, '2', 'bead', '#2a2320'), lt('l', 238, 310, '3', 'bead', '#2a2320'),
+      tx('l', 106, 256, '', 'mon n°1…', 'carnet', '#5a4a3a', 14, 15), tx('l', 14, 328, '', 'n°2…', 'carnet', '#5a4a3a', 14, 16), tx('l', 186, 328, '', 'n°3…', 'carnet', '#5a4a3a', 14, 16),
+      dd('l', 40, 398, 'stars', 24, '#C9A15A'), st('l', 150, 400, 'cire-or-lune', 34), dd('l', 262, 398, 'sparkles', 24, '#C9A15A'),
+      tx('r', 82, 26, 'Le meilleur', 'Ton titre', 'oldmoney', '#2a2320', 20, 24), ...grid3('blanc'),
+      st('r', 22, 30, 'nd2-moutarde', 40, -14), st('r', 280, 30, 'nd2-moutarde', 40, 14)] },
+    { k: 'vrac', n: 'En vrac', pro: 1, full: 1, paper: 'quadrille', font: 'carnet', pal: ['#FBE3D6', '#D9826A', '#C9A15A'], el: () => [
+      tx('l', 22, 44, 'Souvenirs en vrac', 'Ton titre', 'carnet', '#7a3f30', 24, 30), st('l', 272, 52, 'nd2-vichy-terracotta', 40, 14), ...wallL(C2),
+      tx('r', 22, 26, 'Ce que je retiens', 'Ton titre', 'oldmoney', '#7a3f30', 22, 30),
+      ...liste(4, 112, 74, ['coeur-rose', 'or-ovale', 'or-rond', 'coeur-or'], '#5a4a42', '#E8A98F', 'ce que je retiens…', 74, 'r'),
+      st('r', 150, 404, 'fl-pivoine-poudre', 34), st('r', 270, 400, 'empreinte-terracotta', 32)] },
+    { k: 'coins', n: 'Mes coins préférés', pro: 1, full: 1, paper: 'points', font: 'carnet', pal: ['#E3EBDD', '#3f5240', '#F3C979'], el: () => [
+      tx('l', 22, 44, 'Mes coins préférés', 'Ton titre', 'carnet', '#3f5240', 24, 30), dd('l', 272, 52, 'pin', 24, '#B8452C'),
+      ...[[82, 140, 'or-cadre'], [218, 140, 'argent'], [82, 290, 'or-ovale'], [218, 290, 'or-rond']].flatMap(([x, y, f], i) => [ph('l', x, y, 74, 'o', f, i % 2 ? 3 : -3), tx('l', x - 54, y + 50, '', 'le lieu…', 'carnet', '#3f5240', 13, 18)]),
+      st('l', 150, 400, 'fl-achillee', 30), st('l', 266, 398, 'cire-sauge-olivier', 32),
+      tx('r', 82, 26, 'Mes adresses', 'Ton titre', 'carnet', '#3f5240', 20, 24), ...polas([W.sauge, W.jaune, W.peche]),
+      st('r', 22, 30, 'nd2-foret', 40, -14), st('r', 280, 30, 'nd2-foret', 40, 14), dd('r', 150, 400, 'leaf', 24, '#6f8a6c')] },
+    { k: 'duo', n: 'Nous deux', pro: 1, full: 1, paper: 'rose', font: 'romantique', pal: ['#F8E7E5', '#b05a6a', '#C9A15A'], el: () => [
+      tx('l', 22, 44, 'Nous deux', 'Ton titre', 'romantique', '#b05a6a', 34, 20), st('l', 266, 60, 'baiser-framboise', 40, -10),
+      ph('l', 90, 176, 112, 'o', 'coeur-rose', -5), ph('l', 214, 196, 104, 'o', 'coeur-or', 5), st('l', 152, 126, 'nd-satin-rose', 44),
+      tx('l', 24, 274, '', 'notre plus beau souvenir…', 'carnet', '#5a3a42', 15, 44),
+      st('l', 46, 390, 'fl-pivoine-rose', 44, -10), st('l', 190, 400, 'dentelle-rose-eventail', 90), st('l', 270, 392, 'cire-rose-cygne', 32),
+      tx('r', 82, 26, 'Rien que nous', 'Ton titre', 'romantique', '#b05a6a', 22, 26), ...ronds(),
+      st('r', 22, 30, 'nd-satin-rose', 40, -14), st('r', 280, 30, 'nd-satin-rose', 40, 14)] },
     { k: 'raisons', n: 'Raisons de repartir', pro: 1, paper: 'blanc', font: 'oldmoney', pal: ['#E8A9B8', '#C26B7A', '#ffffff'], el: () => [
       tx('l', 24, 40, 'Quatre raisons', 'Ton titre', 'oldmoney', '#2a2320', 28, 20), tx('l', 60, 78, '… de repartir', '', 'romantique', '#C26B7A', 22, 26),
       ...[0, 1, 2, 3].flatMap(i => { const y = 150 + i * 66; return [tx('l', 20, y - 26, String(i + 1), '', 'oldmoney', '#E8A9B8', 38, 3), tx('l', 62, y - 16, '', 'ta raison…', 'carnet', '#5a4a52', 15, 20), ph('l', i % 2 ? 216 : 248, y, 62, 'carre', 'polaroid', i % 2 ? -6 : 6)]; }),

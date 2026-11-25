@@ -17,7 +17,7 @@ async function renderRecos() {
     const { data, error } = await q; if (error) throw error;
     const ids = [...new Set(data.map(r => r.owner_id))];
     const ppl = ids.length ? (await sb.from('profiles').select('id,display_name,handle,avatar_path').in('id', ids)).data || [] : [];
-    const P = Object.fromEntries(ppl.map(p => [p.id, p]));
+    const P = Object.fromEntries(ppl.map(p => [p.id, p])); RECOS = Object.fromEntries(data.map(r => [r.id, { ...r, by: ((P[r.owner_id] || {}).display_name || '').split(' ')[0] }]));
     const TH = data.length ? (await sb.from('reco_thanks').select('reco_id,user_id').in('reco_id', data.map(r => r.id))).data || [] : [];
     const thN = id => TH.filter(x => x.reco_id === id).length, thMe = id => TH.some(x => x.reco_id === id && x.user_id === ME.id);
     if (current !== 'fil' || fView !== 'recos') return;
@@ -28,7 +28,7 @@ async function renderRecos() {
         return `<article class="rc"><div class="rc-h"><span class="rc-ic">${c[0]()}</span><div><b>${esc(r.name)}</b><span>${c[1]} · ${esc(r.city ? r.city + ', ' : '')}${esc((COUNTRIES[r.country_code] || {}).n || r.country_code)}</span></div></div>
           ${r.note ? `<p>${esc(r.note)}</p>` : ''}${r.link ? `<a href="${esc(r.link)}" target="_blank" rel="noopener nofollow">Voir le lieu</a>` : ''}
           <div class="rc-f">${avatar(u, 'sm')}<span>${mine ? 'Ta recommandation' : 'Recommandé par ' + esc((u.display_name || 'un voyageur').split(' ')[0])}</span>
-          ${!mine ? `<span class="rc-act"><button class="${SAVED.has(r.id) ? 'on' : ''}" data-act="recoSave" data-id="${r.id}">${RC_IC.save}${SAVED.has(r.id) ? 'Enregistrée' : 'Enregistrer'}</button><button class="${thMe(r.id) ? 'on' : ''}" data-act="recoThanks" data-id="${r.id}">${thMe(r.id) ? SV.heartF : SV.heart}Merci${thN(r.id) ? ' · ' + thN(r.id) : ''}</button></span>` : thN(r.id) ? `<span class="rc-th">${SV.heartF}${thN(r.id)} merci</span>` : ''}
+          ${tripsFor(r.country_code).length ? `<button class="rc-trip ${inTrip(r) ? 'on' : ''}" data-act="recoTrip" data-id="${r.id}">${inTrip(r) ? SV.check + 'Dans ton voyage' : SV.plus + 'Ajouter à mon voyage'}</button>` : ''}${!mine ? `<span class="rc-act"><button class="${SAVED.has(r.id) ? 'on' : ''}" data-act="recoSave" data-id="${r.id}">${RC_IC.save}${SAVED.has(r.id) ? 'Enregistrée' : 'Enregistrer'}</button><button class="${thMe(r.id) ? 'on' : ''}" data-act="recoThanks" data-id="${r.id}">${thMe(r.id) ? SV.heartF : SV.heart}Merci${thN(r.id) ? ' · ' + thN(r.id) : ''}</button></span>` : thN(r.id) ? `<span class="rc-th">${SV.heartF}${thN(r.id)} merci</span>` : ''}
           ${mine ? `<i>${VIS[r.visibility].n}</i><button data-act="recoDel" data-id="${r.id}" aria-label="Supprimer">${SV.trash || '✕'}</button>` : ''}</div></article>`; }).join('')
         || `<div class="emptyfeed">${t.length >= 2 ? `Pas encore d’adresse pour « ${esc(t)} ». Demande à tes amis qui y sont allés !` : 'Aucune adresse pour l’instant. Partage tes coups de cœur : un resto, une balade, un café…'}</div>`}</div>`;
   } catch (e) { box.innerHTML = `<div class="emptyfeed">${isNetwork(e) ? 'Pas de connexion.' : 'Les recommandations ne peuvent pas être chargées pour le moment.'}</div>`; }
@@ -89,3 +89,19 @@ async function openRecoFrom(u, kind) {
   if (kind === 'reco_new') { const { data } = await sb.from('recommendations').select('country_code').eq('owner_id', u).order('created_at', { ascending: false }).limit(1); name = data && data[0] ? (COUNTRIES[data[0].country_code] || {}).n || '' : ''; }
   fView = 'recos'; fQ = name; RC_CATF = ''; if (current === 'fil') renderFil(); else go('fil');
 }
+
+/* ---------- mettre une adresse dans un voyage prévu ---------- */
+let RECOS = {};
+/** Voyages à venir ou en cours dans ce pays. */
+function tripsFor(cc) { return (S.trips || []).filter(t => t.pays === cc && (info(t).futur || info(t).enCours)).sort((a, b) => String(a.du).localeCompare(String(b.du))); }
+const inTrip = r => tripsFor(r.country_code).some(t => todoOf(t).some(x => x.rid === r.id));
+function putInTrip(t, r) { const L = todoOf(t); if (L.some(x => x.rid === r.id)) return false;
+  L.push({ id: uid(), k: 'reco', rid: r.id, l: r.name, d: [(RC_CAT[r.category] || RC_CAT.autre)[1], r.city, r.by ? 'conseillé par ' + r.by : ''].filter(Boolean).join(' · '), link: r.link || '', r: false, ok: false });
+  save(); return true; }
+ACT.recoTrip = d => { const r = RECOS[d.id]; if (!r) return; const L = tripsFor(r.country_code);
+  const done = t => { const b = document.querySelector(`[data-act="recoTrip"][data-id="${r.id}"]`); if (b) { b.classList.add('on'); b.innerHTML = SV.check + 'Dans ton voyage'; } toast(`Ajouté à ton voyage : ${place(t)}`); };
+  if (L.length === 1) { if (putInTrip(L[0], r)) done(L[0]); else toast('Déjà dans ton voyage'); return; }
+  openPanel(`<h2>Dans quel voyage ?</h2><p class="small">${esc(r.name)} sera ajouté à la préparation du voyage, avec les incontournables.</p>
+    <div class="menulist">${L.map(t => `<button data-t="${t.id}">${flag(t.pays)}<span>${esc(place(t))}<span class="small"> ${esc(tripDates(t))}</span></span></button>`).join('')}</div>${CLOSE('Annuler')}`, p => {
+    p.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { const t = trip(b.dataset.t); closePanel(); if (t && putInTrip(t, r)) done(t); else toast('Déjà dans ce voyage'); }); });
+};

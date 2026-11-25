@@ -3055,3 +3055,18 @@ html,body{overscroll-behavior:none}
 .mot li.mot-imp{color:#7d2a17}.mot li.mot-imp::before{border-color:#B8452C}
 .mot li.mot-new{animation:mwIn .5s ease both}
 .ip-row{display:block}.ip-row .ip-b{margin-bottom:6px}.ip-row+.ip-row{padding-top:10px;border-top:1px dashed rgba(0,0,0,.08)}
+/* mode surprise */
+.surp-btn{display:flex;align-items:center;gap:12px;width:100%;margin:12px 0 4px;padding:14px 16px;border:0;border-radius:20px;color:#fff;text-align:left;font:inherit;background:linear-gradient(120deg,#B8452C,#D46A45 55%,#E9A15B);box-shadow:0 14px 26px -18px rgba(184,69,44,.9)}
+.surp-btn b{display:block;font-size:16px}.surp-btn em{font-style:normal;font-size:12.5px;opacity:.9}
+.surp-dice{display:grid;place-items:center;width:40px;height:40px;flex:none;border-radius:12px;background:rgba(255,255,255,.2)}.surp-dice svg{width:20px;height:20px}
+.surp{--surp-w:96px;text-align:center}.surp-k{margin:0 0 10px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#B8452C;font-weight:700}
+.surp-reel{position:relative;width:var(--surp-w);height:var(--surp-w);margin:0 auto 14px;overflow:hidden;border-radius:50%;box-shadow:0 0 0 4px #FBF6EA,0 0 0 6px #C99A2E,0 18px 30px -18px rgba(0,0,0,.5)}
+.surp-strip{display:flex;height:100%}.surp-strip span{flex:none;width:var(--surp-w);height:var(--surp-w);display:grid;place-items:center}.surp-strip .flag{width:100%;height:100%;border-radius:0}
+.surp-reel.done{animation:spPop .4s ease}@keyframes spPop{50%{transform:scale(1.08)}}
+.surp-res{opacity:0;transform:translateY(8px);transition:opacity .4s,transform .4s}.surp-res.on{opacity:1;transform:none}
+.surp-res h2{margin:0;font-size:30px}.surp-res h2 span{display:block;font-size:15px;font-family:inherit;font-weight:500;opacity:.7;margin-top:2px}
+.surp-price{margin:10px 0 6px;font-size:14px}.surp-price b{font-size:20px;color:#2E5E3E}
+.surp-act{margin-top:14px;display:grid;gap:10px}.surp-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.surp-row .btn2{justify-content:center}
+.rc-trip{display:inline-flex;align-items:center;gap:5px}.rc-trip.on{color:#2E5E3E}
+.td-reco{font-style:normal;color:#8A4B0C!important}
+.note .note-by{display:block;margin-top:4px;font-size:10.5px;line-height:1.25;opacity:.7;font-family:var(--sans,inherit)}

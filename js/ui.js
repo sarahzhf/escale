@@ -128,10 +128,10 @@ const todoOf = t => (t.todo = Array.isArray(t.todo) ? t.todo : []);
 function prepHTML(t) {
   const L = todoOf(t), done = L.filter(x => x.ok).length, f = info(t);
   if (!L.length) return f.futur || f.enCours ? `<div class="sec"><h2>À préparer</h2></div><button class="prep-cta" data-act="prep" data-trip="${t.id}"><i>${SV.star}</i><span><b>Incontournables et checklist</b><em>Les lieux à ne pas rater en ${esc(C(t).n)} et ce qu'il faut réserver</em></span>${SV.right}</button>` : '';
-  const row = (x, i) => `<button class="todo ${x.ok ? 'ok' : ''}" data-act="todoTick" data-trip="${t.id}" data-i="${i}" aria-pressed="${x.ok}"><i>${x.ok ? SV.check : ''}</i><span><b>${esc(x.l)}</b>${x.r ? '<em>À réserver</em>' : ''}</span></button>`;
-  const inc = L.map((x, i) => [x, i]).filter(([x]) => x.k === 'inc'), pra = L.map((x, i) => [x, i]).filter(([x]) => x.k !== 'inc');
+  const row = (x, i) => `<button class="todo ${x.ok ? 'ok' : ''}" data-act="todoTick" data-trip="${t.id}" data-i="${i}" aria-pressed="${x.ok}"><i>${x.ok ? SV.check : ''}</i><span><b>${esc(x.l)}</b>${x.k === 'reco' && x.d ? `<em class="td-reco">${esc(x.d)}</em>` : ''}${x.r ? '<em>À réserver</em>' : ''}</span></button>`;
+  const inc = L.map((x, i) => [x, i]).filter(([x]) => x.k === 'inc'), rec = L.map((x, i) => [x, i]).filter(([x]) => x.k === 'reco'), pra = L.map((x, i) => [x, i]).filter(([x]) => x.k !== 'inc' && x.k !== 'reco');
   return `<div class="sec"><h2>À préparer <span class="cnt num">${done}/${L.length}</span></h2><button class="more" data-act="prep" data-trip="${t.id}">Modifier</button></div>
-    <div class="todos">${inc.length ? `<p class="caps">Incontournables</p>${inc.map(([x, i]) => row(x, i)).join('')}` : ''}${pra.length ? `<p class="caps">Checklist</p>${pra.map(([x, i]) => row(x, i)).join('')}` : ''}</div>`;
+    <div class="todos">${inc.length ? `<p class="caps">Incontournables</p>${inc.map(([x, i]) => row(x, i)).join('')}` : ''}${rec.length ? `<p class="caps">Adresses de tes amis</p>${rec.map(([x, i]) => row(x, i)).join('')}` : ''}${pra.length ? `<p class="caps">Checklist</p>${pra.map(([x, i]) => row(x, i)).join('')}` : ''}</div>`;
 }
 ACT.prep = d => prepSheet(d.trip);
 ACT.todoTick = d => { const t = trip(d.trip), x = todoOf(t)[+d.i]; if (!x) return; x.ok = !x.ok; save(); refresh(); if (x.ok && todoOf(t).every(y => y.ok)) toast('Tout est prêt, bon voyage !'); };
@@ -152,10 +152,10 @@ function prepSheet(tid, fresh) {
    <button class="btn full" id="pr-ok">Enregistrer<i>${SV.arrow}</i></button>${CLOSE(fresh ? 'Plus tard' : 'Annuler')}`, p => {
     p.querySelectorAll('.prp').forEach(b => b.onclick = () => { const l = b.dataset.l; sel.has(l) ? sel.delete(l) : sel.add(l); b.classList.toggle('on'); });
     p.querySelector('#pr-ok').onclick = () => {
-      const keep = cur.filter(x => sel.has(x.l) || x.k === 'own'), out = keep.slice();
+      const keep = cur.filter(x => sel.has(x.l) || x.k === 'own' || x.k === 'reco'), out = keep.slice();
       [...inc, ...pra, ...val].forEach(x => { if (sel.has(x.l) && !has(x.l)) out.push({ id: uid(), k: x.k, l: x.l, r: x.r || false, ok: false }); });
       const own = p.querySelector('#pr-own').value.trim().slice(0, 80); if (own && !out.some(x => x.l === own)) out.push({ id: uid(), k: 'own', l: own, r: false, ok: false });
-      const order = x => x.k === 'inc' ? 0 : x.k === 'own' ? 1 : x.k === 'val' ? 3 : 2; t.todo = out.sort((a, b) => order(a) - order(b)).slice(0, 40);
+      const order = x => x.k === 'inc' ? 0 : x.k === 'reco' ? .5 : x.k === 'own' ? 1 : x.k === 'val' ? 3 : 2; t.todo = out.sort((a, b) => order(a) - order(b)).slice(0, 40);
       save(); closePanel(); refresh(); toast(t.todo.length ? `${t.todo.length} point${t.todo.length > 1 ? 's' : ''} à préparer` : 'Liste vidée'); };
   }, { nofocus: true });
 }

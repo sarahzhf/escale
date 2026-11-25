@@ -1,15 +1,15 @@
 // Eskalys : fonction « infos-pays » (Supabase Edge Function).
 // Lit la fiche officielle « Conseils aux voyageurs » du ministère des Affaires étrangères (diplomatie.gouv.fr)
 // pour un pays, et en tire : le visa ou l'autorisation à demander, les papiers, la situation de sécurité
-// et les risques santé (moustiques, vaccins). Le résultat est gardé 3 jours par pays et par passeport
-// dans pays_infos : tout le monde voit la même info, et la recherche (payante) n'est relancée que tous les 3 jours.
+// et les risques santé (moustiques, vaccins). Le résultat est gardé 7 jours par pays et par passeport
+// dans pays_infos : tout le monde voit la même info, et la recherche (payante) n'est relancée que tous les 7 jours.
 // Seuls le pays et la nationalité arrivent ici, jamais l'identité ni les données de la personne.
 //
 // Déploiement :  supabase functions deploy infos-pays
 // Secret :       ANTHROPIC_API_KEY (le même que pour l'assistant)
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const TTL_DAYS = 3;
+const TTL_DAYS = 7;
 const MODEL = Deno.env.get('INFOS_MODEL') || 'claude-haiku-5-5';
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, 'Content-Type': 'application/json' } });
@@ -54,7 +54,7 @@ Règles :
 - source : l'adresse exacte de la fiche consultée. mise_a_jour : la date de dernière mise à jour de la fiche si elle est affichée (AAAA-MM-JJ), sinon "".
 - Écris en français, sans tiret long. Ne mets que ce que disent les sources consultées.`;
 
-  const tool: Record<string, unknown> = { type: 'web_search_20250305', name: 'web_search', max_uses: 4 };
+  const tool: Record<string, unknown> = { type: 'web_search_20250305', name: 'web_search', max_uses: 2 };
   if (fr) tool.allowed_domains = ['diplomatie.gouv.fr'];
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',

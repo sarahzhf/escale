@@ -1,6 +1,6 @@
 /* Eskalys : entrée dans le pays (visa), situation et santé, à jour.
    Les infos viennent de la fonction « infos-pays », qui lit la fiche officielle « Conseils aux voyageurs »
-   (diplomatie.gouv.fr) et la garde 3 jours. Ici, on les garde aussi 1 jour sur le téléphone.
+   (diplomatie.gouv.fr) et la garde 7 jours. Ici, on les garde aussi 1 jour sur le téléphone.
    Tout élément .ip-slot[data-c] ajouté à la page est rempli tout seul. */
 (() => {
   const PKEY = 'escale:passport', CKEY = 'escale:infos:', TTL = 864e5, PENDING = new Map();

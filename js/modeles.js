@@ -16,6 +16,18 @@
   const lt = (sd, x, y, v, f, c, r = 0, s = 1) => ({ k: 't', v, f, c, x: X(sd, x), y: Y(y), s, r, tpl: 1 });
   const tx = (sd, x, y, v, ph_, f, c, size = 17, w = 30, r = 0) => ({ k: 'x', v, ph: ph_, f, c, x: X(sd, x), y: Y(y), s: r1(size / 17), r, w, tpl: 1 });
 
+
+  // mur de photos plein page (page de droite) : 4 colonnes de hauteurs variées, comme un mood board
+  const wall = (title, tf, tc, cols, frame = 'arrondi', top = 64) => { const out = [], w = 62, xs = [42, 112, 182, 252];
+    cols.forEach((col, ci) => { let y = top; col.forEach(a => { const h = a === 'portrait' ? w * 4 / 3 : a === 'story' ? w * 1.62 : a === 'paysage' ? w * 3 / 4 : w; out.push(ph('r', xs[ci], y + h / 2, w, a, frame)); y += h + 8; }); });
+    if (title) out.unshift(tx('r', 58, 26, title, 'Ton titre', tf, tc, 20, 32));
+    return out; };
+  const C1 = [['portrait', 'carre', 'portrait', 'carre'], ['carre', 'portrait', 'carre', 'portrait'], ['portrait', 'portrait', 'carre', 'carre'], ['carre', 'carre', 'portrait', 'portrait']];
+  const C2 = [['carre', 'portrait', 'carre', 'portrait'], ['portrait', 'carre', 'portrait', 'carre'], ['carre', 'carre', 'portrait', 'portrait'], ['portrait', 'portrait', 'carre', 'carre']];
+  const liste = (n, y0, gap, frames, col, numC, ph_ = 'ta raison…', fw = 74) => Array.from({ length: n }).flatMap((_, i) => { const y = y0 + i * gap, R = i % 2;
+    return [tx('l', 16, y - 24, String(i + 1), '', 'oldmoney', numC, 30, 3), tx('l', R ? 150 : 52, y - 14, '', ph_, 'carnet', col, 14, 17),
+      ph('l', R ? 86 : 236, y, fw, 'o', frames[i % frames.length], R ? -4 : 4)]; });
+
   const MODELES = [
     { k: 'moodboard', n: 'Mood board', pro: 0, paper: 'blanc', font: 'carnet', pal: ['#E8A9B8', '#20243A', '#FBF6EA'], el: () => [
       tx('l', 52, 40, 'Mood board', 'Ton titre', 'carnet', '#20243A', 32, 18), dd('l', 34, 58, 'sparkles', 22, '#C26B7A'), dd('l', 268, 58, 'sparkles', 22, '#C26B7A'),
@@ -152,6 +164,43 @@
       dd('l', 150, 400, 'stars', 26, '#F3C979'), dd('l', 264, 398, 'smile', 26, '#20243A'),
       ph('r', 64, 300, 88, 'carre', 'polaroid', -5), ph('r', 168, 290, 78, 'portrait', 'polaroid', 4), ph('r', 252, 340, 56, 'carre', 'blanc', -6),
       dd('r', 60, 398, 'burst', 26, '#C8414F'), dd('r', 160, 400, 'heartf', 22, '#C8414F')] },
+    { k: 'quatre', n: 'Quatre raisons', pro: 1, full: 1, paper: 'blanc', font: 'oldmoney', pal: ['#F8E7E5', '#C26B7A', '#C9A15A'], el: () => [
+      tx('l', 22, 46, 'Quatre raisons', 'Ton titre', 'oldmoney', '#2a2320', 26, 22), tx('l', 96, 80, '… de repartir', '', 'romantique', '#C26B7A', 20, 24),
+      st('l', 264, 64, 'nd2-vichy-rose', 46, 14), ...liste(4, 146, 70, ['or-ovale', 'coeur-rose', 'or-rond', 'or-cadre'], '#5a4a52', '#E8A9B8'),
+      st('l', 134, 190, 'nd2-vieux-rose', 28, -12), st('l', 150, 402, 'dentelle-rose-eventail', 110),
+      ...wall('Mon mood board', 'carnet', '#2a2320', C1), st('r', 22, 30, 'nd2-vichy-rose', 40, -14), st('r', 280, 30, 'nd2-vichy-rose', 40, 14),
+      st('r', 270, 400, 'cire-rose-cygne', 34)] },
+    { k: 'coups', n: 'Coups de cœur', pro: 1, full: 1, paper: 'quadrille', font: 'oldmoney', pal: ['#DCE6D8', '#5f7a5c', '#C9A15A'], el: () => [
+      tx('l', 22, 46, 'Mes coups de cœur', 'Ton titre', 'oldmoney', '#3f5240', 24, 26), dd('l', 270, 50, 'heartf', 22, '#A9C4AF', 10),
+      ...liste(3, 152, 96, ['coeur-or', 'or-ovale', 'argent'], '#3f5240', '#A9C4AF', 'pourquoi j’ai adoré…', 84),
+      st('l', 186, 196, 'nd2-vichy-sauge', 44, -10), st('l', 40, 400, 'fl-achillee', 40, -12), st('l', 150, 404, 'dentelle-sauge-picot', 130),
+      ...wall('Mood board', 'carnet', '#3f5240', C2), st('r', 22, 30, 'nd2-vichy-sauge', 40, -14), st('r', 280, 30, 'nd2-vichy-sauge', 40, 14),
+      st('r', 272, 400, 'cire-sauge-olivier', 34)] },
+    { k: 'arefaire', n: 'À refaire', pro: 1, full: 1, paper: 'blanc', font: 'oldmoney', pal: ['#6E1F2A', '#C9A15A', '#F3EBDD'], el: () => [
+      tx('l', 22, 46, 'À refaire', 'Ton titre', 'oldmoney', '#6E1F2A', 30, 18), tx('l', 96, 84, 'absolument', '', 'romantique', '#9a7a3a', 20, 26),
+      st('l', 264, 64, 'nd2-bourgogne', 46, 14), ...liste(4, 148, 70, ['bordeaux', 'or-cadre', 'coeur-or', 'or-rond'], '#4a2a2e', '#C9A15A', 'à refaire…'),
+      st('l', 150, 404, 'dentelle-bordeaux-ornement', 110),
+      ...wall('Nos moments', 'oldmoney', '#6E1F2A', C1, 'blanc'), st('r', 22, 30, 'nd2-bourgogne', 40, -14), st('r', 280, 30, 'nd2-bourgogne', 40, 14),
+      st('r', 272, 400, 'cire-bordeaux-rose', 34)] },
+    { k: 'bonheurs', n: 'Petits bonheurs', pro: 1, full: 1, paper: 'points', font: 'romantique', pal: ['#EDE4F6', '#8a6fb0', '#C9A15A'], el: () => [
+      tx('l', 22, 44, 'Petits bonheurs', 'Ton titre', 'romantique', '#6b4f8f', 28, 30), st('l', 272, 66, 'nd2-vichy-lilas', 42, 14),
+      ...liste(5, 128, 60, ['argent', 'or-ovale', 'coeur-rose', 'or-rond', 'argent'], '#5a4a6a', '#C9B6E4', 'un petit bonheur…', 62),
+      st('l', 150, 404, 'fl-gypsophile', 36),
+      ...wall('Mon mood board', 'romantique', '#6b4f8f', C2), st('r', 22, 30, 'nd2-vichy-lilas', 40, -14), st('r', 280, 30, 'nd2-vichy-lilas', 40, 14),
+      dd('r', 272, 402, 'sparkles', 22, '#8a6fb0')] },
+    { k: 'aime', n: 'Ce que j’ai aimé', pro: 1, full: 1, paper: 'quadrille', font: 'oldmoney', pal: ['#DCE8F5', '#3C6E8F', '#C0C4CC'], el: () => [
+      tx('l', 22, 46, 'Ce que j’ai aimé', 'Ton titre', 'oldmoney', '#2f4a66', 24, 26), st('l', 266, 62, 'nd-vichy-bleu', 46, 14),
+      ...liste(4, 146, 70, ['argent', 'or-ovale', 'or-rond', 'argent'], '#2f4a66', '#9EC3E6', 'ce que j’ai aimé…'),
+      st('l', 40, 402, 'fl-fleur-bleue', 34, -12), st('l', 160, 404, 'dentelle-marine-fleurs', 120),
+      ...wall('Mood board', 'carnet', '#2f4a66', C1), st('r', 22, 30, 'nd2-vichy-bleu-ciel', 40, -14), st('r', 280, 30, 'nd2-vichy-bleu-ciel', 40, 14),
+      st('r', 272, 400, 'fl-fleur-bleue', 30, 10)] },
+    { k: 'galerie', n: 'Galerie dorée', pro: 1, full: 1, paper: 'blanc', font: 'oldmoney', pal: ['#FBF8F1', '#C9A15A', '#2a2320'], el: () => [
+      tx('l', 22, 46, 'Galerie', 'Ton titre', 'oldmoney', '#2a2320', 30, 18), tx('l', 92, 82, 'de souvenirs', '', 'romantique', '#9a7a3a', 20, 24),
+      ph('l', 150, 214, 130, 'o', 'or-cadre'), st('l', 150, 138, 'nd-ruban-creme', 44),
+      ph('l', 50, 150, 62, 'o', 'or-ovale', -5), ph('l', 252, 150, 62, 'o', 'or-rond', 5), ph('l', 50, 300, 62, 'o', 'coeur-or', -4), ph('l', 252, 300, 62, 'o', 'argent', 4),
+      st('l', 150, 400, 'dentelle-ivoire-fleurs', 150), st('l', 40, 392, 'cire-creme-noeud', 34),
+      ...wall('Mon mood board', 'oldmoney', '#2a2320', C2, 'blanc'), st('r', 22, 30, 'nd-ruban-creme', 40, -14), st('r', 280, 30, 'nd-ruban-creme', 40, 14),
+      st('r', 272, 400, 'cire-or-lune', 34)] },
     { k: 'raisons', n: 'Raisons de repartir', pro: 1, paper: 'blanc', font: 'oldmoney', pal: ['#E8A9B8', '#C26B7A', '#ffffff'], el: () => [
       tx('l', 24, 40, 'Quatre raisons', 'Ton titre', 'oldmoney', '#2a2320', 28, 20), tx('l', 60, 78, '… de repartir', '', 'romantique', '#C26B7A', 22, 26),
       ...[0, 1, 2, 3].flatMap(i => { const y = 150 + i * 66; return [tx('l', 20, y - 26, String(i + 1), '', 'oldmoney', '#E8A9B8', 38, 3), tx('l', 62, y - 16, '', 'ta raison…', 'carnet', '#5a4a52', 15, 20), ph('l', i % 2 ? 216 : 248, y, 62, 'carre', 'polaroid', i % 2 ? -6 : 6)]; }),
@@ -258,7 +307,7 @@
     // les photos en trop restent sur la page, en polaroïd dans un coin
     const extra = photos.slice(k).map((p, i) => ({ k: 'f', p, x: r1(8 + i * 6), y: r1(90 - i * 4), s: .5, r: i % 2 ? 6 : -6, fr: 'polaroid', ar: 'carre', cx: 50, cy: 50, cz: 1 }));
     en.st = [...el, ...extra, ...keepTx]; en.photos = photos;
-    en.lay = Object.assign({}, en.lay, { paper: m.paper, font: m.font, free: 1, mdl: m.k }); delete en.lay.fr;
+    en.lay = Object.assign({}, en.lay, { paper: m.paper, font: m.font, free: 1, mdl: m.k }); delete en.lay.fr; if (m.full) en.lay.full = 1; else delete en.lay.full;
     BK.sel = null; save(); bkRender(); toast(`Modèle « ${m.n} » posé : touche un emplacement pour ta photo`);
   }
 })();

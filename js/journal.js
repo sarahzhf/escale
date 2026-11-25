@@ -86,6 +86,7 @@ function pageHTML(b, s, side) {
     const placed = new Set((e.st || []).filter(x => x.k === 'f').map(x => x.p)), free = !!(lay.free || placed.size);
     const ph = e.photos.map((x, i) => ({ x, i })).filter(o => o.x && !placed.has(o.x)).slice(0, 6); // jamais de cadre vide : une photo s'ajoute avec le bouton Photo
     return `<div class="pg ${cls}"><p class="pg-kicker">Jour ${e.j} · ${esc(dn)}</p>${ph.length ? `<div class="pg-ph n${ph.length}">${ph.map((o, k) => pola(o.x, k, o.x || !t ? '' : `${t.id}|e|${e.id}|${o.i}`, pageFrame(e, o.i))).join('')}</div>` : `<p class="pg-hand" style="margin-top:18px">${edit && !placed.size ? 'Touche « Photo » pour poser une photo sur la page.' : ''}</p>`}${foot}</div>`; }
+  if (lay.full && !String(e.n || '').trim()) return `<div class="pg ${cls}">${foot}</div>`; // modèle pleine page : la page de droite devient un mur de photos
   const ce = (f, max, ph) => edit ? ` contenteditable="plaintext-only" spellcheck="true" data-fld="${f}" data-max="${max}" data-ph="${ph}"` : '';
   return `<div class="pg ${cls}"><h2 class="pg-h"${ce('t', 80, 'Titre de la journée')}>${esc(e.t)}</h2>${e.d || edit ? `<p class="pg-desc"${ce('d', 200, 'Une petite description')}>${esc(e.d || '')}</p>` : ''}${e.n || edit ? `<div class="pg-note"${ce('n', 2000, 'Touche ici pour écrire ta journée…')}>${esc(e.n || '')}</div>` : ''}${foot}</div>`;
 }

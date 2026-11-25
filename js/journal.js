@@ -52,7 +52,7 @@ function stickerHTML(s, i, edit) {
   const inner = s.k === 'e' ? `<span class="se">${esc(s.v || '⭐')}</span>`
     : s.k === 'w' ? `<span class="stape" style="--c:${esc(s.c || '#F3C979')}"></span>`
     : s.k === 't' ? letterHTML(s)
-    : s.k === 'x' ? `${edit ? '<span class="sx-grip" aria-label="Déplacer le texte">⠿</span>' : ''}<div class="sx tf-${esc(s.f || 'carnet')}" style="--w:${+s.w || 38};color:${esc(s.c || '#20243A')}"${edit ? ' contenteditable="plaintext-only" spellcheck="true" data-ph="Écris ici…"' : ''}>${esc(s.v || '')}</div>`
+    : s.k === 'x' ? `${edit ? '<span class="sx-grip" aria-label="Déplacer le texte">⠿</span>' : ''}<div class="sx tf-${esc(s.f || 'carnet')}" style="--w:${+s.w || 38};color:${esc(s.c || '#20243A')}"${edit ? ` contenteditable="plaintext-only" spellcheck="true" data-ph="${esc(s.ph || 'Écris ici…')}"` : ''}>${esc(s.v || '')}</div>`
     : s.k === 'd' && window.STKI && STKI[s.v] ? `<span class="sd simg si-${esc(s.v.split('-')[0])}"><img src="icons/stickers/${esc(s.v)}.webp" alt="" draggable="false" decoding="async"></span>`
     : s.k === 'd' ? `<span class="sd ${DECOS[s.v] ? 'deco dv-' + esc(s.v) : 'doodle'}">${DECOS[s.v] ? decoSVG(s.v, esc(s.c || '#C0392B')) : doodleSVG(s.v, esc(s.c || '#20243A'))}</span>`
     : s.k === 'f' && typeof freePhotoHTML === 'function' ? freePhotoHTML(s)
@@ -471,7 +471,7 @@ document.addEventListener('input', ev => {
 document.addEventListener('focusout', ev => {
   const el = ev.target; if (!BK || !el.classList || !el.closest('#book')) return; const ent = curEntry(); if (!ent) return;
   if (el.classList.contains('sx')) { const i = +el.closest('.stk').dataset.si, s = ent.st && ent.st[i];
-    if (s && s.k === 'x' && !String(s.v || '').trim()) setTimeout(() => { const a = document.activeElement; if (!BK || curEntry() !== ent || ent.st[i] !== s || String(s.v || '').trim() || (a && a.classList && a.classList.contains('sx'))) return; ent.st.splice(i, 1); if (BK.sel === i) BK.sel = null; save(); bkRender(); }, 250); }
+    if (s && s.k === 'x' && !s.ph && !String(s.v || '').trim()) setTimeout(() => { const a = document.activeElement; if (!BK || curEntry() !== ent || ent.st[i] !== s || String(s.v || '').trim() || (a && a.classList && a.classList.contains('sx'))) return; ent.st.splice(i, 1); if (BK.sel === i) BK.sel = null; save(); bkRender(); }, 250); }
   if (el.dataset.fld === 't' && !el.innerText.trim()) el.innerText = ent.t;
 });
 { const cp0 = closePanel; closePanel = () => { cp0(); if (BK) setTimeout(() => { if (BK && !BK.busy && !$('panel').classList.contains('open')) bkRender(); }, 400); }; }

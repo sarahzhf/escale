@@ -25,7 +25,7 @@ ACT.aiPaywall = () => openPanel(`<div class="exp-pay"><span class="pro-tag big">
 const FREE = {
   font: ['carnet', 'moderne', 'machine'],
   paper: ['ligne', 'blanc', 'quadrille', 'kraft'],
-  fr: ['polaroid', 'simple', 'cercle', 'aucun', 'blanc', 'arrondi'],
+  fr: ['polaroid', 'simple', 'cercle', 'aucun', 'blanc', 'arrondi', 'arche'],
   lt: ['label', 'tile'],
   bk: ['creme', 'sauge', 'bleu', 'noir'],
   emoji: 24, doodle: 8, deco: 4

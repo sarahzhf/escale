@@ -332,13 +332,19 @@
   /* ---------- le bouton « Modèles » et le choix ---------- */
   { const b0 = bkBar; bkBar = () => { b0(); const bar = document.querySelector('#bkBot .bk-tools.wide'); if (!bar || bar.querySelector('[data-act="bkModeles"]')) return;
     const ok = bar.querySelector('[data-act="bkEdit"]'); ok.insertAdjacentHTML('beforebegin', `<button data-act="bkModeles"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="13" width="8" height="7" rx="1.5"/></svg><span>Modèles</span></button>`); }; }
+  // aussi en haut du carnet, à côté du crayon : on choisit un modèle sans passer d'abord en modification
+  { const ob = openBook; openBook = (book, start) => { ob(book, start); if (!book.own) return; const top = document.querySelector('#book .bk-top'), ed = top && top.querySelector('[data-act="bkEdit"]');
+    if (ed && !top.querySelector('[data-act="bkModeles"]')) ed.insertAdjacentHTML('beforebegin', `<button class="bk-ic" data-act="bkModeles" aria-label="Modèles de pages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="13" width="8" height="7" rx="1.5"/></svg></button>`); }; }
+  // après un modèle, on passe en modification pour que les emplacements photo vides se voient
+  const enterEdit = () => { if (!BK || BK.edit) return; if (!curEntry()) { const k = BK.book.spreads.findIndex(x => x.kind === 'day'); if (k < 0) return; BK.i = k; }
+    BK.edit = true; BK.sel = null; bkRender(); if (!BK.wide && !BK.zoom) bkZoom('l'); };
   const proLock = () => typeof PRO !== 'undefined' && PRO.lock && !PRO.has();
-  ACT.bkModeles = () => { const en = curEntry(); if (!en) { toast('Ouvre une page de journée pour choisir un modèle'); return; }
+  ACT.bkModeles = () => { const en = curEntry(), t = bookTrip(); if (!t) return;
     openPanel(`<h2>Modèles</h2><p class="small">La page arrive décorée. Touche ensuite chaque emplacement pour y mettre ta photo. Tes photos déjà posées prennent place toutes seules, et ton texte est gardé.</p>
       <h3 class="mdl-h">Tout le carnet</h3><p class="small">Un thème décore toutes les pages, chacune avec sa mise en page, dans les mêmes couleurs. Les pages que tu ajoutes ensuite le suivent aussi.</p>
       <div class="th-row">${THEMES.map(th => `<button class="th" data-th="${th.k}"><span class="th-pp">${th.mods.slice(0, 3).map(m => `<img src="icons/modeles/${m.k}.webp" alt="" loading="lazy" onerror="this.remove()">`).join('')}</span><b>${esc(th.n)}</b><em>${th.mods.length} mises en page</em>${th.pro ? '<span class="pro-tag">PRO</span>' : ''}</button>`).join('')}</div>
-      <h3 class="mdl-h">Juste cette page</h3>
-      <div class="mdl-grid">${MODELES.map(m => `<button class="mdl" data-mdl="${m.k}"><img src="icons/modeles/${m.k}.webp" alt="" loading="lazy" onerror="this.remove()"><span class="mdl-pal">${m.pal.map(c => `<i style="background:${c}"></i>`).join('')}</span><b>${esc(m.n)}</b>${m.pro ? '<span class="pro-tag">PRO</span>' : ''}</button>`).join('')}</div>${CLOSE('Fermer')}`, p => {
+      <h3 class="mdl-h">Juste cette page</h3>${en ? '' : `<p class="small">${t.entrees.length ? 'Va sur une page de journée pour lui choisir un modèle rien qu’à elle.' : 'Ajoute d’abord une page à ton carnet.'}</p>`}
+      <div class="mdl-grid"${en ? '' : ' hidden'}>${MODELES.map(m => `<button class="mdl" data-mdl="${m.k}"><img src="icons/modeles/${m.k}.webp" alt="" loading="lazy" onerror="this.remove()"><span class="mdl-pal">${m.pal.map(c => `<i style="background:${c}"></i>`).join('')}</span><b>${esc(m.n)}</b>${m.pro ? '<span class="pro-tag">PRO</span>' : ''}</button>`).join('')}</div>${CLOSE('Fermer')}`, p => {
       p.querySelectorAll('[data-th]').forEach(b => b.onclick = () => { const th = THEMES.find(x => x.k === b.dataset.th); if (!th) return;
         if (th.pro && proLock()) { ACT.carnetPaywall(); return; } closePanel(); setTimeout(() => applyTheme(th), 300); });
       p.querySelectorAll('[data-mdl]').forEach(b => b.onclick = () => { const m = MODELES.find(x => x.k === b.dataset.mdl); if (!m) return;
@@ -353,7 +359,7 @@
     el.forEach(s => { if (s.k === 'f' && k < photos.length) s.p = photos[k++]; });
     // les photos en trop restent sur la page, en polaroïd dans un coin
     const extra = photos.slice(k).map((p, i) => ({ k: 'f', p, x: r1(8 + i * 6), y: r1(90 - i * 4), s: .5, r: i % 2 ? 6 : -6, fr: 'polaroid', ar: 'carre', cx: 50, cy: 50, cz: 1 }));
-    en.st = [...el, ...extra, ...keepTx]; en.photos = photos;
+    en.st = [...el, ...extra.slice(0, Math.max(0, 60 - el.length - keepTx.length)), ...keepTx].slice(0, 60); en.photos = photos.slice(0, 12); // limites de la base : 60 éléments, 12 photos
     en.lay = Object.assign({}, en.lay, { paper: (th && th.paper) || m.paper, font: (th && th.font) || m.font, free: 1, mdl: m.k }); delete en.lay.fr;
     if (m.full) en.lay.full = 1; else delete en.lay.full;
     if (th) en.lay.th = th.k; else delete en.lay.th;
@@ -362,7 +368,7 @@
   function apply(m) {
     const en = curEntry(); if (!en) return;
     if (hasDeco(en) && !confirm('Ce modèle remplace la décoration de cette page. Tes photos et ton texte sont gardés. Continuer ?')) return;
-    applyTo(en, m); BK.sel = null; save(); bkRender(); toast(`Modèle « ${m.n} » posé : touche un emplacement pour ta photo`);
+    applyTo(en, m); BK.sel = null; save(); bkRender(); enterEdit(); toast(`Modèle « ${m.n} » posé : touche un emplacement pour ta photo`);
   }
 
   /* ---------- thèmes : tout le carnet d'un coup, chaque page avec sa propre mise en page ---------- */
@@ -387,7 +393,7 @@
     const file = [...th.mods];
     ents.forEach(en => { const txt = String(en.n || '').trim(), k = txt ? file.findIndex(x => !x.full) : 0;
       const m = k < 0 ? pick(th, 0, en) : file.splice(k, 1)[0]; if (k >= 0) file.push(m); applyTo(en, m, th); });
-    BK.sel = null; save(); bkRender(); toast(`Thème « ${th.n} » posé sur ${ents.length} page${ents.length > 1 ? 's' : ''}`);
+    BK.sel = null; save(); bkRender(); enterEdit(); toast(`Thème « ${th.n} » posé sur ${ents.length} page${ents.length > 1 ? 's' : ''}`);
   }
   window.CARNET_THEMES = THEMES;
   // une nouvelle page dans un carnet qui a un thème le reçoit toute seule, avec la mise en page suivante
